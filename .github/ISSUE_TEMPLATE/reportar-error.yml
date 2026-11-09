@@ -1,0 +1,80 @@
+name: Reportar un error / Report a bug
+description: Algo se ve mal, no anda o un precio no cierra. / Something looks wrong, does not work or a price does not add up.
+title: "Error: "
+labels: ["error"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por avisar. Con un buen reporte lo arreglamos más rápido.
+        **No pegues datos personales:** ni tu nombre, ni tu dirección, ni números de tarjeta, ni capturas del pago.
+
+        Thanks for reporting. A good report gets fixed faster. **Do not paste personal data:** no name, address, card numbers or checkout screenshots.
+  - type: dropdown
+    id: donde
+    attributes:
+      label: ¿Dónde pasó? / Where did it happen?
+      options:
+        - Lista de productos (categoría u ofertas) / Product list
+        - Búsqueda / Search
+        - Página de un producto / Product page
+        - Carrusel / Carousel
+        - Carrito o mini carrito / Cart or mini cart
+        - Popup de la extensión / Extension popup
+        - Otro / Other
+    validations:
+      required: true
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: ¿Qué pasó? / What happened?
+      description: "Contalo como se lo contarías a un amigo. / Describe it as you would to a friend."
+      placeholder: "El fideo de 500 g aparece más barato por kilo que el de 1 kg, pero no es así."
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: ¿Qué esperabas? / What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link de la página o del producto / Page or product link
+      description: "Solo de la página pública de Coto, no del carrito ni del pago. / Only the public Coto page, not the cart or checkout."
+      placeholder: "https://www.coto.com.ar/..."
+    validations:
+      required: false
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para que vuelva a pasar / Steps to reproduce
+      placeholder: |
+        1. Entré a ...
+        2. Elegí "Precio por kg/L" ...
+        3. Vi ...
+    validations:
+      required: false
+  - type: textarea
+    id: captura
+    attributes:
+      label: Captura / Screenshot
+      description: "Podés arrastrar una imagen acá. Tapá cualquier dato personal. / You can drag an image here. Hide any personal data."
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Góndola / Góndola version
+      description: "Está en la pestaña Ayuda del popup. Si abriste este formulario desde la extensión, ya viene completa. / It is in the popup's Help tab. If you opened this form from the extension, it is already filled in."
+      placeholder: "0.12.0"
+    validations:
+      required: true
+  - type: checkboxes
+    id: reglas
+    attributes:
+      label: Antes de enviar / Before sending
+      options:
+        - label: "No incluí datos personales. / I did not include personal data."
+          required: true

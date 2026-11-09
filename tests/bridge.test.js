@@ -104,11 +104,11 @@ describe("popup", () => {
     expect(document.body.textContent).toContain("Abrí coto.com.ar una vez para cargar las promos");
   });
 
-  it("tiene tres pestañas y recuerda la elegida", async () => {
+  it("tiene cuatro pestañas y recuerda la elegida", async () => {
     const st = fakeStorage({ promos: PROMOS });
     await open(st);
     const tabs = [...document.querySelectorAll('[role="tab"]')];
-    expect(tabs.map((t) => t.textContent.trim())).toEqual(["Tarjetas", "Ajustes", "Ayuda"]);
+    expect(tabs.map((t) => t.textContent.trim())).toEqual(["Tarjetas", "Ajustes", "Colaborá", "Ayuda"]);
     expect(tabs[0].getAttribute("aria-selected")).toBe("true");
     expect(document.querySelector('[role="tabpanel"]:not([hidden])').dataset.view).toBe("tarjetas");
     await click(tabs[1]);
@@ -198,6 +198,24 @@ describe("popup", () => {
     const help = document.querySelector('[data-view="ayuda"]').textContent;
     expect(help).toContain("No afiliado a Coto");
     expect(help).toContain("0.4.0");
+  });
+
+  it("colaborá abre los formularios de GitHub en otra pestaña, con la versión", async () => {
+    await open(fakeStorage({ promos: PROMOS }));
+    const panel = document.querySelector('[data-view="colabora"]');
+    const links = [...panel.querySelectorAll("a.contrib-link")];
+    expect(links.map((a) => a.querySelector(".contrib-title").textContent)).toEqual(["Reportar un error", "Proponer una mejora", "Pedir otro súper", "Votar ideas"]);
+    const bug = new URL(links[0].href);
+    expect(bug.origin + bug.pathname).toBe("https://github.com/hysmarcos/gondola/issues/new");
+    expect(bug.searchParams.get("template")).toBe("reportar-error.yml");
+    expect(bug.searchParams.get("version")).toBe("0.4.0");
+    expect(new URL(links[1].href).searchParams.get("template")).toBe("proponer-mejora.yml");
+    expect(new URL(links[2].href).searchParams.get("template")).toBe("pedir-super.yml");
+    expect(links[3].href).toContain("sort%3Areactions-%2B1-desc");
+    for (const a of links) {
+      expect(a.target).toBe("_blank");
+      expect(a.rel).toBe("noopener noreferrer");
+    }
   });
 });
 

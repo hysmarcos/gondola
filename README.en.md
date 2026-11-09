@@ -15,9 +15,10 @@
   <a href="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest_V3-2a78d6?logo=googlechrome&logoColor=white">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-2a78d6?logo=node.js&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-324-2a78d6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-325-2a78d6">
   <a href="https://hysmarcos.github.io/gondola/privacidad.html"><img alt="No servers" src="https://img.shields.io/badge/servers-0-2a78d6"></a>
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2a78d6">
+  <a href="CONTRIBUTING.md"><img alt="Contributions welcome" src="https://img.shields.io/badge/contributions-welcome-2a78d6"></a>
 </p>
 
 Góndola is a Chrome extension that upgrades your supermarket's website. It adds what the site lacks for buying cheap, without breaking what already works. It starts with [Coto Digital](https://www.coto.com.ar), the online store of a large Argentine supermarket chain. Carrefour, Día, Más and others come next, each as "Góndola for that store". *Góndola* is the Spanish word for a supermarket shelf.
@@ -38,7 +39,7 @@ The question: which of these products is really the best deal, with my card, tod
 | Unit price | Kilo, liter, unit or 10 meters (toilet paper and rolls) |
 | Personal data sent | None. Settings stay in your browser. |
 | Own servers | None |
-| Tests | 324, with real responses from the Coto, Carrefour, Día and Más APIs |
+| Tests | 325, with real responses from the Coto, Carrefour, Día and Más APIs |
 | Language of the UI | Spanish (Argentina) |
 
 ## What it adds
@@ -84,7 +85,7 @@ flowchart LR
 
 | | Test | Question | Result |
 |:---:|---|---|---|
-| ✅ | Tests with real data | Are price, size and order right? | 324 tests with saved responses from Coto, Carrefour, Día and Más |
+| ✅ | Tests with real data | Are price, size and order right? | 325 tests with saved responses from Coto, Carrefour, Día and Más |
 | ✅ | Coto keeps working | Do add, quantities and cart behave the same? | Yes. The extension adds elements and hides parts with an attribute. It removes nothing from Coto. |
 | ✅ | Bank promos | Does it show a discount Coto does not apply? | No. It follows the days, caps and exclusions of Coto's API. |
 | ⚠️ | Other stores | Is it the price at your branch? | Not always. It uses each site's default area and leaves out bank discounts. |
@@ -121,6 +122,22 @@ Run the tests:
 ```bash
 npm test
 ```
+
+## Contribute
+
+Góndola is built together. You do not need to code: a clear bug report or a 👍 also changes what gets built.
+
+| If you want to... | Do this |
+|---|---|
+| Report something broken | [Report a bug](https://github.com/hysmarcos/gondola/issues/new?template=reportar-error.yml) |
+| Suggest a feature or a design change | [Suggest an improvement](https://github.com/hysmarcos/gondola/issues/new?template=proponer-mejora.yml) |
+| Get Góndola on another store | [Request another store](https://github.com/hysmarcos/gondola/issues/new?template=pedir-super.yml) |
+| Decide what comes first | Add a 👍 to the [open ideas](https://github.com/hysmarcos/gondola/issues?q=is%3Aopen+label%3Amejora+sort%3Areactions-%2B1-desc) |
+| Write code | Read [CONTRIBUTING.md](CONTRIBUTING.md) and pick a [good first task](https://github.com/hysmarcos/gondola/issues?q=is%3Aopen+label%3Abuena-primera-tarea) |
+
+You can also open the forms from the extension popup, in the **Colaborá** tab. Wrong prices are fixed first, then anything that breaks Coto, then whatever has the most 👍.
+
+Everyone who contributes code, bug reports or ideas that ship is credited in the README's [Gracias](README.md#gracias) section.
 
 ## Next steps
 

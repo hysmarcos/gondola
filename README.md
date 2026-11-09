@@ -15,9 +15,10 @@
   <a href="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest_V3-2a78d6?logo=googlechrome&logoColor=white">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-2a78d6?logo=node.js&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-324-2a78d6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-325-2a78d6">
   <a href="https://hysmarcos.github.io/gondola/privacidad.html"><img alt="Sin servidores" src="https://img.shields.io/badge/servidores-0-2a78d6"></a>
   <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-2a78d6">
+  <a href="CONTRIBUTING.md"><img alt="Colaboraciones bienvenidas" src="https://img.shields.io/badge/colaboraciones-bienvenidas-2a78d6"></a>
 </p>
 
 Góndola es una extensión de Chrome que mejora la web de tu supermercado. Agrega lo que le falta para comprar barato, sin romper lo que ya funciona. Empieza por [Coto Digital](https://www.coto.com.ar). Después vienen Carrefour, Día, Más y otros, cada uno como "Góndola para ese súper".
@@ -38,7 +39,7 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 | Precio por unidad | Kilo, litro, unidad o 10 metros (papel higiénico y rollos) |
 | Datos personales enviados | Ninguno. Los ajustes quedan en tu navegador. |
 | Servidores propios | Ninguno |
-| Tests | 324, con respuestas reales de las APIs de Coto, Carrefour, Día y Más |
+| Tests | 325, con respuestas reales de las APIs de Coto, Carrefour, Día y Más |
 
 ## Qué vas a encontrar
 
@@ -49,6 +50,7 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 | Saber cuánto confiar en los números | [¿Se puede confiar?](#4-se-puede-confiar) |
 | Saber qué datos usa | [Privacidad y permisos](#5-privacidad-y-permisos) |
 | Instalarla o cambiar el código | [Cómo está armado](#6-cómo-está-armado) y [Cómo ejecutar](#7-cómo-ejecutar) |
+| Reportar un error, proponer una idea o votar | [Colaborá](#8-colaborá) |
 | Entender un término | [Glosario](#glosario) |
 
 ## 1. El problema
@@ -110,7 +112,7 @@ Estas pruebas buscan dónde falla la extensión:
 
 | | Prueba | Pregunta | Resultado |
 |:---:|---|---|---|
-| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 324 tests con respuestas guardadas de Coto, Carrefour, Día y Más |
+| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 325 tests con respuestas guardadas de Coto, Carrefour, Día y Más |
 | ✅ | Coto sigue funcionando | ¿Agregar, cantidades y carrito andan igual? | Sí. La extensión agrega elementos y oculta partes con un atributo. No borra nada de Coto. |
 | ✅ | Promos bancarias | ¿Muestra un descuento que Coto no aplica? | No. Respeta los días, los topes y las exclusiones de la API de Coto. |
 | ⚠️ | Otros súper | ¿El precio es el de tu sucursal? | No siempre. Usa la zona por defecto de cada web y no incluye descuentos bancarios. |
@@ -173,6 +175,30 @@ npm test
 | `node scripts/dev-server.mjs` | Servidor local en `http://127.0.0.1:8765` para las vistas previas |
 
 </details>
+
+## 8. Colaborá
+
+Góndola la mejoramos entre todos. No hace falta programar: un error bien contado o un 👍 también cambian lo que se hace.
+
+| Si querés... | Hacé esto |
+|---|---|
+| Avisar que algo anda mal | [Reportar un error](https://github.com/hysmarcos/gondola/issues/new?template=reportar-error.yml) |
+| Proponer una función o un cambio de diseño | [Proponer una mejora](https://github.com/hysmarcos/gondola/issues/new?template=proponer-mejora.yml) |
+| Tener Góndola en otro súper | [Pedir otro súper](https://github.com/hysmarcos/gondola/issues/new?template=pedir-super.yml) |
+| Decidir qué se hace primero | Sumá 👍 a las [ideas abiertas](https://github.com/hysmarcos/gondola/issues?q=is%3Aopen+label%3Amejora+sort%3Areactions-%2B1-desc) |
+| Programar | Leé [CONTRIBUTING.md](CONTRIBUTING.md) y elegí una [buena primera tarea](https://github.com/hysmarcos/gondola/issues?q=is%3Aopen+label%3Abuena-primera-tarea) |
+
+También podés abrir los formularios desde la extensión: popup → pestaña **Colaborá**.
+
+Se hace primero lo que da un precio falso, después lo que rompe algo de Coto y después lo que tiene más 👍.
+
+## Gracias
+
+Toda persona que aporta código, reporta un error o propone una idea que se hace aparece acá.
+
+<a href="https://github.com/hysmarcos/gondola/graphs/contributors"><img alt="Personas que aportaron código a Góndola" src="https://contrib.rocks/image?repo=hysmarcos/gondola"></a>
+
+**Ideas y reportes:** todavía no hay. La primera persona puede ser vos.
 
 ## Próximos pasos
 

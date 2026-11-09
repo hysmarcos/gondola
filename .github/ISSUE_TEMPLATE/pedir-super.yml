@@ -1,0 +1,53 @@
+name: Pedir otro súper / Request another store
+description: ¿Querés Góndola en la web de otro supermercado? / Do you want Góndola on another supermarket's site?
+title: "Súper: "
+labels: ["nuevo-super"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Góndola va a sumar súper de a uno. Los pedidos con más 👍 van primero.
+        Antes de enviar, [buscá si ya lo pidieron](https://github.com/hysmarcos/gondola/issues?q=is%3Aissue+label%3Anuevo-super) y, si está, sumale 👍.
+
+        Góndola adds stores one at a time. Requests with more 👍 go first. Before sending, [check if it was already requested](https://github.com/hysmarcos/gondola/issues?q=is%3Aissue+label%3Anuevo-super) and add a 👍 if it was.
+  - type: input
+    id: super
+    attributes:
+      label: Súper / Store
+      placeholder: "Jumbo"
+    validations:
+      required: true
+  - type: input
+    id: web
+    attributes:
+      label: Web donde comprás / Website where you shop
+      placeholder: "https://www.jumbo.com.ar"
+    validations:
+      required: true
+  - type: dropdown
+    id: primero
+    attributes:
+      label: ¿Qué necesitás primero ahí? / What do you need first there?
+      multiple: true
+      options:
+        - Ordenar por precio por kilo / Sort by price per kilo
+        - Precio con mi banco / Price with my bank
+        - Total real del carrito / Real cart total
+        - Comparar con otros súper / Compare with other stores
+        - Otro / Other
+    validations:
+      required: true
+  - type: textarea
+    id: comentario
+    attributes:
+      label: Algo más / Anything else
+      description: "Por ejemplo, qué le falta a esa web o qué te molesta. / For example, what that site lacks or what bothers you."
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Góndola / Góndola version
+      placeholder: "0.12.0"
+    validations:
+      required: false

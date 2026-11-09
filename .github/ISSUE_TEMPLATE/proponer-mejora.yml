@@ -1,0 +1,78 @@
+name: Proponer una mejora / Suggest an improvement
+description: Una función nueva, un cambio de diseño o algo que te ahorraría tiempo o plata. / A new feature, a design change, or something that would save you time or money.
+title: "Idea: "
+labels: ["mejora"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por la idea. Las ideas con más 👍 van primero, así que pasale el link a quien también la quiera.
+        Antes de enviar, [buscá si ya existe](https://github.com/hysmarcos/gondola/issues?q=is%3Aissue+label%3Amejora) y, si existe, sumale 👍.
+
+        Thanks for the idea. Ideas with more 👍 go first, so share the link with others who want it too. Before sending, [check if it already exists](https://github.com/hysmarcos/gondola/issues?q=is%3Aissue+label%3Amejora) and add a 👍 if it does.
+  - type: textarea
+    id: problema
+    attributes:
+      label: ¿Qué problema tenés hoy? / What problem do you have today?
+      description: "El problema importa más que la solución. / The problem matters more than the solution."
+      placeholder: "Compro siempre lo mismo y tengo que buscar producto por producto."
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: ¿Qué te gustaría que hiciera Góndola? / What would you like Góndola to do?
+      placeholder: "Guardar una lista y ver en qué súper sale más barata entera."
+    validations:
+      required: true
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo / Type
+      options:
+        - Función nueva / New feature
+        - Cambio de diseño / Design change
+        - Mejorar algo que ya existe / Improve something that exists
+        - Otro / Other
+    validations:
+      required: true
+  - type: dropdown
+    id: super
+    attributes:
+      label: ¿En qué súper? / Which store?
+      multiple: true
+      options:
+        - Coto
+        - Carrefour
+        - Día
+        - Más
+        - Jumbo, Disco o Vea
+        - Todos / All
+        - Otro / Other
+    validations:
+      required: true
+  - type: textarea
+    id: ejemplo
+    attributes:
+      label: Ejemplo o boceto / Example or sketch
+      description: "Un dibujo, una captura de otra app o un link. Opcional. / A drawing, a screenshot of another app, or a link. Optional."
+    validations:
+      required: false
+  - type: dropdown
+    id: ayuda
+    attributes:
+      label: ¿Querés ayudar a hacerla? / Do you want to help build it?
+      options:
+        - No, solo la propongo / No, just suggesting it
+        - Puedo probarla / I can test it
+        - Puedo programarla / I can code it
+        - Puedo diseñarla / I can design it
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Góndola / Góndola version
+      placeholder: "0.12.0"
+    validations:
+      required: false

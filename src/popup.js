@@ -1,6 +1,7 @@
-// Ventana de la extensión: pestañas Tarjetas, Ajustes y Ayuda.
+// Ventana de la extensión: pestañas Tarjetas, Ajustes, Colaborá y Ayuda.
 // Para sumar un menú: una entrada en TABS y su función en VIEWS.
 import { dayName } from "./banks.js";
+import { feedbackLinks, REPO } from "./feedback.js";
 
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const SVG = "http://www.w3.org/2000/svg";
@@ -8,6 +9,7 @@ const SVG = "http://www.w3.org/2000/svg";
 const TABS = [
   { id: "tarjetas", label: "Tarjetas", icon: ["M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z", "M3 10h18", "M7 15h4"] },
   { id: "ajustes", label: "Ajustes", icon: ["M4 6h8", "M16 6h4", "M4 12h2", "M10 12h10", "M4 18h11", "M19 18h1", "M14 4v4", "M8 10v4", "M17 16v4"] },
+  { id: "colabora", label: "Colaborá", icon: ["M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z", "M12 7v6", "M9 10h6"] },
   { id: "ayuda", label: "Ayuda", icon: ["M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18z", "M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6", "M12 17.2v.1"] },
 ];
 
@@ -16,7 +18,7 @@ const SETTINGS = [
   { key: "autoPromo", title: "Completar promos 2x1, 3x2", text: "En un 2x1, al agregar 1 suma el gratis. En un 3x2, al llegar a 2 suma el tercero." },
   { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
   { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato de la categoría\" en el producto que más conviene por kg, litro o unidad." },
-  { key: "compareStores", title: "Comparar con otros súper", text: "Muestra el precio en Carrefour, Día y Más. ▼ ahí es más barato, = igual, ▲ más caro." },
+  { key: "compareStores", title: "Comparar con otros súper", text: "Un botón dice si Coto tiene el mejor precio o en qué súper está más barato." },
 ];
 
 const HELP = [
@@ -178,7 +180,32 @@ function helpView(doc, meta) {
   ];
 }
 
-const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), ajustes: settingsView, ayuda: (doc, s, st, meta) => helpView(doc, meta) };
+// Colaborá: cada link abre un formulario de GitHub en otra pestaña.
+function contribView(doc, meta) {
+  const link = (it) => {
+    const a = el(doc, "a", { className: "contrib-link", href: it.href, target: "_blank", rel: "noopener noreferrer" }, [
+      el(doc, "span", { className: "contrib-icon" }, [icon(doc, it.icon)]),
+      el(doc, "span", { className: "contrib-text" }, [el(doc, "span", { className: "contrib-title", textContent: it.title }), el(doc, "span", { className: "contrib-desc", textContent: it.text })]),
+      icon(doc, ["M9 6l6 6l-6 6"]),
+    ]);
+    a.dataset.contrib = it.id;
+    return el(doc, "li", {}, [a]);
+  };
+  return [
+    el(doc, "p", { className: "contrib-lead" }, [
+      el(doc, "strong", { textContent: "Góndola la mejoramos entre todos." }),
+      " Contanos qué falla o qué te gustaría. Las ideas con más 👍 van primero.",
+    ]),
+    el(doc, "ul", { className: "contrib" }, feedbackLinks(meta.version).map(link)),
+    el(doc, "p", { className: "contrib-note" }, [
+      "Se abre GitHub. Necesitás una cuenta gratis. El código es abierto: ",
+      el(doc, "a", { href: REPO, target: "_blank", rel: "noopener noreferrer", textContent: "github.com/hysmarcos/gondola" }),
+      ".",
+    ]),
+  ];
+}
+
+const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), ajustes: settingsView, colabora: (doc, s, st, meta) => contribView(doc, meta), ayuda: (doc, s, st, meta) => helpView(doc, meta) };
 
 // storage: misma interfaz que en bridge.js. meta: { version }.
 export async function renderPopup(doc, storage, meta = {}) {

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Cómo colaborar / How to contribute
+    url: https://github.com/hysmarcos/gondola/blob/main/CONTRIBUTING.md
+    about: Cómo reportar, proponer, votar y mandar código. / How to report, suggest, vote and send code.
+  - name: Votar ideas / Vote on ideas
+    url: https://github.com/hysmarcos/gondola/issues?q=is%3Aopen+label%3Amejora+sort%3Areactions-%2B1-desc
+    about: Sumá 👍 a las ideas que querés primero. / Add a 👍 to the ideas you want first.
