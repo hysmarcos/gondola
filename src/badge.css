@@ -418,11 +418,12 @@
   color: #A32D2D;
 }
 
-.coto-unit-cmp-row--higher,
+/* Verde solo para "Coto el más barato": en la tarjeta el verde quiere decir "más barato". */
 .coto-unit-cmp-best--higher {
   color: #3B6D11;
 }
 
+.coto-unit-cmp-row--higher,
 .coto-unit-cmp-row--equal,
 .coto-unit-cmp-row--none,
 .coto-unit-cmp-row--pending,
