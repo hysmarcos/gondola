@@ -23,3 +23,37 @@
   font-size: 13px;
   color: #333;
 }
+
+.coto-unit-bank {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #0a7a3d;
+}
+
+.coto-unit-pdp {
+  margin: 6px 0;
+}
+
+.coto-unit-cart-warn {
+  margin: 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b25e00;
+}
+
+.coto-unit-cart-box {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid #e30613;
+  border-radius: 8px;
+  background: #fff4f4;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #222;
+}
+
+.coto-unit-cart-box > div:first-child {
+  font-weight: 700;
+}
