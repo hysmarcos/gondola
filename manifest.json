@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Coto precio por unidad",
+  "version": "0.1.0",
+  "description": "Ordena Coto Digital por precio final por kg, litro o unidad.",
+  "host_permissions": ["https://api.coto.com.ar/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.coto.com.ar/*"],
+      "js": ["dist/interceptor.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.coto.com.ar/*"],
+      "js": ["dist/badge.js"],
+      "css": ["src/badge.css"],
+      "run_at": "document_start"
+    }
+  ]
+}
