@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sortByUnitPrice } from "../src/sort.js";
+import { sortByUnitPrice, labelsFor } from "../src/sort.js";
 import { row, ACEITE, MIXTA } from "./fixtures/coto.js";
 
 // Producto sintético: precio por unidad = formatPrice (lista 100, sin ofertas).
@@ -75,5 +75,16 @@ describe("v3: grupos nuevos", () => {
     const { results, marks } = sortByUnitPrice(input, "200");
     expect(results.map((r) => r.data.url)).toEqual(["P2", "P1", "B", "A", "k1"]);
     expect(marks).toEqual({ P2: "rollo10m", B: "m2", k1: "kg" });
+  });
+});
+
+describe("labelsFor con EAN", () => {
+  it("suma ean y cmp a la etiqueta", () => {
+    const r = item("E1", "Kilo", 150);
+    r.data.product_main_ean = "7790742348302";
+    const labels = labelsFor([r, item("E2", "Kilo", 150)], "200");
+    expect(labels.E1.ean).toBe("7790742348302");
+    expect(labels.E1.cmp).toEqual({ unit: 100, qty: 1 });
+    expect(labels.E2).toMatchObject({ ean: null, cmp: null });
   });
 });

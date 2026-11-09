@@ -59,3 +59,14 @@ describe("analyzeCart", () => {
     expect(tie.best.day).toBe(4);
   });
 });
+
+describe("analyzeCart EAN", () => {
+  it("las líneas llevan ean y cmp (null sin datos)", () => {
+    const lines = CART_LINES.map((l, i) =>
+      i === 0 ? { ...l, data: { ...l.data, product_main_ean: "7790742348302" } } : i === 1 ? { ...l, data: null } : l);
+    const a = analyzeCart(lines, [], MON, "200");
+    expect(a.lines[0].ean).toBe("7790742348302");
+    expect(a.lines[0].cmp).toEqual({ unit: 5750.99, qty: 1 });
+    expect(a.lines[1]).toMatchObject({ ean: null, cmp: null });
+  });
+});

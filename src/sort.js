@@ -1,4 +1,5 @@
 import { unitPrice } from "./unit-price.js";
+import { compareFields } from "./compare.js";
 
 const TIE_ORDER = ["kg", "L", "unidad", "rollo10m", "panos100", "m2", "m"];
 
@@ -45,9 +46,10 @@ export function labelsFor(results, store, promos = [], day = 0) {
     if (!url) continue;
     const u = unitPrice(r.data, store, promos, day);
     if (u.group === "sin_dato") continue;
-    labels[url] = u;
+    const label = { ...u, ...compareFields(r.data, store) };
+    labels[url] = label;
     // Los carruseles de recomendaciones no tienen link: se buscan por id de producto.
-    if (r.data.id) labels[r.data.id] = u;
+    if (r.data.id) labels[r.data.id] = label;
   }
   return labels;
 }

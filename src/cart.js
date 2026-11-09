@@ -1,9 +1,14 @@
 // Cuánto se paga de verdad por un carrito de Coto: promos de Coto + reintegro del banco.
 import { finalPrice, takeQty, bankBlock } from "./unit-price.js";
+import { compareFields } from "./compare.js";
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
 function analyzeLine({ id, name, qty, list, data }, store) {
+  return { ...analyzeCore({ id, name, qty, list, data }, store), ...compareFields(data, store) };
+}
+
+function analyzeCore({ id, name, qty, list, data }, store) {
   const price = data ? finalPrice(data, store) : null;
   if (!price || !(qty > 0)) {
     return { id, name, total: qty * list, listTotal: qty * list, bankEligible: !(data && bankBlock(data)), missing: 0, saving: 0, promoText: null };
@@ -63,8 +68,8 @@ export function analyzeCart(lines, promos, day, store) {
 
   const used = [today?.promo, best?.promo].filter((p) => p?.capWeekly);
   return {
-    lines: analyzed.map(({ id, name, total, listTotal, missing, saving, promoText }) => ({
-      id, name, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText,
+    lines: analyzed.map(({ id, name, total, listTotal, missing, saving, promoText, ean, cmp }) => ({
+      id, name, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText, ean, cmp,
     })),
     total,
     listTotal,
