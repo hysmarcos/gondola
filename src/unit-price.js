@@ -1,5 +1,6 @@
 import { parseMoney } from "./money.js";
 import { bestPromo } from "./banks.js";
+import { paperMetric } from "./paper.js";
 
 const SIN_DATO = { group: "sin_dato", factor: 1, drained: false };
 
@@ -11,20 +12,28 @@ function clean(text) {
     .trim();
 }
 
-// Lleva el nombre de unidad de Coto a kg, L, unidad o sin_dato.
-// factor: cuánto multiplicar formatPrice para llegar a 1 kg / 1 L / 1 unidad.
+// Lleva el nombre de unidad de Coto a kg, L, unidad, m2, m o sin_dato.
+// factor: cuánto multiplicar formatPrice para llegar a 1 kg / 1 L / 1 unidad / 1 m² / 1 m.
 export function normalizeUnit(format, qty) {
   const name = clean(format);
   if (!name || !qty) return SIN_DATO;
-  const drained = name.includes("escurrido");
-  const base = name.replace("escurrido", "").trim();
+  const drained = /escurridos?/.test(name);
+  const base = name.replace(/escurridos?/, "").trim();
 
   if (base === "kilo" || base === "kilogramo") return { group: "kg", factor: 1, drained };
   if (base === "gramos" || base === "gramo") return { group: "kg", factor: 1000 / qty, drained };
   if (base === "litro") return { group: "L", factor: 1, drained };
   if (base === "mililitros" || base === "mililitro") return { group: "L", factor: 1000 / qty, drained };
+  if (base === "cubicos" || base === "cubico") return { group: "L", factor: 1000 / qty, drained };
   if (base === "unidad") return { group: "unidad", factor: 1, drained };
+  if (base === "cuadrado") return { group: "m2", factor: 1, drained };
+  if (base === "metro") return { group: "m", factor: 1, drained };
   return SIN_DATO;
+}
+
+// Pesables ("X Kg") que vienen sin formato: el precio de lista ya es por kilo.
+function isWeighable(data) {
+  return !data?.product_format && (Number(data?.product_weighable) === 1 || data?.product_unit_of_measure === "KGS");
 }
 
 export function pickStorePrice(data, store) {
@@ -64,19 +73,38 @@ export function takeQty(data, store) {
 const round2 = (n) => Math.round(n * 100) / 100;
 
 // promos: las promos bancarias elegidas; day: 0 = domingo.
-export function unitPrice(data, store, promos = [], day = 0) {
-  const unit = normalizeUnit(data?.product_format, data?.product_format_quantity);
-  const base = pickStorePrice(data, store);
+const EMPTY = { group: "sin_dato", value: null, drained: false, take: 1, note: null, bankValue: null, bankName: null };
+
+// Grupo y precio por unidad (sin banco).
+function measure(data, store) {
   const price = finalPrice(data, store);
-  if (unit.group === "sin_dato" || !base?.listPrice || !base?.formatPrice || !price) {
-    return { group: "sin_dato", value: null, drained: false, take: 1, bankValue: null, bankName: null };
-  }
-  const value = round2(price * (base.formatPrice / base.listPrice) * unit.factor);
-  const promo = bestPromo(promos, day, isOnSale(data));
+  const base = pickStorePrice(data, store);
+  if (!price || !base?.listPrice) return null;
+  if (isWeighable(data)) return { group: "kg", value: price, drained: false, note: null };
+
+  const unit = normalizeUnit(data?.product_format, data?.product_format_quantity);
+  if (unit.group === "sin_dato") return null;
+  const paper = unit.group === "m2" || unit.group === "m" ? paperMetric(data?.sku_display_name) : null;
+  if (paper?.divisor) return { group: paper.group, value: price / paper.divisor, drained: false, note: paper.note };
+  if (!base.formatPrice) return null;
   return {
     group: unit.group,
-    value,
+    value: price * (base.formatPrice / base.listPrice) * unit.factor,
     drained: unit.drained,
+    note: paper?.note ?? null,
+  };
+}
+
+export function unitPrice(data, store, promos = [], day = 0) {
+  const m = measure(data, store);
+  if (!m) return { ...EMPTY };
+  const value = round2(m.value);
+  const promo = bestPromo(promos, day, isOnSale(data));
+  return {
+    group: m.group,
+    value,
+    drained: m.drained,
+    note: m.note,
     take: takeQty(data, store),
     bankValue: promo ? round2(value * (1 - promo.percent / 100)) : null,
     bankName: promo ? promo.bank : null,
