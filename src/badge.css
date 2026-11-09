@@ -50,6 +50,10 @@
   text-wrap: balance;
 }
 
+.coto-unit-offer[data-coto-unit-empty] {
+  visibility: hidden;
+}
+
 .coto-unit-pricerow {
   display: flex;
   flex-wrap: wrap;

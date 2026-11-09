@@ -112,7 +112,8 @@ describe("tarjeta unificada", () => {
     send({ type: "labels", labels: { [K(1)]: L(2711.11, { group: "L", price: 6100, list: 6100, via: "lista", offerText: null }) } });
     await tick();
     expect(doc.querySelector(".coto-unit-regular")).toBeNull();
-    expect(doc.querySelector(".coto-unit-offer")).toBeNull();
+    // Sin oferta queda el lugar vacío: los precios de tarjetas vecinas quedan a la misma altura.
+    expect(doc.querySelector(".coto-unit-offer").hasAttribute("data-coto-unit-empty")).toBe(true);
     expect(hidden(doc.querySelector("h4.card-title"))).toBe(true);
   });
 

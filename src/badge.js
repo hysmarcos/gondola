@@ -126,7 +126,9 @@ export function installBadges(win, doc) {
       if (name) name.after(block);
       else centro.prepend(block);
     }
-    upsert(block, "coto-unit-offer", label.offerText);
+    // Sin oferta el lugar queda reservado (invisible): los precios vecinos quedan alineados.
+    const offer = upsert(block, "coto-unit-offer", label.offerText ?? " ");
+    setAttr(offer, "data-coto-unit-empty", !label.offerText);
     const priceRow = ensure(block, "coto-unit-pricerow");
     upsert(priceRow, "coto-unit-final", label.price != null ? $2(label.price) : null, null, "span");
     const regular = label.list != null && label.price != null && label.list > label.price + 0.5 ? $2(label.list) : null;
