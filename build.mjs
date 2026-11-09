@@ -5,3 +5,4 @@ const common = { bundle: true, format: "iife", target: "chrome120", logLevel: "i
 await build({ ...common, entryPoints: ["src/main.js"], outfile: "dist/interceptor.js" });
 await build({ ...common, entryPoints: ["src/badge-entry.js"], outfile: "dist/badge.js" });
 await build({ ...common, entryPoints: ["src/popup-entry.js"], outfile: "dist/popup.js" });
+await build({ ...common, entryPoints: ["src/background.js"], outfile: "dist/background.js" });
