@@ -21,6 +21,8 @@ export function parseSearch(json) {
         price: Number(offer?.Price) || 0,
         stock: Number(offer?.AvailableQuantity) || 0,
         name: product.productName ?? "",
+        // Link del producto en ese súper (para ir a verlo desde la comparación).
+        url: typeof product.link === "string" ? product.link : null,
       });
     }
   }
@@ -61,7 +63,7 @@ export function bestOffer(hit, sims) {
     if (q === 1 && !sim) sim = hit.price > 0 ? { total: hit.price, promo: null } : null;
     if (!sim) continue;
     const unit = round2(sim.total / q);
-    if (!best || unit < best.unit) best = { unit, qty: q, promo: sim.promo ?? null };
+    if (!best || unit < best.unit) best = { unit, qty: q, promo: sim.promo ?? null, url: hit.url ?? null };
   }
   return best;
 }

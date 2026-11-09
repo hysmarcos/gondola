@@ -25,7 +25,7 @@ describe("parseSearch", () => {
       ],
     }];
     const hit = parseSearch(json).get("123");
-    expect(hit).toEqual({ itemId: "2", seller: "1", price: 2225, stock: 291, name: "Aceite 900ml" });
+    expect(hit).toEqual({ itemId: "2", seller: "1", price: 2225, stock: 291, name: "Aceite 900ml", url: null });
   });
   it("devuelve un Map vacío si no es un array", () => {
     expect(parseSearch({ error: 1 }).size).toBe(0);
@@ -71,10 +71,10 @@ describe("bestOffer", () => {
   const hit = { itemId: "1", seller: "1", price: 2225, stock: 10, name: "x" };
   it("elige la cantidad con menor precio por unidad", () => {
     const sims = { 1: { total: 2225 }, 2: { total: 3798, promo: "Llevando 2…" }, 3: { total: 6023 } };
-    expect(bestOffer(hit, sims)).toEqual({ unit: 1899, qty: 2, promo: "Llevando 2…" });
+    expect(bestOffer(hit, sims)).toEqual({ unit: 1899, qty: 2, promo: "Llevando 2…", url: null });
   });
   it("sin simulación de 1 usa el precio de góndola", () => {
-    expect(bestOffer(hit, { 1: null })).toEqual({ unit: 2225, qty: 1, promo: null });
+    expect(bestOffer(hit, { 1: null })).toEqual({ unit: 2225, qty: 1, promo: null, url: null });
   });
   it("sin stock no hay oferta", () => {
     expect(bestOffer({ ...hit, stock: 0 }, { 1: { total: 1 } })).toBeNull();
@@ -99,4 +99,14 @@ describe("fixtures reales", () => {
       }
     });
   }
+});
+
+describe("v9: link del producto en cada súper", () => {
+  it("la búsqueda guarda el link y la oferta lo lleva", async () => {
+    const { parseSearch, bestOffer } = await import("../src/vtex.js");
+    const hits = parseSearch([{ productName: "Leche", link: "https://www.carrefour.com.ar/leche-1l/p", items: [{ ean: "7790001", itemId: "9", sellers: [{ sellerId: "1", commertialOffer: { Price: 2000, AvailableQuantity: 5 } }] }] }]);
+    const hit = hits.get("7790001");
+    expect(hit.url).toBe("https://www.carrefour.com.ar/leche-1l/p");
+    expect(bestOffer(hit, {})).toMatchObject({ unit: 2000, qty: 1, url: "https://www.carrefour.com.ar/leche-1l/p" });
+  });
 });

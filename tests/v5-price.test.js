@@ -68,3 +68,12 @@ describe("revisión v5: texto de ofertas", () => {
     expect(offerText(d)).toBe("20% dto · 2x1 + 5% Comunidad");
   });
 });
+
+describe("v9: precio con banco del producto", () => {
+  it("la etiqueta trae el precio del producto con el reintegro y el porcentaje", () => {
+    const icbc = { id: "1", bank: "ICBC", logo: "logo_icbc_1.png", days: [1], percent: 30, cap: null, onlyNoOffer: true };
+    const sprite = plain("s", 1979);
+    expect(unitPrice(sprite, "200", [icbc], 1)).toMatchObject({ price: 1979, bankPrice: 1385.3, bankPercent: 30 });
+    expect(unitPrice(sprite, "200", [], 1)).toMatchObject({ bankPrice: null, bankPercent: null });
+  });
+});

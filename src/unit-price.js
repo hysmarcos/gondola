@@ -224,6 +224,9 @@ export function unitPrice(data, store, promos = [], day = 0, opts = {}) {
     bankValue: applies ? round2(value * (1 - promo.percent / 100)) : null,
     bankName: applies ? promo.bank : null,
     bankLogo: applies ? promo.logo ?? null : null,
+    // Precio del producto con el reintegro del banco (para el precio grande de la tarjeta).
+    bankPrice: applies && best?.price != null ? round2(best.price * (1 - promo.percent / 100)) : null,
+    bankPercent: applies ? promo.percent : null,
     bankBlocked: blocked,
     // Para la tarjeta unificada: precio a pagar, precio regular y de dónde sale.
     price: best?.price ?? null,
