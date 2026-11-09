@@ -1,37 +1,11 @@
 // Auditoría de la lógica de precio por unidad sobre el catálogo real de Coto.
 // Herramienta de desarrollo: no va en la extensión.
-import { unitPrice, normalizeUnit, pickStorePrice } from "./unit-price.js";
+import { unitPrice, finalPrice } from "./unit-price.js";
+import { sizeFromName, soldPerKg } from "./size.js";
+
+export { sizeFromName };
 
 const FOOD_TOPS = new Set(["Almacén", "Frescos", "Bebidas", "Congelados", "Limpieza", "Perfumería"]);
-const UNITS = [
-  [/^(kg|kgs|kilo|kilos)$/, "kg", 1],
-  [/^(g|gr|grs|grm|gramos)$/, "kg", 0.001],
-  [/^(l|lt|lts|ltr|litro|litros)$/, "L", 1],
-  [/^(ml|cc|cm3)$/, "L", 0.001],
-];
-const SIZE = "(\\d+(?:[.,]\\d+)?)\\s*(kgs?|kilos?|grs?|grm|gramos|g|lts?|ltr|litros?|l|ml|cc|cm3)\\b";
-
-function toAmount(n, unit) {
-  const u = unit.toLowerCase();
-  for (const [re, kind, mult] of UNITS) if (re.test(u)) return { kind, amount: Number(n.replace(",", ".")) * mult };
-  return null;
-}
-
-// Tamaño que dice el nombre: { kind: "kg" | "L", amounts: [unidad, pack?] } o null.
-export function sizeFromName(name) {
-  const text = String(name ?? "");
-  const pack = text.match(new RegExp(`(\\d+)\\s*x\\s*${SIZE}`, "i")) ?? null;
-  if (pack) {
-    const one = toAmount(pack[2], pack[3]);
-    if (one) return { kind: one.kind, amounts: [round(one.amount), round(one.amount * Number(pack[1]))] };
-  }
-  const all = [...text.matchAll(new RegExp(SIZE, "gi"))];
-  const last = all.at(-1);
-  if (!last) return null;
-  const one = toAmount(last[1], last[2]);
-  return one ? { kind: one.kind, amounts: [round(one.amount)] } : null;
-}
-
 const round = (n) => Math.round(n * 10000) / 10000;
 
 function median(nums) {
@@ -59,14 +33,16 @@ export function auditItems(items, store) {
     if (!byKey.has(key)) byKey.set(key, []);
     byKey.get(key).push({ name, cat, group: label.group, value: label.value });
 
-    // ¿El tamaño implícito en formatPrice coincide con el del nombre?
-    const unit = normalizeUnit(data?.product_format, data?.product_format_quantity);
-    const base = pickStorePrice(data, store);
+    // ¿El precio por unidad que mostramos cierra con el tamaño del nombre?
     const size = sizeFromName(name);
-    if ((unit.group === "kg" || unit.group === "L") && size?.kind === unit.group && base?.formatPrice && base?.listPrice) {
-      const implied = base.listPrice / (base.formatPrice * unit.factor);
-      const ok = size.amounts.some((a) => Math.abs(implied - a) / a <= 0.15);
-      if (!ok) sizeMismatch.push({ name, cat, implied: round(implied), fromName: size.amounts });
+    const price = finalPrice(data, store);
+    // Mismas reglas que la etiqueta: nombres ambiguos, "X KG" o tamaños no creíbles no cuentan.
+    const usable = size && !size.multi && !soldPerKg(name) && size.amounts.at(-1) >= 0.0015;
+    if ((label.group === "kg" || label.group === "L") && usable && size.kind === label.group && price) {
+      const implied = price / label.value;
+      if (!size.amounts.some((a) => Math.abs(implied - a) / a <= 0.15)) {
+        sizeMismatch.push({ name, cat, implied: round(implied), fromName: size.amounts });
+      }
     }
   }
 

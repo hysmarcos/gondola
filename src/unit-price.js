@@ -2,6 +2,11 @@ import { parseMoney } from "./money.js";
 import { bestPromo } from "./banks.js";
 import { paperMetric } from "./paper.js";
 import { exclusionReason } from "./exclusions.js";
+import { sizeFromName, soldPerKg } from "./size.js";
+
+// Menos de 1,5 g o 1,5 ml no es un tamaño creíble: preferimos no mostrar nada.
+const MIN_AMOUNT = 0.0015;
+const MATCH = 0.15;
 
 const SIN_DATO = { group: "sin_dato", factor: 1, drained: false };
 
@@ -30,6 +35,13 @@ export function normalizeUnit(format, qty) {
   if (base === "cuadrado") return { group: "m2", factor: 1, drained };
   if (base === "metro") return { group: "m", factor: 1, drained };
   return SIN_DATO;
+}
+
+// Electro, Textil, Hogar y Aire Libre: un tamaño en el nombre ("Motosierra 45 Cc",
+// "Pileta 1500 L") no sirve para comparar precio por unidad.
+const NON_CONSUMABLE = new Set(["catv00001990", "catv00001259", "catv00001260", "catv00001261"]);
+function isConsumable(data) {
+  return !(data?.groups ?? []).some((g) => NON_CONSUMABLE.has(g?.group_id));
 }
 
 // Pesables ("X Kg") que vienen sin formato: el precio de lista ya es por kilo.
@@ -90,14 +102,34 @@ function measure(data, store) {
   if (!price || !base?.listPrice) return null;
   if (isWeighable(data)) return { group: "kg", value: price, drained: false, note: null };
 
+  const name = data?.sku_display_name;
   const unit = normalizeUnit(data?.product_format, data?.product_format_quantity);
-  if (unit.group === "sin_dato") return null;
+  if (unit.group === "sin_dato") {
+    // Sin formato útil: "X Kg" o el tamaño del nombre.
+    if (soldPerKg(name)) return { group: "kg", value: price, drained: false, note: null };
+    if (!isConsumable(data)) return null;
+    const size = sizeFromName(name);
+    const amount = size && !size.multi ? size.amounts.at(-1) : null;
+    return amount >= MIN_AMOUNT ? { group: size.kind, value: price / amount, drained: false, note: null } : null;
+  }
   const paper = unit.group === "m2" || unit.group === "m" ? paperMetric(data?.sku_display_name) : null;
   if (paper?.divisor) return { group: paper.group, value: price / paper.divisor, drained: false, note: paper.note };
   if (!base.formatPrice) return null;
+  // Coto a veces manda un formatPrice que no cierra con el tamaño del nombre
+  // (ej. vodka 700 ml a $34 millones el litro). En ese caso manda el nombre.
+  let amount = base.listPrice / (base.formatPrice * unit.factor);
+  // No se corrige si el nombre es ambiguo, si su tamaño no es creíble, o si es "X KG"
+  // (carne con peso aproximado: el precio ya es por kilo).
+  if (unit.group === "kg" || unit.group === "L") {
+    const size = sizeFromName(name);
+    const fromName = size?.amounts.at(-1);
+    const usable = size?.kind === unit.group && !size.multi && !soldPerKg(name) && fromName >= MIN_AMOUNT;
+    if (usable && !size.amounts.some((a) => Math.abs(amount - a) / a <= MATCH)) amount = fromName;
+    if (!(amount >= MIN_AMOUNT)) return null;
+  }
   return {
     group: unit.group,
-    value: price * (base.formatPrice / base.listPrice) * unit.factor,
+    value: price / amount,
     drained: unit.drained,
     note: paper?.note ?? null,
   };

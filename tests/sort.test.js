@@ -62,8 +62,8 @@ describe("sortByUnitPrice", () => {
 
   it("datos reales: búsqueda mixta deja los sin dato al final en su orden", () => {
     const { results } = sortByUnitPrice(MIXTA, "200");
-    const tail = results.slice(-4).map((r) => r.data.sku_display_name.split(" ")[0]);
-    expect(tail).toEqual(["Playmobil", "Panquequera", "Set", "Anchoita"]);
+    const tail = results.slice(-3).map((r) => r.data.sku_display_name.split(" ")[0]);
+    expect(tail).toEqual(["Playmobil", "Panquequera", "Set"]);
   });
 });
 
