@@ -1,7 +1,28 @@
-// Ventana de la extensión: elegir promos bancarias y día de compra.
+// Ventana de la extensión: pestañas Tarjetas, Ajustes y Ayuda.
+// Para sumar un menú: una entrada en TABS y su función en VIEWS.
 import { dayName } from "./banks.js";
 
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+const SVG = "http://www.w3.org/2000/svg";
+
+const TABS = [
+  { id: "tarjetas", label: "Tarjetas", icon: ["M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z", "M3 10h18", "M7 15h4"] },
+  { id: "ajustes", label: "Ajustes", icon: ["M4 6h8", "M16 6h4", "M4 12h2", "M10 12h10", "M4 18h11", "M19 18h1", "M14 4v4", "M8 10v4", "M17 16v4"] },
+  { id: "ayuda", label: "Ayuda", icon: ["M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18z", "M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6", "M12 17.2v.1"] },
+];
+
+const SETTINGS = [
+  { key: "autoPromo", title: "Completar promos 2x1, 3x2", text: "En un 2x1, al agregar 1 suma el gratis. En un 3x2, al llegar a 2 suma el tercero." },
+  { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
+  { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato por kg\" en el producto que conviene de cada lista." },
+];
+
+const HELP = [
+  ["Precio real para comparar", "El precio por kg, litro, unidad o 10 m de papel, ya con la oferta de Coto."],
+  ["Hoy con tu banco", "El mismo precio con la promo de tu tarjeta, si Coto la aplica a ese producto."],
+  ["Banco no aplica", "El producto ya está en oferta o Coto lo excluye de las promos bancarias."],
+  ["Ordenar por precio por kg/L", "Nueva opción en \"Ordenar por\" de cada categoría y búsqueda."],
+];
 
 function describe(p) {
   const days = p.days.map(dayName).join(", ");
@@ -12,53 +33,187 @@ function describe(p) {
 
 function el(doc, tag, props = {}, children = []) {
   const e = doc.createElement(tag);
-  Object.assign(e, props);
-  for (const c of children) e.append(c);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "attrs") for (const [a, val] of Object.entries(v)) e.setAttribute(a, val);
+    else e[k] = v;
+  }
+  for (const c of children) if (c != null) e.append(c);
   return e;
 }
 
-// storage: misma interfaz que en bridge.js.
-export async function renderPopup(doc, storage) {
-  const s = await storage.get(["promos", "selectedPromoIds", "day"]);
-  const root = el(doc, "main");
-  root.append(el(doc, "h1", { textContent: "Coto precio por unidad" }));
+function icon(doc, paths) {
+  const svg = doc.createElementNS(SVG, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("class", "icon");
+  for (const d of paths) {
+    const p = doc.createElementNS(SVG, "path");
+    p.setAttribute("d", d);
+    svg.append(p);
+  }
+  return svg;
+}
 
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const norm = (t) => String(t).normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+
+function switchInput(doc, props) {
+  return el(doc, "input", { type: "checkbox", className: "switch", ...props, attrs: { role: "switch", ...(props.attrs ?? {}) } });
+}
+
+function cardsView(doc, s, storage) {
+  const view = [];
   const promos = s.promos ?? [];
   if (!promos.length) {
-    root.append(el(doc, "p", { textContent: "Abrí coto.com.ar una vez para cargar las promos" }));
-    doc.body.replaceChildren(root);
-    return;
+    view.push(el(doc, "div", { className: "empty" }, [
+      el(doc, "p", { className: "empty-title", textContent: "Todavía no hay promos" }),
+      el(doc, "p", { textContent: "Abrí coto.com.ar una vez para cargar las promos de los bancos." }),
+    ]));
+    return view;
   }
 
-  const select = el(doc, "select", { id: "day" }, [
-    el(doc, "option", { value: "hoy", textContent: "Hoy" }),
-    ...[0, 1, 2, 3, 4, 5, 6].map((d) => el(doc, "option", { value: String(d), textContent: dayName(d) })),
-  ]);
-  select.value = typeof s.day === "number" ? String(s.day) : "hoy";
-  select.addEventListener("change", () => {
-    storage.set({ day: select.value === "hoy" ? "hoy" : Number(select.value) });
-  });
-  root.append(el(doc, "label", { className: "day" }, ["Día de compra ", select]));
-  root.append(el(doc, "p", { className: "hint", textContent: "Marcá las promos de tus tarjetas:" }));
+  // Día de compra: chips de radio.
+  const current = typeof s.day === "number" ? String(s.day) : "hoy";
+  const days = el(doc, "fieldset", { className: "days" }, [el(doc, "legend", { textContent: "Día de compra" })]);
+  const options = [["hoy", "Hoy"], ...[0, 1, 2, 3, 4, 5, 6].map((d) => [String(d), dayName(d).slice(0, 3)])];
+  for (const [value, text] of options) {
+    const input = el(doc, "input", { type: "radio", name: "day", value, checked: value === current });
+    input.addEventListener("change", () => storage.set({ day: value === "hoy" ? "hoy" : Number(value) }));
+    const title = value === "hoy" ? "Hoy" : dayName(Number(value));
+    days.append(el(doc, "label", { className: "chip", title }, [input, el(doc, "span", { textContent: text })]));
+  }
+  view.push(days);
 
   const selected = new Set(s.selectedPromoIds ?? []);
+  const summary = el(doc, "p", { className: "summary", attrs: { "aria-live": "polite" } });
+  const updateSummary = () => {
+    summary.textContent = selected.size ? plural(selected.size, "promo elegida", "promos elegidas") : "Marcá las promos de tus tarjetas";
+  };
+  updateSummary();
+
+  const search = el(doc, "input", { type: "search", placeholder: "Buscar banco", className: "search", attrs: { "aria-label": "Buscar banco" } });
+  view.push(el(doc, "div", { className: "toolbar" }, [search, summary]));
+
   const byBank = new Map();
   for (const p of promos) {
     if (!byBank.has(p.bank)) byBank.set(p.bank, []);
     byBank.get(p.bank).push(p);
   }
-  for (const [bank, list] of [...byBank].sort(([a], [b]) => a.localeCompare(b))) {
-    const section = el(doc, "section", {}, [el(doc, "h2", { textContent: bank })]);
-    for (const p of list) {
-      const box = el(doc, "input", { type: "checkbox", value: p.id, checked: selected.has(p.id) });
+  const list = el(doc, "div", { className: "banks" });
+  const rows = [];
+  // Primero los bancos con promos elegidas, después por nombre.
+  const chosen = ([, items]) => (items.some((p) => selected.has(p.id)) ? 0 : 1);
+  const order = [...byBank].sort((a, b) => chosen(a) - chosen(b) || a[0].localeCompare(b[0]));
+  for (const [bank, items] of order) {
+    const count = el(doc, "span", { className: "count" });
+    const updateCount = () => {
+      const n = items.filter((p) => selected.has(p.id)).length;
+      count.textContent = n ? String(n) : "";
+      count.hidden = !n;
+    };
+    const details = el(doc, "details", { className: "bank", open: items.some((p) => selected.has(p.id)) }, [
+      el(doc, "summary", {}, [el(doc, "span", { className: "bank-name", textContent: bank }), count, icon(doc, ["M6 9l6 6l6-6"])]),
+    ]);
+    for (const p of items) {
+      const box = switchInput(doc, { value: p.id, checked: selected.has(p.id) });
       box.addEventListener("change", () => {
         if (box.checked) selected.add(p.id);
         else selected.delete(p.id);
+        updateCount();
+        updateSummary();
         storage.set({ selectedPromoIds: [...selected] });
       });
-      section.append(el(doc, "label", { title: p.text }, [box, " " + describe(p)]));
+      details.append(el(doc, "label", { className: "row", title: p.text }, [el(doc, "span", { className: "row-text", textContent: describe(p) }), box]));
     }
-    root.append(section);
+    updateCount();
+    rows.push({ name: norm(bank), details });
+    list.append(details);
   }
-  doc.body.replaceChildren(root);
+  const noMatch = el(doc, "p", { className: "empty-search", textContent: "Ningún banco con ese nombre", hidden: true });
+  search.addEventListener("input", () => {
+    const q = norm(search.value.trim());
+    let shown = 0;
+    for (const r of rows) {
+      r.details.hidden = !!q && !r.name.includes(q);
+      if (!r.details.hidden) shown++;
+    }
+    noMatch.hidden = shown > 0;
+  });
+  view.push(list, noMatch);
+  return view;
+}
+
+function settingsView(doc, s, storage) {
+  return SETTINGS.map(({ key, title, text }) => {
+    const box = switchInput(doc, { name: key, checked: s[key] !== false });
+    box.addEventListener("change", () => storage.set({ [key]: box.checked }));
+    return el(doc, "label", { className: "setting" }, [
+      el(doc, "span", { className: "setting-text" }, [el(doc, "span", { className: "setting-title", textContent: title }), el(doc, "span", { className: "setting-desc", textContent: text })]),
+      box,
+    ]);
+  });
+}
+
+function helpView(doc, meta) {
+  return [
+    el(doc, "dl", { className: "help" }, HELP.flatMap(([t, d]) => [el(doc, "dt", { textContent: t }), el(doc, "dd", { textContent: d })])),
+    el(doc, "p", { className: "legal" }, [
+      el(doc, "strong", { textContent: "No afiliado a Coto." }),
+      " Usa solo los datos de coto.com.ar y no envía nada a otros sitios.",
+    ]),
+    el(doc, "p", { className: "version", textContent: `Versión ${meta.version ?? ""}`.trim() }),
+  ];
+}
+
+const VIEWS = { tarjetas: cardsView, ajustes: settingsView, ayuda: (doc, s, st, meta) => helpView(doc, meta) };
+
+// storage: misma interfaz que en bridge.js. meta: { version }.
+export async function renderPopup(doc, storage, meta = {}) {
+  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "popupTab"]);
+  let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
+
+  const header = el(doc, "header", { className: "top" }, [
+    el(doc, "span", { className: "mark" }, [icon(doc, ["M7.5 7.5h.01", "M3 6v5.2a2 2 0 0 0 .6 1.4l7.8 7.8a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8L11.6 4.6A2 2 0 0 0 10.2 4H5a2 2 0 0 0-2 2z"])]),
+    el(doc, "div", {}, [el(doc, "h1", { textContent: "Precio por unidad" }), el(doc, "p", { className: "sub", textContent: "para comprar en Coto Digital" })]),
+  ]);
+
+  const panels = {};
+  const tabs = {};
+  const main = el(doc, "main");
+  const nav = el(doc, "nav", { className: "tabs", attrs: { role: "tablist", "aria-label": "Menú" } });
+
+  const select = (id, focus = false) => {
+    active = id;
+    for (const t of TABS) {
+      const on = t.id === id;
+      tabs[t.id].setAttribute("aria-selected", String(on));
+      tabs[t.id].tabIndex = on ? 0 : -1;
+      panels[t.id].hidden = !on;
+    }
+    if (focus) tabs[id].focus();
+  };
+
+  TABS.forEach((t, i) => {
+    const panel = el(doc, "section", { className: "panel", attrs: { role: "tabpanel", id: `panel-${t.id}`, "aria-labelledby": `tab-${t.id}` } }, VIEWS[t.id](doc, s, storage, meta));
+    panel.dataset.view = t.id;
+    panels[t.id] = panel;
+    main.append(panel);
+    const tab = el(doc, "button", { type: "button", className: "tab", attrs: { role: "tab", id: `tab-${t.id}`, "aria-controls": `panel-${t.id}` } }, [icon(doc, t.icon), el(doc, "span", { textContent: t.label })]);
+    tab.addEventListener("click", () => {
+      select(t.id);
+      storage.set({ popupTab: t.id });
+    });
+    tab.addEventListener("keydown", (e) => {
+      const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      const next = TABS[(i + step + TABS.length) % TABS.length].id;
+      select(next, true);
+      storage.set({ popupTab: next });
+    });
+    tabs[t.id] = tab;
+    nav.append(tab);
+  });
+  select(active);
+
+  doc.body.replaceChildren(header, main, nav);
 }

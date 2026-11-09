@@ -75,32 +75,89 @@ describe("installBridge", () => {
 });
 
 describe("popup", () => {
-  it("sin promos muestra cómo cargarlas", async () => {
+  const open = async (st, meta = { version: "0.4.0" }) => {
     document.body.innerHTML = "";
-    await renderPopup(document, fakeStorage());
+    await renderPopup(document, st, meta);
+  };
+  const click = async (el) => { el.click(); await tick(); };
+  const change = async (el) => { el.dispatchEvent(new Event("change", { bubbles: true })); await tick(); };
+
+  it("sin promos muestra cómo cargarlas", async () => {
+    await open(fakeStorage());
     expect(document.body.textContent).toContain("Abrí coto.com.ar una vez para cargar las promos");
   });
 
+  it("tiene tres pestañas y recuerda la elegida", async () => {
+    const st = fakeStorage({ promos: PROMOS });
+    await open(st);
+    const tabs = [...document.querySelectorAll('[role="tab"]')];
+    expect(tabs.map((t) => t.textContent.trim())).toEqual(["Tarjetas", "Ajustes", "Ayuda"]);
+    expect(tabs[0].getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector('[role="tabpanel"]:not([hidden])').dataset.view).toBe("tarjetas");
+    await click(tabs[1]);
+    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector('[role="tabpanel"]:not([hidden])').dataset.view).toBe("ajustes");
+    expect(st.data.popupTab).toBe("ajustes");
+    await open(st);
+    expect(document.querySelector('[role="tabpanel"]:not([hidden])').dataset.view).toBe("ajustes");
+  });
+
   it("agrupa por banco y guarda lo elegido", async () => {
-    document.body.innerHTML = "";
     const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["457"] });
-    await renderPopup(document, st);
-    const banks = [...document.querySelectorAll("h2")].map((h) => h.textContent);
+    await open(st);
+    const banks = [...document.querySelectorAll(".bank-name")].map((h) => h.textContent);
     expect(banks).toContain("ICBC");
     expect(banks.filter((b) => b === "Naranja X")).toHaveLength(1);
     const icbc = document.querySelector('input[value="457"]');
     expect(icbc.checked).toBe(true);
+    expect(icbc.getAttribute("role")).toBe("switch");
     expect(icbc.closest("label").textContent).toContain("Lunes · 30% · tope $20.000");
+    expect(icbc.closest("details").open).toBe(true);
     const cred = document.querySelector('input[value="449"]');
     cred.checked = true;
-    cred.dispatchEvent(new Event("change", { bubbles: true }));
-    await tick();
+    await change(cred);
     expect(st.data.selectedPromoIds.sort()).toEqual(["449", "457"]);
-    const day = document.querySelector("select#day");
-    day.value = "3";
-    day.dispatchEvent(new Event("change", { bubbles: true }));
-    await tick();
-    expect(st.data.day).toBe(3);
+    expect(document.querySelector(".summary").textContent).toBe("2 promos elegidas");
+  });
+
+  it("elige el día con botones", async () => {
+    const st = fakeStorage({ promos: PROMOS, day: 3 });
+    await open(st);
+    expect(document.querySelector('input[name="day"][value="3"]').checked).toBe(true);
+    const hoy = document.querySelector('input[name="day"][value="hoy"]');
+    hoy.checked = true;
+    await change(hoy);
+    expect(st.data.day).toBe("hoy");
+  });
+
+  it("el buscador filtra bancos", async () => {
+    await open(fakeStorage({ promos: PROMOS }));
+    const search = document.querySelector('input[type="search"]');
+    search.value = "icb";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    const visible = [...document.querySelectorAll("details.bank:not([hidden]) .bank-name")].map((e) => e.textContent);
+    expect(visible).toEqual(["ICBC"]);
+    search.value = "zzz";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(document.querySelector(".empty-search").hidden).toBe(false);
+  });
+
+  it("los ajustes se guardan y arrancan encendidos", async () => {
+    const st = fakeStorage({ promos: PROMOS, markBest: false });
+    await open(st);
+    const auto = document.querySelector('input[name="autoPromo"]');
+    expect(auto.checked).toBe(true);
+    expect(document.querySelector('input[name="markBest"]').checked).toBe(false);
+    auto.checked = false;
+    await change(auto);
+    expect(st.data.autoPromo).toBe(false);
+  });
+
+  it("ayuda dice que no es de Coto y la versión", async () => {
+    await open(fakeStorage({ promos: PROMOS }));
+    const help = document.querySelector('[data-view="ayuda"]').textContent;
+    expect(help).toContain("No afiliado a Coto");
+    expect(help).toContain("0.4.0");
   });
 });
 

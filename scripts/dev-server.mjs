@@ -26,10 +26,10 @@ createServer(async (req, res) => {
     return res.writeHead(200, headers).end("ok");
   }
   const path = decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/^\/+/, "");
-  if (path.includes("..") || !/^(dist|dist-dev|src)\//.test(path)) return res.writeHead(404, headers).end();
+  if (path.includes("..") || !/^(dist|dist-dev|src|assets)\//.test(path)) return res.writeHead(404, headers).end();
   try {
     const body = await readFile(join(root, path));
-    const type = path.endsWith(".css") ? "text/css" : path.endsWith(".html") ? "text/html; charset=utf-8" : path.endsWith(".json") ? "application/json" : "text/javascript";
+    const type = path.endsWith(".css") ? "text/css" : path.endsWith(".html") ? "text/html; charset=utf-8" : path.endsWith(".json") ? "application/json" : path.endsWith(".woff2") ? "font/woff2" : "text/javascript";
     res.writeHead(200, { ...headers, "Content-Type": type }).end(body);
   } catch {
     res.writeHead(404, headers).end();
