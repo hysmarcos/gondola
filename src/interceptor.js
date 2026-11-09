@@ -16,6 +16,7 @@ const SOURCE = "coto-unit";
 const NOTICE_FAIL = "No se pudo ordenar por precio por kg";
 const NOTICE_CAP = "Se ordenaron los primeros 1.000 productos";
 const HELD = ["load", "readystatechange"];
+const FORCE_CART_MS = 5000;
 const PROMOS_URL = "https://www.coto.com.ar/rest/model/atg/actors/cProfileActor/getPromocionesMulticanal?enviroment=ag&pushSite=CotoDigital";
 
 export function installInterceptor(win, deps) {
@@ -29,6 +30,7 @@ export function installInterceptor(win, deps) {
   let lastProductsUrl = null;
   let lastCart = null;
   let lastCartBody = null;
+  let forceCartUntil = -Infinity;
   let lastList = null; // última lista vista: { results, store } para volver a etiquetar si cambia el banco
   const onCartPage = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
@@ -141,7 +143,7 @@ export function installInterceptor(win, deps) {
   // force: lo pidió la extensión (página /carrito o mini-carrito abierto).
   async function onCart(body, force = false) {
     lastCartBody = body;
-    if (!force && !onCartPage()) return;
+    if (!force && !onCartPage() && deps.now() > forceCartUntil) return;
     const items = Object.values(body?.output?.productoItems ?? {});
     const lines = await pool(items, 4, async (it) => {
       const plu = pluOf(it?.producto?.id);
@@ -181,8 +183,11 @@ export function installInterceptor(win, deps) {
       if (lastList) {
         post({ type: "labels", labels: labelsFor(lastList.results, lastList.store, settings.selected, settings.day) });
       }
-    } else if (msg.type === "cartRequest" && lastCartBody) {
-      onCart(lastCartBody, true).catch(() => {});
+    } else if (msg.type === "cartRequest") {
+      // El mini-carrito se abrió: Coto puede pedir el carrito justo ahora; esa respuesta
+      // también se analiza aunque no estemos en /carrito.
+      forceCartUntil = deps.now() + FORCE_CART_MS;
+      if (lastCartBody) onCart(lastCartBody, true).catch(() => {});
     } else if (msg.type === "lookup" && msg.plu && msg.key) {
       onLookup(msg).catch(() => {});
     }

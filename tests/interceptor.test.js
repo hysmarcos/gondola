@@ -355,3 +355,14 @@ describe("v3: mini-carrito", () => {
     expect(s.env.posts.find((m) => m.type === "cart")).toBeUndefined();
   });
 });
+
+describe("revisión final: mini-carrito", () => {
+  it("tras un cartRequest, analiza la respuesta nueva del carrito aunque no estés en /carrito", async () => {
+    const s = setup({ settings: { selected: [], day: 1 } });
+    s.win.location = { pathname: "/productos/x" };
+    s.send({ type: "cartRequest" });
+    await request(s.win, "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0");
+    for (let i = 0; i < 4; i++) await flush();
+    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.81, 2);
+  });
+});

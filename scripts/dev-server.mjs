@@ -13,8 +13,15 @@ createServer(async (req, res) => {
   };
   if (req.method === "OPTIONS") return res.writeHead(204, headers).end();
   if (req.method === "POST" && req.url === "/save") {
+    // Solo la página de auditoría local puede guardar, y con un tope de 50 MB.
+    if (req.headers.origin !== "http://127.0.0.1:8765") return res.writeHead(403).end();
     const chunks = [];
-    for await (const c of req) chunks.push(c);
+    let size = 0;
+    for await (const c of req) {
+      size += c.length;
+      if (size > 50 * 1024 * 1024) return res.writeHead(413).end();
+      chunks.push(c);
+    }
     await writeFile(join(root, "dist-dev", "catalog.json"), Buffer.concat(chunks));
     return res.writeHead(200, headers).end("ok");
   }

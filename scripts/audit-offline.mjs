@@ -9,5 +9,5 @@ const byCat = (list) => Object.entries(list.reduce((a, x) => ((a[x.cat] = (a[x.c
 console.log(JSON.stringify({
   counts: r.counts,
   noUnit: r.noUnit.length, noUnitByCat: byCat(r.noUnit).slice(0, 12),
-  outliers: r.outliers.length, sizeMismatch: r.sizeMismatch.length,
+  outliers: r.outliers.length, sizeMismatch: r.sizeMismatch.length, corrected: r.corrected.length,
 }, null, 1));

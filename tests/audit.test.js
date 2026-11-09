@@ -17,6 +17,13 @@ describe("sizeFromName", () => {
   });
 });
 
+describe("auditItems: corregidos", () => {
+  it("lista los productos donde el nombre cambió el dato de Coto", () => {
+    const r = auditItems([item(d("Vodka Absolut 700 Ml", "Litro", 24263.4, 34662000))], "200");
+    expect(r.corrected).toEqual([{ name: "Vodka Absolut 700 Ml", cat: "Pastas", coto: 0.0007, label: 0.7 }]);
+  });
+});
+
 describe("auditItems", () => {
   it("encuentra comida sin unidad, valores raros y tamaños que no cierran", () => {
     const items = [
@@ -31,8 +38,9 @@ describe("auditItems", () => {
     const r = auditItems(items, "200");
     expect(r.noUnit.map((x) => x.name)).toEqual(["Fideos raros"]);
     expect(r.outliers.map((x) => x.name)).toEqual(["Fideos D"]);
-    // Fideos E: Coto dice 1 kg pero el nombre 500g; la etiqueta ya usa el nombre.
-    expect(r.sizeMismatch).toEqual([]);
+    // Fideos E: Coto dice 1 kg (2 × 500g): se trata como pack y queda para revisar.
+    expect(r.sizeMismatch.map((x) => x.name)).toEqual(["Fideos E 500g"]);
+    expect(r.corrected).toEqual([]);
     expect(r.counts).toMatchObject({ total: 7, labeled: 5 });
   });
 });

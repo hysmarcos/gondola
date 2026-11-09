@@ -58,3 +58,27 @@ describe("banco en la etiqueta", () => {
     expect(unitPrice(p("Ravioles"), "200", [icbc], 1)).toMatchObject({ bankValue: 1400, bankName: "ICBC", bankBlocked: null });
   });
 });
+
+describe("revisión final: exclusiones sin falsos positivos", () => {
+  it("leches infantiles: solo etapa 1 y 2", () => {
+    expect(exclusionReason(p("Leche En Polvo Etapa 3 Vital 1 Kg"))).toBeNull();
+    expect(exclusionReason(p("Leche NUTRILON 4 Profutura Desde Los 2 Años"))).toBeNull();
+    expect(exclusionReason(p("Leche Infantil 3 De 1 A 3 Años"))).toBeNull();
+    expect(exclusionReason(p("Leche Infantil Nutrilon Etapa 2 800g"))).toBe("excluido");
+  });
+
+  it("embutidos solo si el producto es el embutido", () => {
+    expect(exclusionReason(p("Queso Sabor Salame La Paulina"))).toBeNull();
+    expect(exclusionReason(p("Tortilla De Papa Con Chorizo"))).toBeNull();
+    expect(exclusionReason(p("Chorizo De Cerdo Bombon COTO"))).toBe("excluido");
+  });
+
+  it("marcas ambiguas: solo por marca", () => {
+    expect(exclusionReason(p("Camión Monster Jam Juguete"))).toBeNull();
+    expect(exclusionReason(p("Energizante Monster Energy 473 Ml"))).toBe("excluido");
+    expect(exclusionReason(p("Cartera Animal Print"))).toBeNull();
+    expect(exclusionReason(p("Champaña Brut Animal Bot 750", { product_brand: "ANIMAL" }))).toBe("excluido");
+    expect(exclusionReason(p("Cepillo Neumático Para Cabello"))).toBeNull();
+    expect(exclusionReason(p("Neumático Pirelli 175/65"))).toBe("excluido");
+  });
+});

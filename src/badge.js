@@ -100,11 +100,21 @@ export function installBadges(win, doc) {
     }
   }
 
+  // Si la tarjeta se quedó sin etiqueta (Angular la reusó), vuelve a verse como Coto.
+  function undimCoto(centro) {
+    for (const s of centro.querySelectorAll("[data-coto-unit-dim], [data-coto-unit-strike]")) {
+      s.removeAttribute("data-coto-unit-dim");
+      s.removeAttribute("data-coto-unit-strike");
+    }
+  }
+
   function renderCards() {
     const byGroup = new Map();
+    const seen = new Set();
     for (const link of doc.querySelectorAll('a[href*="_/R-"]')) {
       const card = link.closest(".card-container");
-      if (!card) continue;
+      if (!card || seen.has(card)) continue; // una tarjeta puede tener varios links
+      seen.add(card);
       const key = link.getAttribute("href").match(KEY_RE)?.[0];
       const label = key ? state.labels[key] : null;
       const centro = card.querySelector(".centro-precios") ?? card;
@@ -114,6 +124,8 @@ export function installBadges(win, doc) {
         dimCoto(centro);
         if (!byGroup.has(label.group)) byGroup.set(label.group, []);
         byGroup.get(label.group).push({ box, price: label.bankValue ?? label.value });
+      } else {
+        undimCoto(centro);
       }
       upsert(card, MARK, key && state.marks[key] ? groupMark(state.marks[key]) : null);
     }

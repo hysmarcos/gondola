@@ -150,3 +150,23 @@ describe("página de producto", () => {
     expect(box.querySelector(".coto-unit-value").textContent).toBe("$9.597 /kg");
   });
 });
+
+describe("revisión final: tarjeta", () => {
+  it("si la etiqueta desaparece, saca atenuado y tachado", async () => {
+    const { doc, send } = setup(offerCard(K(1)));
+    send({ type: "labels", labels: { [K(1)]: L(5177.44) } });
+    await tick();
+    expect(doc.querySelector("[data-coto-unit-strike]")).not.toBeNull();
+    send({ type: "labels", labels: { [K(1)]: L(null, { group: "sin_dato" }) } });
+    await tick();
+    expect(doc.querySelector("[data-coto-unit-strike], [data-coto-unit-dim], .coto-unit-box")).toBeNull();
+  });
+
+  it("'Más barato' cuenta tarjetas, no links", async () => {
+    const twoLinks = (key) => plainCard(key).replace("</a>", `</a><a href="/productos/x/${key}">otro</a>`);
+    const { doc, send } = setup(twoLinks(K(1)) + twoLinks(K(2)));
+    send({ type: "labels", labels: { [K(1)]: L(900), [K(2)]: L(500) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-best")).toBeNull();
+  });
+});

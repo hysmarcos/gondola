@@ -94,3 +94,43 @@ describe("vuelta 4 del loop", () => {
     expect(unitPrice(d("Enjuague Bucal Colgate Plax Fresh Mint 500X350 Ml", "Litro", 1, 7840.99, 15681.98), "200").value).toBe(15681.98);
   });
 });
+
+describe("revisión final: la corrección por nombre no rompe etiquetas buenas", () => {
+  it("escurridos: nunca se corrige (el nombre es peso neto)", () => {
+    expect(unitPrice(d("Aceitunas Verdes NUCETE Pouch 300 Gr", "Kilo escurrido", 1, 2533, 14072.22), "200").value).toBe(14072.22);
+    expect(unitPrice(d("Hamburguesas PATY 4 Uni X 80 Gr Clásicas", "Kilo escurrido", 1, 9609, 30028.12), "200").value).toBe(30028.12);
+  });
+
+  it("packs con la cantidad después del tamaño", () => {
+    expect(sizeFromName("Cerveza Andes Pack Latas 473 CC 6 Unidades")).toMatchObject({ amounts: [0.473, 2.838] });
+    expect(sizeFromName("Energizante RED BULL Pack X 4 Unidades 250 Cc")).toMatchObject({ amounts: [0.25, 1] });
+    expect(sizeFromName("Hamburguesas PATY 4 Uni X 80 Gr Clásicas")).toMatchObject({ amounts: [0.08, 0.32] });
+    expect(sizeFromName("Jabón De Tocador Protex Limpieza Profunda 90 G 3 U")).toMatchObject({ amounts: [0.09, 0.27] });
+    expect(sizeFromName("Paño Microfibra 35x35 Cm 1 Unidad")).toBeNull();
+    expect(unitPrice(d("Cerveza Andes Pack Latas 473 CC 6 Unidades", "Litro", 1, 20508, 7226.21), "200").value).toBe(7226.21);
+    expect(unitPrice(d("Alfajor Jorgito Mini Blanco Paquete 25 Gr 6 Unidades", "Kilo", 1, 4493.99, 28993.48), "200").value).toBe(28993.48);
+    expect(unitPrice(d("Energizante RED BULL Pack X 4 Unidades 250 Cc", "Litro", 1, 13755, 13755), "200").value).toBe(13755);
+    expect(unitPrice(d("Jabón De Tocador Protex Limpieza Profunda 90 G 3 U", "Kilo", 1, 4520.99, 16744.4), "200").value).toBe(16744.4);
+  });
+
+  it("si Coto da un múltiplo exacto del tamaño del nombre, es un pack: se respeta", () => {
+    expect(unitPrice(d("Galletitas Surtidas 120g", "Kilo", 1, 3000, 4166.67), "200").value).toBe(4166.67);
+  });
+
+  it("'Unidad Aprox.' es precio por kilo", () => {
+    expect(unitPrice(d("Queso Pategrás La Serenísima - Unidad Aprox. 340g", "Kilogramo", 1, 37895, 37895), "200").value).toBe(37895);
+  });
+});
+
+describe("revisión final, vuelta 2", () => {
+  it("escurrido con dato de Coto absurdo: usa el peso neto del nombre (sin 'escurrido')", () => {
+    expect(unitPrice(d("Aceitunas Verdes YOVINESSA Pouch 250 Gr", "Gramos escurridos", 100, 2973, 1651666.67), "200"))
+      .toMatchObject({ group: "kg", value: 11892, drained: false });
+    expect(unitPrice(d("Vodka Raspberri Absolut Bot 700 Ml", "Mililitros escurridos", 100, 34662, 3466200), "200"))
+      .toMatchObject({ group: "L", value: 49517.14, drained: false });
+  });
+
+  it("peso aproximado entre paréntesis: el precio es por kilo", () => {
+    expect(unitPrice(d("Suprema Sin Piel X Uni (1.46 Kg) Refrigerado", "Kilogramo", 1, 25378.59, 25378.59), "200").value).toBe(25378.59);
+  });
+});

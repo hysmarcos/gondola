@@ -95,6 +95,12 @@ export function bankBlock(data) {
   return exclusionReason(data);
 }
 
+// ¿amount es k veces single (k de 2 a 48, ±3%)?
+function isPackMultiple(amount, single) {
+  const k = Math.round(amount / single);
+  return k >= 2 && k <= 48 && Math.abs(amount / single - k) / k <= 0.03;
+}
+
 // Grupo y precio por unidad (sin banco).
 function measure(data, store) {
   const price = finalPrice(data, store);
@@ -118,19 +124,33 @@ function measure(data, store) {
   // Coto a veces manda un formatPrice que no cierra con el tamaño del nombre
   // (ej. vodka 700 ml a $34 millones el litro). En ese caso manda el nombre.
   let amount = base.listPrice / (base.formatPrice * unit.factor);
-  // No se corrige si el nombre es ambiguo, si su tamaño no es creíble, o si es "X KG"
-  // (carne con peso aproximado: el precio ya es por kilo).
+  // No se corrige si: el nombre es ambiguo, su tamaño no es creíble, es "X KG", "Aprox."
+  // o un peso entre paréntesis (precio por kilo), o Coto da un múltiplo exacto del tamaño
+  // del nombre (es un pack que el nombre no explica). En escurridos el nombre da peso neto
+  // y Coto el escurrido: solo se usa el nombre si el dato de Coto es absurdo, y entonces
+  // la etiqueta deja de decir "escurrido".
+  let drained = unit.drained;
   if (unit.group === "kg" || unit.group === "L") {
     const size = sizeFromName(name);
     const fromName = size?.amounts.at(-1);
-    const usable = size?.kind === unit.group && !size.multi && !soldPerKg(name) && fromName >= MIN_AMOUNT;
-    if (usable && !size.amounts.some((a) => Math.abs(amount - a) / a <= MATCH)) amount = fromName;
+    const usable =
+      size?.kind === unit.group && !size.multi && !soldPerKg(name) &&
+      !/aprox|\(\s*[\d.,]+\s*(kgs?|grs?|grm|g)\s*\)/i.test(name ?? "") && fromName >= MIN_AMOUNT;
+    if (unit.drained) {
+      if (!(amount >= MIN_AMOUNT) && usable) {
+        amount = fromName;
+        drained = false;
+      }
+    } else {
+      const matches = usable && size.amounts.some((a) => Math.abs(amount - a) / a <= MATCH);
+      if (usable && !matches && !isPackMultiple(amount, size.amounts[0])) amount = fromName;
+    }
     if (!(amount >= MIN_AMOUNT)) return null;
   }
   return {
     group: unit.group,
     value: price / amount,
-    drained: unit.drained,
+    drained,
     note: paper?.note ?? null,
   };
 }

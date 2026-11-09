@@ -1,6 +1,6 @@
 // Auditoría de la lógica de precio por unidad sobre el catálogo real de Coto.
 // Herramienta de desarrollo: no va en la extensión.
-import { unitPrice, finalPrice } from "./unit-price.js";
+import { unitPrice, finalPrice, normalizeUnit, pickStorePrice } from "./unit-price.js";
 import { sizeFromName, soldPerKg } from "./size.js";
 
 export { sizeFromName };
@@ -18,6 +18,7 @@ function median(nums) {
 export function auditItems(items, store) {
   const noUnit = [];
   const sizeMismatch = [];
+  const corrected = [];
   const byKey = new Map();
   let labeled = 0;
 
@@ -32,6 +33,16 @@ export function auditItems(items, store) {
     const key = cat + "|" + label.group;
     if (!byKey.has(key)) byKey.set(key, []);
     byKey.get(key).push({ name, cat, group: label.group, value: label.value });
+
+    // ¿La etiqueta usa otra cantidad que la de Coto? (la corrigió el nombre)
+    const unit = normalizeUnit(data?.product_format, data?.product_format_quantity);
+    const base = pickStorePrice(data, store);
+    const fp = finalPrice(data, store);
+    if ((unit.group === "kg" || unit.group === "L") && label.group === unit.group && base?.formatPrice && fp) {
+      const coto = base.listPrice / (base.formatPrice * unit.factor);
+      const used = fp / label.value;
+      if (Math.abs(used - coto) / coto > 0.01) corrected.push({ name, cat, coto: round(coto), label: round(used) });
+    }
 
     // ¿El precio por unidad que mostramos cierra con el tamaño del nombre?
     const size = sizeFromName(name);
@@ -54,7 +65,7 @@ export function auditItems(items, store) {
       if (x.value > med * 8 || x.value < med / 8) outliers.push({ ...x, median: med });
     }
   }
-  return { counts: { total: items.length, labeled }, noUnit, outliers, sizeMismatch };
+  return { counts: { total: items.length, labeled }, noUnit, outliers, sizeMismatch, corrected };
 }
 
 // Campos que usa la lógica; el resto se descarta para que el catálogo pese poco.

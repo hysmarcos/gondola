@@ -48,7 +48,18 @@ export function sizeFromName(name) {
   const one = all.at(-1);
   if (!one) return null;
   const multi = new Set(all.map((a) => a.kind + round(a.amount))).size > 1;
-  return { kind: one.kind, amounts: [round(one.amount)], multi };
+  // Packs con la cantidad aparte: "473 CC 6 Unidades", "4 Uni X 80 Gr", "Pack X 4", "90 G 3 U".
+  const count = packCount(text);
+  const amounts = count ? [round(one.amount), round(one.amount * count)] : [round(one.amount)];
+  return { kind: one.kind, amounts, multi };
+}
+
+function packCount(text) {
+  const m =
+    text.match(/(?<![\d.,])(\d+)\s*(?:u|un|uni|unid|unidades?)\b/i) ??
+    text.match(/\b(?:pack|display)\s*x\s*(\d+)\b/i);
+  const n = m ? Number(m[1]) : 0;
+  return n >= 2 && n <= MAX_PACK ? n : null;
 }
 
 // "Filete De Merluza X Kg": se vende por kilo.
