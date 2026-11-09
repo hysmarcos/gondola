@@ -28,6 +28,9 @@ export function installInterceptor(win, deps) {
   let lastSeq = 0;
   let lastProductsUrl = null;
   let lastCart = null;
+  let lastCartBody = null;
+  let lastList = null; // última lista vista: { results, store } para volver a etiquetar si cambia el banco
+  const onCartPage = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
   // Configuración de banco: llega desde la extensión. Esperamos un rato antes de la primera respuesta.
   let settings = { selected: [], day: new Date().getDay() };
@@ -80,6 +83,7 @@ export function installInterceptor(win, deps) {
   async function transform({ url, unit, seq }, body) {
     await ready;
     if (!unit) {
+      lastList = { results: body.response.results, store: storeOf(url) };
       post({ type: "labels", labels: pageLabels(body, url), marks: null, seq });
       return withSortOption(body, false);
     }
@@ -87,6 +91,7 @@ export function installInterceptor(win, deps) {
       const sorted = await getSorted(url, body.response.total_num_results ?? body.response.results.length);
       const { page, size } = requestedPage(url);
       const slice = sorted.results.slice((page - 1) * size, page * size);
+      lastList = { results: sorted.results, store: storeOf(url) };
       post({ type: "labels", labels: sorted.labels, marks: sorted.marks, seq });
       if (sorted.capped) post({ type: "notice", text: NOTICE_CAP, seq });
       return withSortOption(withResults(body, slice), true);
@@ -118,9 +123,26 @@ export function installInterceptor(win, deps) {
     post({ type: "cart", analysis, seq });
   }
 
+  // Corre fn sobre cada item con como mucho `limit` a la vez.
+  async function pool(items, limit, fn) {
+    const out = new Array(items.length);
+    let next = 0;
+    const worker = async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i]);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    return out;
+  }
+
+  // El mini-carrito pide getCarrito en todas las páginas: solo analizamos en /carrito.
   async function onCart(body) {
+    lastCartBody = body;
+    if (!onCartPage()) return;
     const items = Object.values(body?.output?.productoItems ?? {});
-    const lines = await Promise.all(items.map(async (it) => {
+    const lines = await pool(items, 4, async (it) => {
       const plu = pluOf(it?.producto?.id);
       return {
         id: it?.producto?.id,
@@ -129,7 +151,7 @@ export function installInterceptor(win, deps) {
         list: Number(it?.precio?.precioLista) || 0,
         data: plu ? await lookupPlu(plu) : null,
       };
-    }));
+    });
     await ready;
     lastCart = lines;
     postCart();
@@ -155,6 +177,11 @@ export function installInterceptor(win, deps) {
       settings = { selected: Array.isArray(msg.selected) ? msg.selected : [], day: Number(msg.day) || 0 };
       settingsReady();
       postCart();
+      if (lastList) {
+        post({ type: "labels", labels: labelsFor(lastList.results, lastList.store, settings.selected, settings.day) });
+      }
+    } else if (msg.type === "cartRequest" && lastCartBody) {
+      onCart(lastCartBody).catch(() => {});
     } else if (msg.type === "lookup" && msg.plu && msg.key) {
       onLookup(msg).catch(() => {});
     }

@@ -46,6 +46,7 @@ function bestForDay(promos, day, lines) {
 export function analyzeCart(lines, promos, day, store) {
   const analyzed = lines.map((l) => analyzeLine(l, store));
   const total = round2(analyzed.reduce((s, l) => s + l.total, 0));
+  const listTotal = round2(lines.reduce((s, l) => s + l.qty * l.list, 0));
 
   const todayBest = bestForDay(promos, day, analyzed);
   const today = todayBest ? { ...todayBest, total: round2(total - todayBest.refund) } : null;
@@ -61,6 +62,7 @@ export function analyzeCart(lines, promos, day, store) {
   return {
     lines: analyzed.map(({ id, name, missing, saving, promoText }) => ({ id, name, missing, saving, promoText })),
     total,
+    listTotal,
     today,
     best,
     weeklyCapBanks: [...new Set(used.map((p) => p.bank))],

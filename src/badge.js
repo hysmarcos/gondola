@@ -49,7 +49,7 @@ function upsert(parent, cls, text) {
 
 export function installBadges(win, doc) {
   const today = () => new Date().getDay();
-  const state = { labels: {}, marks: {}, seq: 0, day: today(), path: null };
+  const state = { labels: {}, marks: {}, seq: 0, day: today(), path: null, sig: undefined };
 
   function paint(target, label) {
     upsert(target, BADGE, label ? formatBadge(label) : null);
@@ -116,6 +116,16 @@ export function installBadges(win, doc) {
     if (!m || m.source !== SOURCE) return;
     if (m.type === "settings") {
       state.day = Number(m.day) || 0;
+      // Si cambió el día o las promos, las líneas de banco viejas mienten: se borran hasta
+      // que lleguen etiquetas nuevas.
+      const sig = (m.selected ?? []).map((p) => p.id).join(",") + "@" + state.day;
+      if (state.sig !== undefined && sig !== state.sig) {
+        for (const l of Object.values(state.labels)) {
+          l.bankValue = null;
+          l.bankName = null;
+        }
+      }
+      state.sig = sig;
       return render();
     }
     // Un pedido viejo que termina tarde no pisa marcas ni avisos del más nuevo.

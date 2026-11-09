@@ -112,3 +112,24 @@ describe("página de producto", () => {
     expect(box.querySelector(".coto-unit-badge").textContent).toBe("$9.597/kg final");
   });
 });
+
+describe("fix: cambio de configuración", () => {
+  it("borra las líneas de banco viejas cuando cambia el día o las promos", async () => {
+    const doc = document.implementation.createHTMLDocument("x");
+    const win = new EventTarget();
+    win.location = { pathname: "/" };
+    win.postMessage = () => {};
+    win.MutationObserver = window.MutationObserver;
+    doc.body.innerHTML = card(KEY);
+    installBadges(win, doc);
+    const sendW = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
+    sendW({ type: "settings", selected: [{ id: "457" }], day: 1 });
+    sendW({ type: "labels", labels: { [KEY]: L1 } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-bank")).not.toBeNull();
+    sendW({ type: "settings", selected: [{ id: "457" }], day: 3 });
+    await tick();
+    expect(doc.querySelector(".coto-unit-bank")).toBeNull();
+    expect(doc.querySelector(".coto-unit-badge").textContent).toBe("$5.177/kg final");
+  });
+});

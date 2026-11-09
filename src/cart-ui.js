@@ -1,6 +1,7 @@
 // En /carrito: avisos de promos incompletas y caja con lo que se paga de verdad.
 // Solo agrega nodos; no toca el carrito de Coto.
 import { dayName } from "./banks.js";
+import { parseMoney } from "./money.js";
 
 const SOURCE = "coto-unit";
 const WARN = "coto-unit-cart-warn";
@@ -31,7 +32,7 @@ function boxLines(a, day, today) {
 }
 
 export function installCartUi(win, doc) {
-  const state = { analysis: null, seq: -1, day: new Date().getDay() };
+  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null };
   const onCart = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
   function renderWarnings(a) {
@@ -70,8 +71,29 @@ export function installCartUi(win, doc) {
     box.replaceChildren(...lines.map((t) => Object.assign(doc.createElement("div"), { textContent: t })));
   }
 
+  // Si el total de la página no coincide con el carrito que leímos (cambió una cantidad
+  // y Coto no volvió a pedir el carrito), no mostramos nada para no mentir.
+  function inSync(a) {
+    const text = doc.querySelector(".card-body-container")?.textContent ?? "";
+    const shown = parseMoney(text.match(/Total:\s*(\$\s*[\d.,]+)/)?.[1] ?? null);
+    return shown === null || a.listTotal == null || Math.abs(shown - a.listTotal) <= 1;
+  }
+
+  function clear() {
+    doc.querySelectorAll(`.${WARN}, .${BOX}`).forEach((e) => e.remove());
+  }
+
+  function checkPath() {
+    const path = String(win.location?.pathname ?? "");
+    if (path === state.path) return;
+    state.path = path;
+    if (onCart()) win.postMessage?.({ source: SOURCE, type: "cartRequest" }, "*");
+  }
+
   function render() {
+    checkPath();
     if (!onCart() || !state.analysis) return;
+    if (!inSync(state.analysis)) return clear();
     renderWarnings(state.analysis);
     renderBox(state.analysis);
   }

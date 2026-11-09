@@ -93,3 +93,14 @@ describe("popup", () => {
     expect(st.data.day).toBe(3);
   });
 });
+
+describe("fix: promos vacías", () => {
+  it("no pisa la lista guardada con una vacía", async () => {
+    const st = fakeStorage({ promos: PROMOS });
+    const win = fakeWin();
+    installBridge(win, st, () => 1);
+    win.send({ type: "promos", promos: [] });
+    await tick();
+    expect(st.data.promos).toHaveLength(14);
+  });
+});

@@ -81,6 +81,7 @@ function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0
       const plu = String(u).match(/\/search\/(\d+)\?/)?.[1];
       if (plu) {
         env.searched.push(plu);
+        if (env.onSearch) await env.onSearch();
         const r = CART_ROWS.find((row) => String(parseInt(row[0].slice(4), 10)) === plu);
         return { ok: true, json: async () => apiBody(r ? [{ data: searchData(r) }] : []) };
       }
@@ -90,7 +91,7 @@ function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0
       return { ok: true, json: async () => apiBody(all.slice((p - 1) * s, p * s), total) };
     },
   };
-  const win = { XMLHttpRequest: FakeXHR };
+  const win = { XMLHttpRequest: FakeXHR, location: { pathname: "/carrito" } };
   installInterceptor(win, deps);
   const send = (msg) => env.listeners.forEach((fn) => fn({ source: "coto-unit", ...msg }));
   if (settings) send({ type: "settings", ...settings });
@@ -291,5 +292,44 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
     await flush(); await flush();
     const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
     expect(msg.labels["_/R-00299912-00299912-200"]).toMatchObject({ group: "kg", take: 3 });
+  });
+});
+
+describe("fix: revisión final", () => {
+  const icbc = { id: "457", bank: "ICBC", days: [1], percent: 30, cap: 20000, capWeekly: false, onlyNoOffer: false };
+  const CART_URL = "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0&pushSite=CotoDigital";
+
+  it("al cambiar la configuración vuelve a publicar las etiquetas de la última lista", async () => {
+    const s = setup({ settings: { selected: [], day: 1 } });
+    await request(s.win, url("price"));
+    s.send({ type: "settings", selected: [icbc], day: 1 });
+    await flush();
+    const last = s.env.posts.filter((m) => m.type === "labels").at(-1);
+    expect(last.labels.p0).toMatchObject({ bankName: "ICBC" });
+    expect("marks" in last).toBe(false);
+  });
+
+  it("fuera de /carrito no busca los productos del carrito", async () => {
+    const s = setup({ settings: { selected: [], day: 1 } });
+    s.win.location = { pathname: "/productos/x" };
+    await request(s.win, CART_URL);
+    await flush(); await flush();
+    expect(s.env.searched).toHaveLength(0);
+    expect(s.env.posts.find((m) => m.type === "cart")).toBeUndefined();
+    s.win.location = { pathname: "/carrito" };
+    s.send({ type: "cartRequest" });
+    await flush(); await flush(); await flush();
+    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.81, 2);
+  });
+
+  it("busca como mucho 4 productos a la vez", async () => {
+    const s = setup({ settings: { selected: [], day: 1 } });
+    s.win.location = { pathname: "/carrito" };
+    let inFlight = 0, max = 0;
+    s.env.onSearch = async () => { inFlight++; max = Math.max(max, inFlight); await flush(); inFlight--; };
+    await request(s.win, CART_URL);
+    for (let i = 0; i < 10; i++) await flush();
+    expect(s.env.searched).toHaveLength(6);
+    expect(max).toBeLessThanOrEqual(4);
   });
 });

@@ -19,7 +19,7 @@ export function installBridge(win, storage, now = Date.now) {
 
   win.addEventListener("message", (e) => {
     const m = e.data;
-    if (m?.source !== SOURCE || m.type !== "promos" || !Array.isArray(m.promos)) return;
+    if (m?.source !== SOURCE || m.type !== "promos" || !Array.isArray(m.promos) || !m.promos.length) return;
     storage.set({ promos: m.promos, fetchedAt: now() }).catch(() => {});
   });
 

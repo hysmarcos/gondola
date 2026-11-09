@@ -10,7 +10,7 @@ const ALL = parsePromos(PROMOS_RESULT);
 const pick = (...ids) => ALL.filter((p) => ids.includes(p.id));
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-function setup(path = "/carrito") {
+function setup(path = "/carrito", total = "$48.355,92") {
   const win = new EventTarget();
   win.location = { pathname: path };
   win.MutationObserver = window.MutationObserver;
@@ -19,7 +19,7 @@ function setup(path = "/carrito") {
   doc.body.innerHTML = `
     ${line("JABÓN DE TOCADOR DOVE KARITE  Y VAINILLA 90 G")}
     ${line("Shampoo TRESEMME Keratina Antifrizz 500 Ml")}
-    <div class="card-body text-center card-body-container">Total: $48.355,92 <button>Continuar compra</button></div>`;
+    <div class="card-body text-center card-body-container">Total: ${total} <button>Continuar compra</button></div>`;
   installCartUi(win, doc);
   const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
   return { win, doc, send };
@@ -30,7 +30,7 @@ const dove4 = CART_LINES.map((l) => (l.id === "prod00299912" ? { ...l, qty: 4 } 
 
 describe("installCartUi", () => {
   it("avisa en la línea con promo incompleta (nombre sin acentos ni mayúsculas)", async () => {
-    const { doc, send } = setup();
+    const { doc, send } = setup("/carrito", "$51.094,91");
     send({ type: "cart", analysis: analyzeCart(dove4, [], today, "200"), seq: 1 });
     await tick();
     const warn = doc.querySelectorAll(".coto-unit-cart-warn");
@@ -66,7 +66,7 @@ describe("installCartUi", () => {
   });
 
   it("ignora análisis viejos", async () => {
-    const { doc, send } = setup();
+    const { doc, send } = setup("/carrito", "$51.094,91");
     send({ type: "cart", analysis: analyzeCart(dove4, [], today, "200"), seq: 10 });
     send({ type: "cart", analysis: analyzeCart(CART_LINES, [], today, "200"), seq: 9 });
     await tick();
@@ -75,6 +75,16 @@ describe("installCartUi", () => {
 
   it("fuera del carrito no hace nada", async () => {
     const { doc, send } = setup("/productos/x");
+    send({ type: "cart", analysis: analyzeCart(dove4, [], today, "200"), seq: 1 });
+    await tick();
+    expect(doc.querySelector(".coto-unit-cart-box, .coto-unit-cart-warn")).toBeNull();
+  });
+});
+
+describe("fix: total de Coto distinto", () => {
+  it("si el total de la página no coincide con el carrito leído, no muestra nada", async () => {
+    const { doc, send } = setup();
+    doc.querySelector(".card-body-container").firstChild.textContent = "Total: $50.000,00 ";
     send({ type: "cart", analysis: analyzeCart(dove4, [], today, "200"), seq: 1 });
     await tick();
     expect(doc.querySelector(".coto-unit-cart-box, .coto-unit-cart-warn")).toBeNull();
