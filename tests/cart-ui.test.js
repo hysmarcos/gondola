@@ -39,30 +39,34 @@ describe("installCartUi", () => {
     expect(warn[0].closest("card-product").textContent).toContain("DOVE");
   });
 
-  it("caja con total real, banco de hoy y mejor día", async () => {
+  it("caja: subtotal, descuentos de Coto, reintegro con tope, total final y mejor día", async () => {
     const { doc, send } = setup();
     send({ type: "settings", selected: [], day: 1 });
-    send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("456", "449"), 1, "200"), seq: 2 });
+    const a = analyzeCart(CART_LINES, pick("456", "449"), 1, "200");
+    send({ type: "cart", analysis: a, seq: 2 });
     await tick();
     const box = doc.querySelector(".coto-unit-cart-box");
     expect(box.previousElementSibling.classList.contains("card-body-container")).toBe(true);
-    const lines = [...box.children].map((e) => e.textContent);
-    const when = today === 1 ? "Hoy" : "Lunes";
-    expect(lines).toEqual([
-      "Total con promos de Coto: $37.454",
-      `${when} con ICBC: $33.751 (reintegro $3.703)`,
-      "Mejor día: martes con Credicoop, $31.899",
-    ]);
+    const kinds = [...box.children].map((e) => e.className.match(/--(\w+)/)[1]);
+    expect(kinds[0]).toBe("subtotal");
+    expect(kinds).toContain("group");
+    expect(kinds).toContain("detail");
+    expect(kinds.slice(-4)).toEqual(["bank", "cap", "total", "hint"]);
+    const text = (k) => box.querySelector(`.coto-unit-sum-row--${k}`).textContent;
+    expect(text("subtotal")).toContain("Subtotal");
+    expect(text("bank")).toContain("Reintegro ICBC");
+    expect(text("total")).toContain("Total final con reintegro");
+    expect(text("hint")).toContain("Mejor día: martes con Credicoop");
   });
 
-  it("avisa el tope semanal y no duplica la caja", async () => {
+  it("tope semanal: lo dice en la línea del tope y no duplica la caja", async () => {
     const { doc, send } = setup();
     send({ type: "settings", selected: [], day: 2 });
     send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("473"), 2, "200"), seq: 3 });
     send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("473"), 2, "200"), seq: 4 });
     await tick();
     expect(doc.querySelectorAll(".coto-unit-cart-box")).toHaveLength(1);
-    expect(doc.querySelector(".coto-unit-cart-box").textContent).toContain("El tope de Naranja X es semanal.");
+    expect(doc.querySelector(".coto-unit-sum-row--cap").textContent).toMatch(/tope semanal/);
   });
 
   it("ignora análisis viejos", async () => {
@@ -123,21 +127,34 @@ describe("mini-carrito", () => {
     expect(win.posted).toContainEqual({ source: "coto-unit", type: "cartRequest" });
   });
 
-  it("muestra precio con promo por línea y totales", async () => {
+  it("línea: precio de Coto tachado, precio con promo y la promo; totales en detalle", async () => {
     const { doc, send, open } = setupMini();
     open();
     send({ type: "settings", selected: [], day: 1 });
     send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("457"), 1, "200"), seq: 1 });
     await tick();
-    const lines = doc.querySelectorAll(".coto-unit-mini-line");
-    expect(lines).toHaveLength(1);
-    expect(lines[0].textContent).toBe("$5.478 con promo");
-    expect(lines[0].closest("card-product-float").textContent).toContain("DOVE");
-    expect(doc.querySelector('.precio-final[data-coto-unit-strike]').textContent).toBe("$8.216,97");
-    const total = doc.querySelector(".coto-unit-mini-total");
-    expect(total.previousElementSibling.className).toBe("total-precio");
-    const when = new Date().getDay() === 1 ? "Hoy" : "Lunes";
-    expect([...total.children].map((e) => e.textContent)).toEqual(["Con promos: $37.454", `${when} con ICBC: $31.899`]);
+    const dove = [...doc.querySelectorAll("card-product-float")].find((c) => c.textContent.includes("DOVE"));
+    expect(dove.querySelector(".coto-unit-mini-final").textContent).toBe("$5.478,24");
+    expect(dove.querySelector(".coto-unit-sum-tag").textContent).toBe("3x2");
+    expect(dove.querySelector(".precio-final").hasAttribute("data-coto-unit-strike")).toBe(true);
+    // El total de Coto queda como Subtotal de nuestro detalle.
+    const totalEl = doc.querySelector(".total-precio");
+    expect(totalEl.hasAttribute("data-coto-unit-hide")).toBe(true);
+    const box = doc.querySelector(".coto-unit-mini-total");
+    expect(box.previousElementSibling).toBe(totalEl);
+    expect(box.querySelector(".coto-unit-sum-row--subtotal").textContent).toContain("Subtotal");
+    expect(box.querySelector(".coto-unit-sum-row--total")).not.toBeNull();
+  });
+
+  it("línea que aplica al banco: muestra lo que queda con el reintegro", async () => {
+    const { doc, send, open } = setupMini();
+    open();
+    send({ type: "settings", selected: [], day: 1 });
+    send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("457"), 1, "200"), seq: 1 });
+    await tick();
+    const bolsa = [...doc.querySelectorAll("card-product-float")].find((c) => c.textContent.includes("Bolsa"));
+    expect(bolsa.querySelector(".coto-unit-mini-bank").textContent).toMatch(/con reintegro$/);
+    expect(bolsa.querySelector(".precio-final").hasAttribute("data-coto-unit-strike")).toBe(false);
   });
 
   it("si el total no coincide, no muestra nada", async () => {
@@ -146,6 +163,7 @@ describe("mini-carrito", () => {
     send({ type: "cart", analysis: analyzeCart(CART_LINES, [], 1, "200"), seq: 1 });
     await tick();
     expect(doc.querySelector(".coto-unit-mini-line, .coto-unit-mini-total")).toBeNull();
+    expect(doc.querySelector(".total-precio").hasAttribute("data-coto-unit-hide")).toBe(false);
   });
 });
 
@@ -355,6 +373,6 @@ describe("v7: logos en el carrito", () => {
     expect(imgs.length).toBeGreaterThan(0);
     expect(imgs[0].getAttribute("src")).toMatch(/^https:\/\/x\/logo_/);
     expect(imgs[0].getAttribute("alt")).toBeTruthy();
-    expect(doc.querySelector(".coto-unit-cart-box").textContent).toContain("Total con promos de Coto");
+    expect(doc.querySelector(".coto-unit-cart-box").textContent).toContain("Subtotal");
   });
 });

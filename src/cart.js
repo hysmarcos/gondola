@@ -1,11 +1,15 @@
 // Cuánto se paga de verdad por un carrito de Coto: promos de Coto + reintegro del banco.
-import { finalPrice, takeQty, bankBlock } from "./unit-price.js";
+import { finalPrice, takeQty, bankBlock, offerText } from "./unit-price.js";
 import { compareFields } from "./compare.js";
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
 function analyzeLine({ id, name, qty, list, data }, store, opts = {}) {
-  return { ...analyzeCore({ id, name, qty, list, data }, store, opts), ...compareFields(data, store, opts) };
+  const core = analyzeCore({ id, name, qty, list, data }, store, opts);
+  // Cuánto le saca Coto a esta línea y con qué promo (para el detalle del carrito).
+  const discount = Math.max(0, round2(core.listTotal - core.total));
+  const promoLabel = discount > 0.5 && data ? offerText(data, opts) : null;
+  return { ...core, discount: discount > 0.5 ? discount : 0, promoLabel, ...compareFields(data, store, opts) };
 }
 
 function analyzeCore({ id, name, qty, list, data }, store, opts = {}) {
@@ -57,7 +61,24 @@ export function analyzeCart(lines, promos, day, store, opts = {}) {
   const listTotal = round2(lines.reduce((s, l) => s + l.qty * l.list, 0));
 
   const todayBest = bestForDay(promos, day, analyzed);
-  const today = todayBest ? { ...todayBest, total: round2(total - todayBest.refund) } : null;
+  // Reintegro de hoy: sobre qué monto aplica, el tope y si ya se llegó.
+  const eligible = round2(analyzed.reduce((s, l) => s + (l.bankEligible ? l.total : 0), 0));
+  const today = todayBest
+    ? (() => {
+        const cap = todayBest.promo.cap ?? null;
+        const raw = (eligible * todayBest.promo.percent) / 100;
+        return {
+          ...todayBest,
+          total: round2(total - todayBest.refund),
+          eligible,
+          cap,
+          capReached: cap != null && raw >= cap - 0.005,
+          capLeft: cap != null ? round2(Math.max(0, cap - todayBest.refund)) : null,
+        };
+      })()
+    : null;
+  // Parte del reintegro que le toca a cada línea (proporcional a lo que paga).
+  const shareOf = (l) => (today && l.bankEligible && eligible > 0 ? round2((today.refund * l.total) / eligible) : 0);
 
   let best = null;
   for (let k = 0; k < 7; k++) {
@@ -68,9 +89,14 @@ export function analyzeCart(lines, promos, day, store, opts = {}) {
 
   const used = [today?.promo, best?.promo].filter((p) => p?.capWeekly);
   return {
-    lines: analyzed.map(({ id, name, total, listTotal, missing, saving, promoText, ean, cmp }) => ({
-      id, name, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText, ean, cmp,
-    })),
+    lines: analyzed.map((l) => {
+      const { id, name, total, listTotal, missing, saving, promoText, ean, cmp, discount, promoLabel } = l;
+      return {
+        id, name, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText, ean, cmp,
+        discount, promoLabel, bankShare: shareOf(l),
+      };
+    }),
+    discountTotal: round2(analyzed.reduce((s, l) => s + l.discount, 0)),
     total,
     listTotal,
     today,

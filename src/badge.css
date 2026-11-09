@@ -356,33 +356,181 @@
   color: #b25e00;
 }
 
+/* ---------- Detalle del carrito (mini-carrito y /carrito) ---------- */
+
 .coto-unit-cart-box,
 .coto-unit-mini-total {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin: 10px 0;
-  padding: 10px 12px;
-  border: 1px solid #e30613;
-  border-radius: 8px;
-  background: #fff4f4;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #222;
-}
-
-.coto-unit-cart-box > div:first-child,
-.coto-unit-mini-total > div:first-child {
-  font-weight: 700;
+  padding: 12px 14px;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  background: #fff;
+  font: 400 13px/1.35 Poppins, sans-serif;
+  color: #212529;
+  font-variant-numeric: tabular-nums;
 }
 
 .coto-unit-mini-total {
-  margin: 6px 12px;
-  padding: 6px 10px;
-  font-size: 13px;
+  margin: 8px 12px 10px;
 }
 
-.coto-unit-mini-line {
+.coto-unit-sum-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coto-unit-sum-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.coto-unit-sum-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.coto-unit-sum-value {
+  flex: none;
+  white-space: nowrap;
+}
+
+.coto-unit-sum-row--subtotal {
+  color: #51585e;
+}
+
+/* Grupos (Descuentos Coto, Reintegro): separados, con el monto en verde. */
+.coto-unit-sum-row--group,
+.coto-unit-sum-row--bank {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+  font-weight: 600;
+}
+
+.coto-unit-sum-row--group .coto-unit-sum-value,
+.coto-unit-sum-row--bank .coto-unit-sum-value,
+.coto-unit-sum-row--detail .coto-unit-sum-value {
+  color: #1d7a35;
+}
+
+/* Detalle de cada promo de Coto: más chico y sangrado. */
+.coto-unit-sum-row--detail {
+  padding-left: 10px;
   font-size: 12px;
+  color: #51585e;
+}
+
+.coto-unit-sum-tag {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #ffc107;
+  color: #212529;
+  font-size: 10px;
   font-weight: 700;
-  color: #1d6b2e;
+  text-transform: uppercase;
+}
+
+.coto-unit-sum-sub {
+  flex: none;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7177;
+}
+
+.coto-unit-sum-row .coto-unit-logo {
+  height: 18px;
+  max-width: 56px;
+  object-fit: contain;
+}
+
+/* Estado del tope: alcanzado (ámbar, destacado) o cuánto queda. */
+.coto-unit-sum-row--cap {
+  justify-content: flex-start;
+  align-self: flex-start;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.coto-unit-sum-cap--reached {
+  background: #fff3cd;
+  color: #7a4d00;
+}
+
+.coto-unit-sum-cap--left,
+.coto-unit-sum-cap--none {
+  background: #eef4fb;
+  color: #0c447c;
+}
+
+.coto-unit-sum-row--total {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.coto-unit-sum-row--hint {
+  justify-content: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #51585e;
+}
+
+/* Precio de Coto tachado en el mini-carrito: gris, para que no parezca el que se paga. */
+.dropdown-carrito .precio-final[data-coto-unit-strike] {
+  color: #8a9096 !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+}
+
+/* Línea del mini-carrito: precio con promo y, si aplica, con reintegro. */
+.coto-unit-mini-line {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: -4px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-mini-promo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coto-unit-mini-final {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1d7a35;
+}
+
+.coto-unit-mini-bank {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0c447c;
+}
+
+.coto-unit-mini-bank .coto-unit-logo {
+  height: 16px;
+  max-width: 48px;
+  object-fit: contain;
 }
 
 /* Mismo producto (mismo EAN) en otros supermercados, al pie de la caja. */
