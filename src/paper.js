@@ -9,6 +9,7 @@ const num = (s) => Number(String(s).replace(",", "."));
 
 function rolls(name) {
   const m =
+    name.match(/(\d+)\s*x\s*\d+(?:[.,]\d+)?\s*(?:m|mts?|mtr|metros)\b/i) ??
     name.match(/(\d+)\s*rollos?\b/i) ??
     name.match(/\bx\s*(\d+)\b(?!\s*(?:m|mts?|mtr|metros|pa[ñn]os)\b)/i) ??
     name.match(/(\d+)\s*(?:un|u|uni|unid|unidades?)\b/i) ??
@@ -23,7 +24,7 @@ function metersPerRoll(name) {
 
 const round = (n) => Math.round(n * 100) / 100;
 
-// → { group: "rollo10m" | "panos100" | null, divisor, note } o null si no es papel.
+// → { kind: "toilet" | "kitchen", group: "rollo10m" | "panos100" | null, divisor, note } o null si no es papel.
 export function paperMetric(name) {
   const text = String(name ?? "");
   const toilet = TOILET.test(text);
@@ -33,12 +34,12 @@ export function paperMetric(name) {
 
   if (kitchen) {
     const panos = text.match(/(\d+)\s*pa[ñn]os/i);
-    if (panos) return { group: "panos100", divisor: round((num(panos[1]) * (rolls(text) ?? 1)) / 100), note };
+    if (panos) return { kind: "kitchen", group: "panos100", divisor: round((num(panos[1]) * (rolls(text) ?? 1)) / 100), note };
   }
   if (toilet) {
     const meters = metersPerRoll(text);
     const n = rolls(text);
-    if (meters && n) return { group: "rollo10m", divisor: round((meters * n) / 10), note };
+    if (meters && n) return { kind: "toilet", group: "rollo10m", divisor: round((meters * n) / 10), note };
   }
-  return { group: null, divisor: null, note };
+  return { kind: toilet ? "toilet" : "kitchen", group: null, divisor: null, note };
 }

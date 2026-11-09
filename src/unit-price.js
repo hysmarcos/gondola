@@ -121,6 +121,15 @@ function measure(data, store) {
   const paper = unit.group === "m2" || unit.group === "m" ? paperMetric(data?.sku_display_name) : null;
   if (paper?.divisor) return { group: paper.group, value: price / paper.divisor, drained: false, note: paper.note };
   if (!base.formatPrice) return null;
+  // Papel higiénico sin metros en el nombre: el m² de Coto con un rollo de 10 cm de ancho
+  // da los metros (1 m² = 10 m de rollo), así se compara con los demás por 10 m.
+  if (paper?.kind === "toilet" && unit.group === "m2") {
+    const m2 = base.listPrice / (base.formatPrice * unit.factor);
+    if (m2 >= 0.5) {
+      const note = [paper.note, "≈ ancho 10 cm"].filter(Boolean).join(" · ");
+      return { group: "rollo10m", value: price / m2, drained: false, note };
+    }
+  }
   // Coto a veces manda un formatPrice que no cierra con el tamaño del nombre
   // (ej. vodka 700 ml a $34 millones el litro). En ese caso manda el nombre.
   let amount = base.listPrice / (base.formatPrice * unit.factor);

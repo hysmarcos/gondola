@@ -70,7 +70,7 @@ describe("sortByUnitPrice", () => {
 describe("v3: grupos nuevos", () => {
   it("ordena grupos por tamaño con el orden de desempate del spec", () => {
     const paper = (url, meters, price) => row([url, `Papel Higiénico X ${meters} M 4 Un`, "Cuadrado", 1, price, 1, null, null, null]);
-    const m2 = (url, price) => row([url, `Papel Higiénico Y Doble Hoja Paquete 4 Unidades`, "Cuadrado", 1, 100, price, null, null, null]);
+    const m2 = (url, price) => row([url, `Rollo De Cocina Y Paquete 4 Unidades`, "Cuadrado", 1, 100, price, null, null, null]);
     const input = [m2("A", 300), paper("P1", 30, 1200), m2("B", 200), paper("P2", 50, 1000), item("k1", "Kilo", 10)];
     const { results, marks } = sortByUnitPrice(input, "200");
     expect(results.map((r) => r.data.url)).toEqual(["P2", "P1", "B", "A", "k1"]);
