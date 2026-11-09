@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { installInterceptor } from "../src/interceptor.js";
 import { row, apiBody } from "./fixtures/coto.js";
+import { PROMOS_RESULT } from "./fixtures/promos.js";
+import { CARRITO_BODY, CART_ROWS, searchData } from "./fixtures/cart.js";
 
 const API = "https://api.coto.com.ar/api/v1/ms-digital-sitio-bff-web/api/v1/products/";
 const Q = "&us=200&i=abc&s=1";
@@ -57,18 +59,31 @@ function makeFakeXHR(server) {
   return { FakeXHR, seen };
 }
 
-function setup({ total = 250, fetchFails = false, serverBody } = {}) {
+const PROMOS_URL = "https://www.coto.com.ar/promos-test";
+
+function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0, settings } = {}) {
   const all = catalog(total);
   const server = serverBody ?? ((u) => {
-    const { page, size } = { page: pageOf(u), size: sizeOf(u) };
+    if (/getCarrito/.test(u)) return CARRITO_BODY;
+    const { page, size } = { page: pageOf(u) || 1, size: sizeOf(u) || 24 };
     return apiBody(all.slice((page - 1) * size, page * size), total);
   });
   const { FakeXHR, seen } = makeFakeXHR(server);
-  const env = { time: 0, fetched: [], posts: [] };
+  const env = { time: 0, fetched: [], searched: [], posts: [], listeners: [] };
   const deps = {
     now: () => env.time,
     post: (m) => env.posts.push(m),
+    listen: (fn) => env.listeners.push(fn),
+    promosUrl: PROMOS_URL,
+    settingsWaitMs,
     fetch: async (u) => {
+      if (u === PROMOS_URL) return { ok: true, json: async () => ({ result: PROMOS_RESULT }) };
+      const plu = String(u).match(/\/search\/(\d+)\?/)?.[1];
+      if (plu) {
+        env.searched.push(plu);
+        const r = CART_ROWS.find((row) => String(parseInt(row[0].slice(4), 10)) === plu);
+        return { ok: true, json: async () => apiBody(r ? [{ data: searchData(r) }] : []) };
+      }
       env.fetched.push(u);
       if (fetchFails) throw new Error("red caída");
       const p = pageOf(u), s = sizeOf(u);
@@ -77,8 +92,12 @@ function setup({ total = 250, fetchFails = false, serverBody } = {}) {
   };
   const win = { XMLHttpRequest: FakeXHR };
   installInterceptor(win, deps);
-  return { win, env, seen, all };
+  const send = (msg) => env.listeners.forEach((fn) => fn({ source: "coto-unit", ...msg }));
+  if (settings) send({ type: "settings", ...settings });
+  return { win, env, seen, all, send };
 }
+
+const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function request(win, u, { type = "", useOnload = false } = {}) {
   return new Promise((resolve) => {
@@ -103,7 +122,9 @@ describe("installInterceptor", () => {
     expect(mine(body).status).toBe("");
     expect(urls(body.response.results)).toEqual(urls(s.all.slice(0, 24)));
     expect(s.env.fetched).toHaveLength(0);
-    expect(s.env.posts).toContainEqual(expect.objectContaining({ source: "coto-unit", type: "labels", active: false }));
+    const msg = s.env.posts.find((m) => m.type === "labels");
+    expect(msg.marks).toBeNull();
+    expect(Object.keys(msg.labels)).toHaveLength(24);
   });
 
   it("orden por unidad: pide todo, ordena y devuelve la página 1", async () => {
@@ -114,7 +135,8 @@ describe("installInterceptor", () => {
     expect(urls(body.response.results)).toEqual(Array.from({ length: 24 }, (_, i) => `p${249 - i}`));
     expect(body.response.total_num_results).toBe(250);
     expect(mine(body).status).toBe("selected");
-    const labels = s.env.posts.find((m) => m.type === "labels" && m.active);
+    const labels = s.env.posts.find((m) => m.type === "labels" && m.marks);
+    expect(labels.marks).toEqual({ p249: "kg" });
     expect(Object.keys(labels.labels)).toHaveLength(250);
   });
 
@@ -169,7 +191,7 @@ describe("Angular y zone.js", () => {
     const s = setup();
     await request(s.win, url("price"));
     await request(s.win, url("unit_price"));
-    const seqs = s.env.posts.map((m) => m.seq);
+    const seqs = s.env.posts.filter((m) => m.type === "labels").map((m) => m.seq);
     expect(seqs.every((n) => typeof n === "number")).toBe(true);
     expect(seqs[seqs.length - 1]).toBeGreaterThan(seqs[0]);
   });
@@ -203,5 +225,71 @@ describe("límites y errores", () => {
     const { body } = await request(s.win, API + "recommendations/popular-searches?x=1");
     expect(body).toEqual({ hola: 1 });
     expect(s.env.posts).toHaveLength(0);
+  });
+});
+
+describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
+  const icbc = { id: "457", bank: "ICBC", days: [1], percent: 30, cap: 20000, capWeekly: false, onlyNoOffer: false };
+  const offers = (sort) => `${API}offers/todas-las-ofertas?sort_by=${sort}&sort_order=ascending&page=1&num_results_per_page=24${Q}`;
+
+  it("la página de ofertas también ordena por unidad", async () => {
+    const s = setup();
+    const { body } = await request(s.win, offers("unit_price"));
+    expect(mine(body).status).toBe("selected");
+    expect(urls(body.response.results)[0]).toBe("p249");
+  });
+
+  it("carruseles: no toca la respuesta y publica etiquetas sin marcas", async () => {
+    const s = setup();
+    const u = `${API}recommendations/complementarios?item_id=x${Q}`;
+    const { x } = await request(s.win, u);
+    expect(x.responseText).toBe(JSON.stringify(apiBody(s.all.slice(0, 24), 250)));
+    await flush(); await flush();
+    const msg = s.env.posts.find((m) => m.type === "labels");
+    expect(Object.keys(msg.labels)).toHaveLength(24);
+    expect("marks" in msg).toBe(false);
+  });
+
+  it("al arrancar publica las promos bancarias", async () => {
+    const s = setup();
+    await flush();
+    const msg = s.env.posts.find((m) => m.type === "promos");
+    expect(msg.promos).toHaveLength(14);
+  });
+
+  it("con configuración de banco, las etiquetas traen el precio con banco", async () => {
+    const s = setup({ settings: { selected: [icbc], day: 1 } });
+    await request(s.win, url("unit_price"));
+    const msg = s.env.posts.find((m) => m.type === "labels" && m.marks);
+    expect(msg.labels.p249).toMatchObject({ bankName: "ICBC", bankValue: 700.7 });
+  });
+
+  it("sin configuración espera un rato y sigue sin banco", async () => {
+    const s = setup({ settingsWaitMs: 40 });
+    const t0 = Date.now();
+    await request(s.win, url("price"));
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(35);
+    const msg = s.env.posts.find((m) => m.type === "labels");
+    expect(msg.labels.p0.bankValue).toBeNull();
+  });
+
+  it("carrito: no lo toca y publica el análisis", async () => {
+    const s = setup({ settings: { selected: [icbc], day: 1 } });
+    const u = "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0&pushSite=CotoDigital";
+    const { x } = await request(s.win, u);
+    expect(x.responseText).toBe(JSON.stringify(CARRITO_BODY));
+    await flush(); await flush();
+    const msg = s.env.posts.find((m) => m.type === "cart");
+    expect(msg.analysis.total).toBeCloseTo(37453.81, 2);
+    expect(msg.analysis.today.refund).toBeCloseTo(11236.14, 2);
+    expect(s.env.searched).toHaveLength(6);
+  });
+
+  it("página de producto: busca por PLU y publica la etiqueta", async () => {
+    const s = setup();
+    s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
+    await flush(); await flush();
+    const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    expect(msg.labels["_/R-00299912-00299912-200"]).toMatchObject({ group: "kg", take: 3 });
   });
 });

@@ -15,7 +15,35 @@ const VOLATILE = ["page", "num_results_per_page", "i", "s"];
 const parse = (url) => new URL(String(url), BASE);
 
 export function isProductsUrl(url) {
-  return /\/products\/(categories|search)\//.test(String(url));
+  return /\/products\/(categories|search|offers)\//.test(String(url));
+}
+
+export function isRecommendationsUrl(url) {
+  return /\/products\/recommendations\//.test(String(url));
+}
+
+export function isCartUrl(url) {
+  return /cCarritoActor\/getCarrito/.test(String(url));
+}
+
+const DEFAULT_TEMPLATE =
+  "https://api.coto.com.ar/api/v1/ms-digital-sitio-bff-web/api/v1/products/search/x" +
+  "?key=key_r6xzz4IAoTWcipni&pre_filter_expression=%7B%22name%22:%22store_availability%22,%22value%22:%22200%22%7D" +
+  "&c=cio-fe-web-coto-4.6.0&us=200";
+
+// URL de búsqueda por PLU, copiando los parámetros del último pedido de productos visto.
+export function searchUrl(plu, template) {
+  const u = parse(template || DEFAULT_TEMPLATE);
+  u.pathname = u.pathname.replace(/\/products\/.*$/, `/products/search/${plu}`);
+  for (const k of ["page", "sort_by", "sort_order", "item_id"]) u.searchParams.delete(k);
+  u.searchParams.set("num_results_per_page", "24");
+  return u.toString();
+}
+
+// "prod00299912" o "_/R-00299912-00299912-200" → "299912".
+export function pluOf(text) {
+  const m = String(text ?? "").match(/(?:prod|R-)(\d+)/);
+  return m ? String(parseInt(m[1], 10)) : null;
 }
 
 export function isUnitSort(url) {
