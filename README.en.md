@@ -21,6 +21,12 @@
   <a href="CONTRIBUTING.md"><img alt="Contributions welcome" src="https://img.shields.io/badge/contributions-welcome-2a78d6"></a>
 </p>
 
+<p align="center">
+  <img alt="20-second video: Coto's page without and with Góndola. Sort by price per kilo, the cheapest tagged, one clear price per card, and the same product at other stores." src="docs/img/readme/gondola-demo.gif" width="100%">
+</p>
+
+<p align="center"><sub>Real captures of coto.com.ar. <a href="docs/img/readme/gondola-demo.mp4">Watch the MP4</a>.</sub></p>
+
 Góndola is a Chrome extension that upgrades your supermarket's website. It adds what the site lacks for buying cheap, without breaking what already works. It starts with [Coto Digital](https://www.coto.com.ar), the online store of a large Argentine supermarket chain. Carrefour, Día, Más and others come next, each as "Góndola for that store". *Góndola* is the Spanish word for a supermarket shelf.
 
 The extension has no servers. Everything runs in your browser.
@@ -41,6 +47,16 @@ The question: which of these products is really the best deal, with my card, tod
 | Own servers | None |
 | Tests | 325, with real responses from the Coto, Carrefour, Día and Más APIs |
 | Language of the UI | Spanish (Argentina) |
+
+## Before and after
+
+The same Coto page, without and with Góndola. Real captures from November 9, 2026, signed out. The images are in Spanish, like the extension.
+
+![Product card before and after, with a 2x1 deal](docs/img/readme/tarjeta.png)
+
+![Filled pasta grid before and after, sorted by price per kilo](docs/img/readme/orden.png)
+
+![Natura sunflower oil 1.5 L compared with Carrefour, Día and Más](docs/img/readme/comparar.png)
 
 ## What it adds
 

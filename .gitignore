@@ -3,3 +3,6 @@ dist/
 .superpowers/
 dist-dev/
 .impeccable/hook.cache.json
+
+# Capturas crudas del README (las arma scripts/capture-readme.mjs)
+docs/img/readme/raw*/

@@ -22,6 +22,7 @@
     "@resvg/resvg-js": "^2.6.2",
     "esbuild": "^0.28.2",
     "jsdom": "^31.0.0",
+    "playwright": "^1.65.0",
     "vitest": "^5.1.0"
   }
 }

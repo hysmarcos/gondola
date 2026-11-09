@@ -21,6 +21,12 @@
   <a href="CONTRIBUTING.md"><img alt="Colaboraciones bienvenidas" src="https://img.shields.io/badge/colaboraciones-bienvenidas-2a78d6"></a>
 </p>
 
+<p align="center">
+  <img alt="Video de 20 segundos: la página de Coto sin Góndola y con Góndola. Orden por precio por kilo, el más barato marcado, un precio claro en cada tarjeta y el mismo producto en otros súper." src="docs/img/readme/gondola-demo.gif" width="100%">
+</p>
+
+<p align="center"><sub>Capturas reales de coto.com.ar. <a href="docs/img/readme/gondola-demo.mp4">Ver el video en MP4</a>.</sub></p>
+
 Góndola es una extensión de Chrome que mejora la web de tu supermercado. Agrega lo que le falta para comprar barato, sin romper lo que ya funciona. Empieza por [Coto Digital](https://www.coto.com.ar). Después vienen Carrefour, Día, Más y otros, cada uno como "Góndola para ese súper".
 
 La extensión no tiene servidores. Todo pasa en tu navegador.
@@ -45,6 +51,7 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 
 | Si querés... | Leé |
 |---|---|
+| Ver el antes y el después | [Antes y después](#antes-y-después) |
 | Saber qué agrega | [Qué agrega](#2-qué-agrega) |
 | Saber cómo calcula el precio | [Cómo funciona](#3-cómo-funciona) |
 | Saber cuánto confiar en los números | [¿Se puede confiar?](#4-se-puede-confiar) |
@@ -52,6 +59,25 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 | Instalarla o cambiar el código | [Cómo está armado](#6-cómo-está-armado) y [Cómo ejecutar](#7-cómo-ejecutar) |
 | Reportar un error, proponer una idea o votar | [Colaborá](#8-colaborá) |
 | Entender un término | [Glosario](#glosario) |
+
+## Antes y después
+
+La misma página de Coto, sin Góndola y con Góndola. Son capturas reales del 9 de noviembre de 2026, sin sesión iniciada.
+
+**La tarjeta de cada producto.** Un precio grande con el original tachado, y el precio por kilo real, con la oferta.
+
+![Antes y después de la tarjeta de un producto con 2x1](docs/img/readme/tarjeta.png)
+
+**Ordenar por precio por kilo.** Una opción nueva en "Ordenar por" y el más barato de la categoría, marcado.
+
+![Antes y después de la grilla de pastas rellenas, ordenada por precio por kilo](docs/img/readme/orden.png)
+
+**El mismo producto en otros súper.** Una palabra dice si conviene. Al pasar el mouse, el precio y el link de cada súper.
+
+![Antes y después de la comparación del aceite Natura 1,5 L con Carrefour, Día y Más](docs/img/readme/comparar.png)
+
+> [!NOTE]
+> Los precios cambian todos los días. Estas imágenes muestran cómo se ve, no el precio de hoy.
 
 ## 1. El problema
 
@@ -172,6 +198,8 @@ npm test
 | `npm run icons` | Genera los PNG del ícono desde `assets/icon/icon.svg` |
 | `npm run fixtures` | Baja respuestas reales de la API de Coto a `tests/fixtures/` |
 | `npm run fixtures:vtex` | Baja respuestas reales de Carrefour, Día y Más a `tests/fixtures/` |
+| `node scripts/capture-readme.mjs` | Captura Coto sin y con Góndola para el README (abre Chrome: no toques la ventana) |
+| `node scripts/readme-media.mjs` | Arma las imágenes de antes y después en `docs/img/readme/` |
 | `node scripts/dev-server.mjs` | Servidor local en `http://127.0.0.1:8765` para las vistas previas |
 
 </details>
