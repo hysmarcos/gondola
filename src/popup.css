@@ -266,6 +266,20 @@ main {
   background: var(--surface-2);
 }
 
+/* Logo del banco: misma caja para todos, así los nombres quedan alineados. */
+.bank-logo {
+  flex: none;
+  width: 48px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.bank-logo--empty {
+  visibility: hidden;
+}
+
 .bank-name {
   flex: 1;
   min-width: 0;

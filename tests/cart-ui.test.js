@@ -344,3 +344,17 @@ describe("v5: comparar con otros súper en el carrito", () => {
     expect(order()).toEqual(["title", "coto-unit-cart-warn", "coto-unit-cmp"]);
   });
 });
+
+describe("v7: logos en el carrito", () => {
+  it("las líneas con banco llevan su logo", async () => {
+    const { doc, send } = setup("/carrito", "$48.355,92", { logoUrl: (n) => (n ? "https://x/" + n : null) });
+    send({ type: "settings", selected: [], day: 1 });
+    send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("456", "449"), 1, "200"), seq: 2 });
+    await tick();
+    const imgs = [...doc.querySelectorAll(".coto-unit-cart-box img.coto-unit-logo")];
+    expect(imgs.length).toBeGreaterThan(0);
+    expect(imgs[0].getAttribute("src")).toMatch(/^https:\/\/x\/logo_/);
+    expect(imgs[0].getAttribute("alt")).toBeTruthy();
+    expect(doc.querySelector(".coto-unit-cart-box").textContent).toContain("Total con promos de Coto");
+  });
+});

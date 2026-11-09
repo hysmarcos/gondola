@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validEan, compareFields, classify } from "../src/compare.js";
+import { labelsFor } from "../src/sort.js";
 
 const base = (extra = {}) => ({
   product_main_ean: "7790742348302",
@@ -38,6 +39,19 @@ describe("compareFields", () => {
     expect(compareFields(base({ product_main_ean: "" }), "200")).toEqual({ ean: null, cmp: null });
     expect(compareFields(base({ price: [] }), "200").cmp).toBeNull();
     expect(compareFields(null, "200")).toEqual({ ean: null, cmp: null });
+  });
+  it("Comunidad: usa el mismo precio que la tarjeta, con o sin el ajuste", () => {
+    const data = base({
+      sku_display_name: "Gaseosa X 2 L", product_format: "Litro", product_format_quantity: 1,
+      price: [{ store: "200", listPrice: 2225, formatPrice: 1112.5 }],
+      discounts: [{ discountText: "15%Dto", takingText: null, discountPrice: "$1891" }, { discountText: "+5%", takingText: null, discountPrice: "$1780" }],
+    });
+    expect(compareFields(data, "200").cmp).toEqual({ unit: 1780, qty: 1 });
+    expect(compareFields(data, "200", { comunidad: false }).cmp).toEqual({ unit: 1891, qty: 1 });
+    for (const opts of [{}, { comunidad: false }]) {
+      const label = labelsFor([{ data: { ...data, url: "_/R-1" } }], "200", [], 0, opts)["_/R-1"];
+      expect(label.cmp.unit).toBe(label.price);
+    }
   });
 });
 

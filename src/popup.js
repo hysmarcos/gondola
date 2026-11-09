@@ -12,9 +12,10 @@ const TABS = [
 ];
 
 const SETTINGS = [
+  { key: "comunidad", title: "Tengo Comunidad Coto", text: "Usa el precio Comunidad (+5%, +15%…) cuando el producto lo tiene." },
   { key: "autoPromo", title: "Completar promos 2x1, 3x2", text: "En un 2x1, al agregar 1 suma el gratis. En un 3x2, al llegar a 2 suma el tercero." },
   { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
-  { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato por kg\" en el producto que conviene de cada lista." },
+  { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato de la categoría\" en el producto que más conviene por kg, litro o unidad." },
   { key: "compareStores", title: "Comparar con otros súper", text: "Muestra el precio en Carrefour, Día y Más. ▼ ahí es más barato, = igual, ▲ más caro." },
 ];
 
@@ -63,7 +64,17 @@ function switchInput(doc, props) {
   return el(doc, "input", { type: "checkbox", className: "switch", ...props, attrs: { role: "switch", ...(props.attrs ?? {}) } });
 }
 
-function cardsView(doc, s, storage) {
+// Logo del banco (decorativo: el nombre va al lado). Si no carga, deja el lugar vacío.
+function bankLogo(doc, items, logoUrl) {
+  const src = logoUrl(items.find((p) => p.logo)?.logo);
+  if (!src) return el(doc, "span", { className: "bank-logo bank-logo--empty", attrs: { "aria-hidden": "true" } });
+  const img = el(doc, "img", { className: "bank-logo", attrs: { src, alt: "", loading: "lazy" } });
+  img.addEventListener("error", () => img.classList.add("bank-logo--empty"));
+  return img;
+}
+
+function cardsView(doc, s, storage, meta = {}) {
+  const logoUrl = meta.logoUrl ?? (() => null);
   const view = [];
   const promos = s.promos ?? [];
   if (!promos.length) {
@@ -114,7 +125,7 @@ function cardsView(doc, s, storage) {
       count.hidden = !n;
     };
     const details = el(doc, "details", { className: "bank", open: items.some((p) => selected.has(p.id)) }, [
-      el(doc, "summary", {}, [el(doc, "span", { className: "bank-name", textContent: bank }), count, icon(doc, ["M6 9l6 6l6-6"])]),
+      el(doc, "summary", {}, [bankLogo(doc, items, logoUrl), el(doc, "span", { className: "bank-name", textContent: bank }), count, icon(doc, ["M6 9l6 6l6-6"])]),
     ]);
     for (const p of items) {
       const box = switchInput(doc, { value: p.id, checked: selected.has(p.id) });
@@ -167,11 +178,11 @@ function helpView(doc, meta) {
   ];
 }
 
-const VIEWS = { tarjetas: cardsView, ajustes: settingsView, ayuda: (doc, s, st, meta) => helpView(doc, meta) };
+const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), ajustes: settingsView, ayuda: (doc, s, st, meta) => helpView(doc, meta) };
 
 // storage: misma interfaz que en bridge.js. meta: { version }.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "compareStores", "popupTab"]);
+  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "popupTab"]);
   let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
 
   const header = el(doc, "header", { className: "top" }, [

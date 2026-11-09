@@ -1,39 +1,255 @@
-/* Caja "Precio real para comparar": un solo dato destacado para comparar. */
-.coto-unit-box {
-  margin: 6px auto 4px;
-  padding: 6px 10px;
-  max-width: 220px;
-  border-radius: 8px;
-  background: #eef4fb;
-  text-align: left;
-  font-family: inherit;
-  line-height: 1.3;
+/* Paleta: azul para lo que agrega la extensión, verde para "más barato", rojo Coto para
+   ofertas. Números con cifras de ancho fijo para que no salten al cambiar. */
+
+/* ---------- Tarjetas de las listas: bloque unificado ---------- */
+
+/* La tarjeta pasa a columna y el botón queda abajo: todas las filas parejas. */
+.card-container[data-coto-unit-card] {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-.coto-unit-cap {
+.card-container[data-coto-unit-card] > .centro-precios {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-container[data-coto-unit-card] .bottom-botones {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* Partes de Coto que repetían lo que muestra el bloque. Siguen en la página. */
+[data-coto-unit-hide] {
+  display: none !important;
+}
+
+/* Nombre: hasta 3 líneas completas, con el mismo alto en todas las tarjetas. */
+.card-container[data-coto-unit-card] .nombre-producto {
+  display: -webkit-box !important;
+  height: calc(1.3em * 3);
+  margin-bottom: 4px;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.3;
+  white-space: normal !important;
+  text-overflow: clip !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical;
+}
+
+/* Cuerpo en filas fijas: precio, detalle y precio por unidad quedan a la misma altura
+   en todas las tarjetas, haya o no oferta. */
+.coto-unit-price {
+  display: grid;
+  grid-template-rows: 30px 18px 34px;
+  justify-items: center;
+  align-items: center;
+  row-gap: 4px;
+  width: 100%;
+  margin: 2px 0 8px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-pricerow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.coto-unit-final {
+  font-size: 22px;
+  font-weight: 500;
+  color: #212529;
+  letter-spacing: -0.01em;
+}
+
+/* Solo para lectores de pantalla. */
+.coto-unit-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.coto-unit-regular {
+  font-size: 13px;
+  color: #6b7177;
+}
+
+/* Detalle: cuándo vale el precio ("c/u llevando 2", "con Comunidad") y notas de medida. */
+.coto-unit-detail {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b01f17;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.coto-unit-detail[data-coto-unit-empty] {
+  visibility: hidden;
+}
+
+/* La fila del precio por unidad: el número para comparar y, con banco, cuál. */
+.coto-unit-unit {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: #eef4fb;
+}
+
+.coto-unit-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0c447c;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.coto-unit-why {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c447c;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Logo del banco dentro del motivo ("[ICBC] hoy") y en las líneas del carrito. */
+.coto-unit-why:has(.coto-unit-logo) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 4px;
+}
+
+.coto-unit-logo {
+  display: block;
+  height: 16px;
+  max-width: 56px;
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+.coto-unit-box--pdp .coto-unit-logo {
+  height: 20px;
+  max-width: 72px;
+}
+
+.coto-unit-line-bank {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coto-unit-line-bank .coto-unit-logo {
+  height: 18px;
+  max-width: 64px;
+  padding: 1px 3px;
+  background: #fff;
+}
+
+.coto-unit-note {
   font-size: 11px;
   color: #3b5f86;
 }
 
-.coto-unit-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #0c447c;
-  font-variant-numeric: tabular-nums;
+/* "Sin impuestos": una sola línea, chica, al pie del bloque. */
+.card-container[data-coto-unit-card] [data-coto-unit-dim] {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-/* Página de producto: a lo ancho, debajo del precio de Coto. */
+/* ---------- Etiquetas sobre la imagen (arriba a la izquierda) ---------- */
+
+.coto-unit-tags {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 140px;
+}
+
+.coto-unit-tags > div {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.coto-unit-best {
+  background: #1d7a35;
+  color: #fff;
+}
+
+.coto-unit-offer {
+  background: #ffc107;
+  color: #212529;
+}
+
+.coto-unit-tags .coto-unit-mark {
+  margin: 0;
+  background: #eceef0;
+  color: #444;
+}
+
+/* ---------- Página de producto y carrusel ---------- */
+
+.coto-unit-box {
+  margin: 6px auto 4px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #eef4fb;
+  text-align: left;
+  line-height: 1.3;
+}
+
+/* Dentro de la caja, la fila de unidad no lleva fondo propio. */
+.coto-unit-box .coto-unit-unit {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0;
+  background: none;
+}
+
+.coto-unit-cap {
+  font-size: 12px;
+  color: #3b5f86;
+}
+
 .coto-unit-box--pdp {
   display: inline-block;
   min-width: 220px;
   max-width: 100%;
   margin: 10px 0 12px;
   padding: 10px 14px;
-  border-radius: 10px;
-}
-
-.coto-unit-box--pdp .coto-unit-cap {
-  font-size: 12px;
 }
 
 .coto-unit-box--pdp .coto-unit-value {
@@ -41,27 +257,63 @@
   line-height: 1.2;
 }
 
-.coto-unit-box--pdp .coto-unit-note,
-.coto-unit-box--pdp .coto-unit-bankno {
+.coto-unit-box--pdp .coto-unit-why {
   font-size: 12px;
 }
 
-/* Carrusel: solo el número, chico. */
+.coto-unit-box--pdp .coto-unit-note,
+.coto-unit-box--pdp .coto-unit-bankno {
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.coto-unit-bankno {
+  font-size: 11px;
+  color: #6b6b6b;
+}
+
 .coto-unit-box--mini {
   margin: 2px 0 4px;
-  padding: 3px 8px;
-  max-width: none;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
   text-align: center;
+}
+
+.coto-unit-box--mini .coto-unit-unit {
+  justify-content: center;
+  gap: 2px 6px;
 }
 
 .coto-unit-box--mini .coto-unit-value {
   font-size: 14px;
 }
 
-.coto-unit-box--mini .coto-unit-bank {
-  margin-top: 1px;
+/* Líneas secundarias de Coto: siguen ahí, pero no compiten con el precio. */
+[data-coto-unit-dim],
+[data-coto-unit-dim] * {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: #6b7177 !important;
+}
+
+[data-coto-unit-strike] {
+  text-decoration: line-through;
+}
+
+.coto-unit-mark {
   font-size: 11px;
+  font-weight: 700;
+  color: #444;
+  text-transform: uppercase;
+}
+
+.coto-unit-notice {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fff4f4;
+  font-size: 13px;
+  color: #333;
 }
 
 /* Aviso breve de promos por cantidad, con el estilo de los botones de Coto. */
@@ -95,65 +347,6 @@
   .coto-unit-toast {
     transition-duration: 0ms;
   }
-}
-
-.coto-unit-note {
-  font-size: 11px;
-  color: #3b5f86;
-}
-
-.coto-unit-bank {
-  margin-top: 3px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #1d6b2e;
-}
-
-.coto-unit-bankno {
-  margin-top: 3px;
-  font-size: 11px;
-  color: #6b6b6b;
-}
-
-.coto-unit-best {
-  display: inline-block;
-  margin-bottom: 3px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: #e3f3e6;
-  color: #1d6b2e;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-/* Líneas secundarias de Coto: siguen ahí, pero no compiten con el precio. */
-[data-coto-unit-dim],
-[data-coto-unit-dim] * {
-  font-size: 11px !important;
-  font-weight: 400 !important;
-  color: #8a8a8a !important;
-}
-
-[data-coto-unit-strike] {
-  text-decoration: line-through;
-}
-
-.coto-unit-mark {
-  margin: 4px 0 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.coto-unit-notice {
-  margin: 8px 0;
-  padding: 6px 10px;
-  border-left: 3px solid #e30613;
-  background: #fff4f4;
-  font-size: 13px;
-  color: #333;
 }
 
 .coto-unit-cart-warn {
@@ -235,6 +428,16 @@
 .coto-unit-cmp-row--pending,
 .coto-unit-cmp-best--pending {
   color: #5F5E5A;
+}
+
+/* En la tarjeta unificada va como última fila del bloque de precio, a lo ancho. El alto
+   alcanza para 3 súper y una línea "llevando N": las tarjetas con comparación quedan parejas. */
+.coto-unit-price > .coto-unit-cmp {
+  justify-self: stretch;
+  align-self: start;
+  min-height: calc(4 * 1.35em + 5px);
+  margin-top: 2px;
+  text-align: left;
 }
 
 .coto-unit-box--pdp .coto-unit-cmp {

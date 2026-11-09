@@ -9,14 +9,16 @@ export function validEan(value) {
 }
 
 // { ean, cmp }: cmp es el precio final de Coto y las unidades que hay que llevar.
+// Es el mismo precio de un paquete que muestra la tarjeta (label.price, sin banco).
+// opts: los mismos de unitPrice ({ comunidad: false } deja afuera Comunidad).
 // Sin cmp si no hay EAN, si el producto es pesable o si no hay precio.
-export function compareFields(data, store) {
+export function compareFields(data, store, opts = {}) {
   const ean = validEan(data?.product_main_ean);
   const weighable = Number(data?.product_weighable) === 1 || data?.product_unit_of_measure === "KGS";
   if (!ean || weighable) return { ean, cmp: null };
-  const unit = finalPrice(data, store);
+  const unit = finalPrice(data, store, opts);
   if (unit === null) return { ean, cmp: null };
-  return { ean, cmp: { unit, qty: takeQty(data, store) } };
+  return { ean, cmp: { unit, qty: takeQty(data, store, opts) } };
 }
 
 // Compara el precio unitario de Coto con el de otro súper; tolerancia de 1%.

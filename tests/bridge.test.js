@@ -67,7 +67,7 @@ describe("installBridge", () => {
     const win = fakeWin();
     installBridge(win, st, () => 0);
     await tick();
-    expect(win.posted.find((m) => m.type === "settings")).toMatchObject({ autoPromo: false, notifyPromo: true, markBest: true });
+    expect(win.posted.find((m) => m.type === "settings")).toMatchObject({ autoPromo: false, notifyPromo: true, markBest: true, comunidad: true });
     await st.set({ markBest: false });
     await tick();
     expect(win.posted.filter((m) => m.type === "settings").at(-1).markBest).toBe(false);
@@ -165,6 +165,7 @@ describe("popup", () => {
     const auto = document.querySelector('input[name="autoPromo"]');
     expect(auto.checked).toBe(true);
     expect(document.querySelector('input[name="markBest"]').checked).toBe(false);
+    expect(document.querySelector('input[name="comunidad"]').checked).toBe(true);
     auto.checked = false;
     await change(auto);
     expect(st.data.autoPromo).toBe(false);
@@ -181,6 +182,15 @@ describe("popup", () => {
     expect(st.data.compareStores).toBe(false);
     await open(st);
     expect(document.querySelector('input[name="compareStores"]').checked).toBe(false);
+  });
+
+  it("cada banco lleva su logo", async () => {
+    document.body.innerHTML = "";
+    const promos = PROMOS.map((p) => ({ ...p, logo: p.logo ?? "logo_icbc_1.png" }));
+    await renderPopup(document, fakeStorage({ promos }), { version: "1", logoUrl: (n) => "https://x/" + n });
+    const img = document.querySelector("details.bank summary img.bank-logo");
+    expect(img.getAttribute("src")).toMatch(/^https:\/\/x\//);
+    expect(img.getAttribute("alt")).toBe("");
   });
 
   it("ayuda dice que no es de Coto y la versión", async () => {

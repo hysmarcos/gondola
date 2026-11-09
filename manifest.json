@@ -1,31 +1,55 @@
 {
   "manifest_version": 3,
   "name": "Coto precio por unidad",
-  "version": "0.5.0",
+  "version": "0.8.0",
   "description": "Ordena Coto Digital por precio final por kg, litro o unidad, con tu banco y el total real del carrito, y lo compara con Carrefour, Día y Más.",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "https://www.carrefour.com.ar/*",
     "https://diaonline.supermercadosdia.com.ar/*",
     "https://www.masonline.com.ar/*"
   ],
-  "background": { "service_worker": "dist/background.js" },
+  "background": {
+    "service_worker": "dist/background.js"
+  },
   "action": {
     "default_title": "Coto precio por unidad",
     "default_popup": "popup.html"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.coto.com.ar/*"],
-      "js": ["dist/interceptor.js"],
+      "matches": [
+        "https://www.coto.com.ar/*"
+      ],
+      "js": [
+        "dist/interceptor.js"
+      ],
       "world": "MAIN",
       "run_at": "document_start"
     },
     {
-      "matches": ["https://www.coto.com.ar/*"],
-      "js": ["dist/badge.js"],
-      "css": ["src/badge.css"],
+      "matches": [
+        "https://www.coto.com.ar/*"
+      ],
+      "js": [
+        "dist/badge.js"
+      ],
+      "css": [
+        "src/badge.css"
+      ],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/banks/*"
+      ],
+      "matches": [
+        "https://www.coto.com.ar/*"
+      ]
     }
   ]
 }

@@ -24,21 +24,46 @@ export function normName(text) {
     .trim();
 }
 
+// Líneas de la caja: { text, promo } (promo: la del banco, para su logo).
 function boxLines(a, day, today) {
-  const out = [`Total con promos de Coto: ${$(a.total)}`];
+  const out = [{ text: `Total con promos de Coto: ${$(a.total)}` }];
   if (a.today) {
     const when = day === today ? "Hoy" : dayName(day);
-    out.push(`${when} con ${a.today.promo.bank}: ${$(a.today.total)} (reintegro ${$(a.today.refund)})`);
+    out.push({ text: `${when} con ${a.today.promo.bank}: ${$(a.today.total)} (reintegro ${$(a.today.refund)})`, promo: a.today.promo });
   }
   if (a.best && a.best.day !== day) {
-    out.push(`Mejor día: ${dayName(a.best.day).toLowerCase()} con ${a.best.promo.bank}, ${$(a.best.total)}`);
+    out.push({ text: `Mejor día: ${dayName(a.best.day).toLowerCase()} con ${a.best.promo.bank}, ${$(a.best.total)}`, promo: a.best.promo });
   }
-  for (const bank of a.weeklyCapBanks ?? []) out.push(`El tope de ${bank} es semanal.`);
+  for (const bank of a.weeklyCapBanks ?? []) out.push({ text: `El tope de ${bank} es semanal.` });
   return out;
 }
 
-// compare: cliente de compare-client.js; sin él no se compara con otros súper.
-export function installCartUi(win, doc, { compare } = {}) {
+// Firma de las líneas: si no cambió, la caja no se reescribe (el observador volvería a llamar).
+const sigOf = (lines) => lines.map((l) => l.text + "|" + (l.promo?.logo ?? "")).join("\n");
+
+// deps.logoUrl(icono) → URL del logo del banco, o null.
+// deps.compare: cliente de compare-client.js; sin él no se compara con otros súper.
+export function installCartUi(win, doc, deps = {}) {
+  const logoUrl = deps.logoUrl ?? (() => null);
+  const compare = deps.compare ?? null;
+
+  // Una línea de caja: logo del banco (si hay) y el texto.
+  function lineNode({ text, promo }) {
+    const div = doc.createElement("div");
+    const src = promo ? logoUrl(promo.logo) : null;
+    if (!src) {
+      div.textContent = text;
+      return div;
+    }
+    div.className = "coto-unit-line-bank";
+    const img = doc.createElement("img");
+    img.className = "coto-unit-logo";
+    img.setAttribute("src", src);
+    img.setAttribute("alt", promo.bank);
+    div.append(img, doc.createTextNode(text));
+    return div;
+  }
+
   const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true };
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
   let scheduled = false;
@@ -106,7 +131,7 @@ export function installCartUi(win, doc, { compare } = {}) {
     let box = doc.querySelector("." + BOX);
     if (!total) return box?.remove();
     const lines = boxLines(a, state.day, new Date().getDay());
-    const text = lines.join("\n");
+    const text = sigOf(lines);
     if (box && box.dataset.text === text) return;
     if (!box) {
       box = doc.createElement("div");
@@ -114,7 +139,7 @@ export function installCartUi(win, doc, { compare } = {}) {
       total.after(box);
     }
     box.dataset.text = text;
-    box.replaceChildren(...lines.map((t) => Object.assign(doc.createElement("div"), { textContent: t })));
+    box.replaceChildren(...lines.map(lineNode));
   }
 
   // Si el total de la página no coincide con el carrito que leímos (cambió una cantidad
@@ -166,9 +191,12 @@ export function installCartUi(win, doc, { compare } = {}) {
     const totalEl = menu.querySelector(".total-precio");
     let box = menu.querySelector(".coto-unit-mini-total");
     if (!ok || !totalEl) return box?.remove();
-    const lines = [`Con promos: ${$(a.total)}`];
-    if (a.today) lines.push(`${state.day === new Date().getDay() ? "Hoy" : dayName(state.day)} con ${a.today.promo.bank}: ${$(a.today.total)}`);
-    const text = lines.join("\n");
+    const lines = [{ text: `Con promos: ${$(a.total)}` }];
+    if (a.today) {
+      const when = state.day === new Date().getDay() ? "Hoy" : dayName(state.day);
+      lines.push({ text: `${when} con ${a.today.promo.bank}: ${$(a.today.total)}`, promo: a.today.promo });
+    }
+    const text = sigOf(lines);
     if (box && box.dataset.text === text) return;
     if (!box) {
       box = doc.createElement("div");
@@ -176,7 +204,7 @@ export function installCartUi(win, doc, { compare } = {}) {
       totalEl.after(box);
     }
     box.dataset.text = text;
-    box.replaceChildren(...lines.map((t) => Object.assign(doc.createElement("div"), { textContent: t })));
+    box.replaceChildren(...lines.map(lineNode));
   }
 
   function checkMini() {
