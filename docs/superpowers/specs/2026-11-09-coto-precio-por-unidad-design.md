@@ -81,8 +81,10 @@ Funciones puras, sin acceso al DOM ni a la red.
   La comparación de texto ignora mayúsculas, acentos y espacios.
 - `finalPrice(data, store)` → el número más bajo entre:
   `listPrice` de la sucursal, cada `discounts[].discountPrice` y cada
-  `discounts_payment_methods[].precioCuota`. Los textos tipo
-  `"$2588.72"` se pasan a número. Si un valor no se puede leer, se
+  `discounts_payment_methods[].precioCuota` **solo cuando
+  `cantidadCuotas` es 1** (con más cuotas, `precioCuota` es el valor de
+  una cuota, no el total). Los textos tipo `"$2588.72"` o
+  `"$2.588,72"` se pasan a número. Si un valor no se puede leer, se
   ignora.
 - `unitPrice(data, store)` → `{ group, value, drained }`, donde
   `value = finalPrice × (formatPrice ÷ listPrice) × factor`.
