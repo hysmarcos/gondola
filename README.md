@@ -15,7 +15,7 @@
   <a href="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest_V3-2a78d6?logo=googlechrome&logoColor=white">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-2a78d6?logo=node.js&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-325-2a78d6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-328-2a78d6">
   <a href="https://hysmarcos.github.io/gondola/privacidad.html"><img alt="Sin servidores" src="https://img.shields.io/badge/servidores-0-2a78d6"></a>
   <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-2a78d6">
   <a href="CONTRIBUTING.md"><img alt="Colaboraciones bienvenidas" src="https://img.shields.io/badge/colaboraciones-bienvenidas-2a78d6"></a>
@@ -45,7 +45,7 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 | Precio por unidad | Kilo, litro, unidad o 10 metros (papel higiénico y rollos) |
 | Datos personales enviados | Ninguno. Los ajustes quedan en tu navegador. |
 | Servidores propios | Ninguno |
-| Tests | 325, con respuestas reales de las APIs de Coto, Carrefour, Día y Más |
+| Tests | 328, con respuestas reales de las APIs de Coto, Carrefour, Día y Más |
 
 ## Qué vas a encontrar
 
@@ -138,7 +138,7 @@ Estas pruebas buscan dónde falla la extensión:
 
 | | Prueba | Pregunta | Resultado |
 |:---:|---|---|---|
-| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 325 tests con respuestas guardadas de Coto, Carrefour, Día y Más |
+| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 328 tests con respuestas guardadas de Coto, Carrefour, Día y Más |
 | ✅ | Coto sigue funcionando | ¿Agregar, cantidades y carrito andan igual? | Sí. La extensión agrega elementos y oculta partes con un atributo. No borra nada de Coto. |
 | ✅ | Promos bancarias | ¿Muestra un descuento que Coto no aplica? | No. Respeta los días, los topes y las exclusiones de la API de Coto. |
 | ⚠️ | Otros súper | ¿El precio es el de tu sucursal? | No siempre. Usa la zona por defecto de cada web y no incluye descuentos bancarios. |
@@ -195,6 +195,7 @@ npm test
 
 | Comando | Qué hace |
 |---|---|
+| `npm run package` | Arma el ZIP para la Chrome Web Store en `release/`. Guía: [docs/chrome-web-store.md](docs/chrome-web-store.md) |
 | `npm run icons` | Genera los PNG del ícono desde `assets/icon/icon.svg` |
 | `npm run fixtures` | Baja respuestas reales de la API de Coto a `tests/fixtures/` |
 | `npm run fixtures:vtex` | Baja respuestas reales de Carrefour, Día y Más a `tests/fixtures/` |
@@ -230,7 +231,7 @@ Toda persona que aporta código, reporta un error o propone una idea que se hace
 
 ## Próximos pasos
 
-1. Publicar en la Chrome Web Store.
+1. Publicar en la Chrome Web Store. El paquete, los textos y las imágenes están listos: [docs/chrome-web-store.md](docs/chrome-web-store.md).
 2. Sumar más súper como sitio principal: Góndola para Carrefour, para Día y para Más.
 3. Comparar con la sucursal elegida en cada súper, no con la zona por defecto.
 

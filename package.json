@@ -15,12 +15,14 @@
     "build": "node build.mjs",
     "fixtures": "node scripts/capture-fixtures.mjs",
     "fixtures:vtex": "node scripts/capture-vtex-fixtures.mjs",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs",
+    "package": "npm run build && node scripts/package.mjs"
   },
   "devDependencies": {
     "@fontsource/poppins": "^5.2.7",
     "@resvg/resvg-js": "^2.6.2",
     "esbuild": "^0.28.2",
+    "fflate": "^0.8.3",
     "jsdom": "^31.0.0",
     "playwright": "^1.65.0",
     "vitest": "^5.1.0"

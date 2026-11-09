@@ -30,6 +30,16 @@ jobs:
       # El build arma dist/. Si falla, la extensión no carga.
       - run: npm run build
 
+      # El ZIP de la Chrome Web Store: falla si falta un archivo que pide el manifest.
+      - run: node scripts/package.mjs
+
+      - name: Subir el ZIP de la extensión
+        uses: actions/upload-artifact@v7
+        with:
+          name: gondola-zip
+          path: release/*.zip
+          retention-days: 30
+
       # Solo en main: el sitio con la política de privacidad.
       - name: Subir artefacto de Pages
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

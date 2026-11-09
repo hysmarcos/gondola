@@ -6,3 +6,6 @@ dist-dev/
 
 # Capturas crudas del README (las arma scripts/capture-readme.mjs)
 docs/img/readme/raw*/
+
+# ZIP para la Chrome Web Store (npm run package)
+release/
