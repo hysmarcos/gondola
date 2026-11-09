@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseMoney } from "../src/money.js";
-import { normalizeUnit, pickStorePrice, finalPrice, unitPrice } from "../src/unit-price.js";
+import { normalizeUnit, pickStorePrice, finalPrice, unitPrice, takeQty, isOnSale } from "../src/unit-price.js";
 import { PASTAS, MIXTA } from "./fixtures/coto.js";
 
 describe("parseMoney", () => {
@@ -57,7 +57,7 @@ describe("precios", () => {
   });
 
   it("calcula el precio por unidad", () => {
-    expect(unitPrice(p, "200")).toEqual({ group: "kg", value: 5000, drained: false });
+    expect(unitPrice(p, "200")).toEqual({ group: "kg", value: 5000, drained: false, take: 1, bankValue: null, bankName: null });
     const zero = { ...p, price: [{ store: "200", listPrice: 0, formatPrice: 0 }] };
     expect(unitPrice(zero, "200").group).toBe("sin_dato");
   });
@@ -66,6 +66,28 @@ describe("precios", () => {
     for (const r of PASTAS) expect(unitPrice(r.data, "200").group).toBe("kg");
     const rav = PASTAS.find((r) => r.data.sku_display_name.startsWith("Ravioles Jamón y queso")).data;
     expect(unitPrice(rav, "200").value).toBeCloseTo(2 * finalPrice(rav, "200"), 2);
+  });
+
+  it("promos por cantidad y banco", () => {
+    const leche = {
+      product_format: "Litro", product_format_quantity: 1,
+      price: [{ store: "200", listPrice: 2499, formatPrice: 2499 }],
+      discounts: [{ discountText: "3x2", takingText: "Llevando 3", discountPrice: "$1666.08" }],
+      discounts_payment_methods: [{ precioCuota: "$1666.08", cantidadCuotas: "1" }],
+    };
+    expect(takeQty(leche, "200")).toBe(3);
+    expect(isOnSale(leche)).toBe(true);
+    const listerine = { ...leche, discounts: [{ discountText: "35%Dto", takingText: null, discountPrice: "$6330.99" }] };
+    expect(takeQty(listerine, "200")).toBe(1);
+    // Si la oferta "llevando N" no es la más barata, no se exige llevar N.
+    const pago = { ...leche, discounts_payment_methods: [{ precioCuota: "$1500", cantidadCuotas: "1" }] };
+    expect(takeQty(pago, "200")).toBe(1);
+
+    const icbc = { id: "457", bank: "ICBC", days: [1], percent: 30, cap: 20000, capWeekly: false, onlyNoOffer: false };
+    const sinOferta = { ...leche, discounts: [], discounts_payment_methods: [] };
+    expect(unitPrice(sinOferta, "200", [icbc], 1)).toMatchObject({ value: 2499, bankValue: 1749.3, bankName: "ICBC" });
+    expect(unitPrice(sinOferta, "200", [icbc], 2).bankValue).toBeNull();
+    expect(unitPrice(leche, "200", [icbc], 1)).toMatchObject({ take: 3, bankValue: 1166.26 });
   });
 
   it("datos reales: 12 cuotas no cuentan como precio final", () => {

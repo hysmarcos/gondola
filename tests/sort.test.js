@@ -23,11 +23,21 @@ describe("sortByUnitPrice", () => {
   });
 
   it("marca el inicio de cada grupo y no etiqueta sin_dato", () => {
-    const { labels } = sortByUnitPrice(input, "200");
-    const starts = Object.entries(labels).filter(([, l]) => l.groupStart).map(([k]) => k);
-    expect(starts).toEqual(["L1", "kg1", "u1"]);
+    const { labels, marks } = sortByUnitPrice(input, "200");
+    expect(marks).toEqual({ L1: "L", kg1: "kg", u1: "unidad" });
     expect(labels.X).toBeUndefined();
-    expect(labels.L2).toEqual({ group: "L", value: 200, drained: false, groupStart: false });
+    expect(labels.L2).toEqual({ group: "L", value: 200, drained: false, take: 1, bankValue: null, bankName: null });
+  });
+
+  it("ordena por el precio con banco cuando hay promo", () => {
+    // A es más barato de lista pero está en oferta; la promo solo vale sin oferta.
+    const a = row(["A", "A", "Kilo", 1, 100, 1000, "$95", null, null]);
+    const b = item("B", "Kilo", 1010);
+    const ciudad = { id: "440", bank: "Ciudad", days: [1], percent: 25, cap: 30000, capWeekly: false, onlyNoOffer: true };
+    const { results, labels } = sortByUnitPrice([a, b], "200", [ciudad], 1);
+    expect(results.map((r) => r.data.url)).toEqual(["B", "A"]);
+    expect(labels.A.bankValue).toBeNull();
+    expect(labels.B).toMatchObject({ bankValue: 757.5, bankName: "Ciudad" });
   });
 
   it("si kg y L empatan, kg va primero", () => {

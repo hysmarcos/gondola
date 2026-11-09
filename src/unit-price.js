@@ -1,4 +1,5 @@
 import { parseMoney } from "./money.js";
+import { bestPromo } from "./banks.js";
 
 const SIN_DATO = { group: "sin_dato", factor: 1, drained: false };
 
@@ -45,13 +46,39 @@ export function finalPrice(data, store) {
   return valid.length ? Math.min(...valid) : null;
 }
 
-export function unitPrice(data, store) {
+export function isOnSale(data) {
+  return (data?.discounts ?? []).length > 0;
+}
+
+// Unidades que hay que llevar para pagar el precio final ("Llevando 3" → 3).
+export function takeQty(data, store) {
+  const price = finalPrice(data, store);
+  for (const d of data?.discounts ?? []) {
+    const n = String(d.takingText ?? "").match(/Llevando\s+(\d+)/i);
+    const p = parseMoney(d.discountPrice);
+    if (n && p !== null && price !== null && Math.abs(p - price) < 0.01) return Number(n[1]);
+  }
+  return 1;
+}
+
+const round2 = (n) => Math.round(n * 100) / 100;
+
+// promos: las promos bancarias elegidas; day: 0 = domingo.
+export function unitPrice(data, store, promos = [], day = 0) {
   const unit = normalizeUnit(data?.product_format, data?.product_format_quantity);
   const base = pickStorePrice(data, store);
   const price = finalPrice(data, store);
   if (unit.group === "sin_dato" || !base?.listPrice || !base?.formatPrice || !price) {
-    return { group: "sin_dato", value: null, drained: false };
+    return { group: "sin_dato", value: null, drained: false, take: 1, bankValue: null, bankName: null };
   }
-  const value = price * (base.formatPrice / base.listPrice) * unit.factor;
-  return { group: unit.group, value: Math.round(value * 100) / 100, drained: unit.drained };
+  const value = round2(price * (base.formatPrice / base.listPrice) * unit.factor);
+  const promo = bestPromo(promos, day, isOnSale(data));
+  return {
+    group: unit.group,
+    value,
+    drained: unit.drained,
+    take: takeQty(data, store),
+    bankValue: promo ? round2(value * (1 - promo.percent / 100)) : null,
+    bankName: promo ? promo.bank : null,
+  };
 }
