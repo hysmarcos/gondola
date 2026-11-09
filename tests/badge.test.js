@@ -170,3 +170,72 @@ describe("revisión final: tarjeta", () => {
     expect(doc.querySelector(".coto-unit-best")).toBeNull();
   });
 });
+
+describe("v4: página de producto real", () => {
+  const key = "_/R-00621756-00621756-200";
+  const pdp = `<div class="mt-4">
+      <div class="mb-1"></div>
+      <div class="ng-star-inserted"><div class="badge">Oferta</div><div>30%Dto</div>
+        <div class="mb-1"><var class="price h3"> $3.498,59 </var></div><span>No acumulable con otras promos</span></div>
+      <div class="mt-2 small">Precio regular: <span>$5.099,99</span></div>
+      <div class="mb-2">Precio sin impuestos nacionales: $4.214,87</div>
+      <div class="mb-5 small">Precio por 1 Cuadrado : $159,38</div>
+    </div>`;
+
+  it("la caja va a lo ancho debajo del bloque de precio y atenúa lo secundario", async () => {
+    const { doc, send } = setup(pdp, `/productos/papel/${key}`);
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m", note: "≈ ancho 10 cm" }) } });
+    await tick();
+    const box = doc.querySelector(".coto-unit-box");
+    expect(box.parentElement.className).toBe("mt-4");
+    expect(box.previousElementSibling.querySelector(".price")).not.toBeNull();
+    expect(box.classList.contains("coto-unit-box--pdp")).toBe(true);
+    const regular = doc.querySelector(".mt-2.small");
+    expect(regular.hasAttribute("data-coto-unit-dim")).toBe(true);
+    expect(regular.hasAttribute("data-coto-unit-strike")).toBe(true);
+    expect(doc.querySelector(".mb-5").hasAttribute("data-coto-unit-dim")).toBe(true);
+    expect(doc.querySelector(".mb-2").hasAttribute("data-coto-unit-dim")).toBe(true);
+  });
+
+  it("sin oferta no tacha el precio regular", async () => {
+    const plain = pdp.replace('<div class="badge">Oferta</div><div>30%Dto</div>', "");
+    const { doc, send } = setup(plain, `/productos/papel/${key}`);
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m" }) } });
+    await tick();
+    expect(doc.querySelector(".mt-2.small").hasAttribute("data-coto-unit-strike")).toBe(false);
+  });
+});
+
+describe("v4: carrusel de recomendaciones", () => {
+  const mini = (id) => `<div class="swiper-slide"><mini-product-card><div class="mini-product-card" data-cnstrc-item-id="${id}">
+      <div class="mini-product-card__body"><p class="mini-product-card__name">Felpita</p>
+        <div class="mini-product-card__price-section"><span class="mini-product-card__price"> $13.640,00 </span></div>
+        <p class="mini-product-card__unit">1 UNI</p>
+        <small class="mini-product-card__reference-price"> Precio por 1 Cuadrado: $189,45 </small>
+        <product-add-show-remove><button>Agregar</button></product-add-show-remove></div></div></mini-product-card></div>`;
+
+  it("pone una caja compacta en cada tarjeta, también en las duplicadas", async () => {
+    const { doc, send } = setup(mini("prod00632358") + mini("prod00632358") + mini("prod00000001"));
+    send({ type: "labels", labels: { prod00632358: L(189.44, { group: "rollo10m" }) } });
+    await tick();
+    const boxes = doc.querySelectorAll(".coto-unit-box--mini");
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0].previousElementSibling.className).toBe("mini-product-card__price-section");
+    expect(boxes[0].querySelector(".coto-unit-value").textContent).toBe("$189 /10 m");
+    expect(boxes[0].querySelector(".coto-unit-cap")).toBeNull();
+    expect(doc.querySelector(".mini-product-card__reference-price").hasAttribute("data-coto-unit-dim")).toBe(true);
+  });
+});
+
+describe("v4: ajuste 'marcar el más barato'", () => {
+  it("apagado, no pone el cartel", async () => {
+    const { doc, send } = setup(offerCard(K(1)) + offerCard(K(2)) + offerCard(K(3)));
+    send({ type: "settings", selected: [], day: 1, markBest: false });
+    send({ type: "labels", labels: { [K(1)]: L(10), [K(2)]: L(20), [K(3)]: L(30) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-best")).toBeNull();
+    send({ type: "settings", selected: [], day: 1, markBest: true });
+    await tick();
+    expect(doc.querySelector(".coto-unit-best")).not.toBeNull();
+  });
+});
