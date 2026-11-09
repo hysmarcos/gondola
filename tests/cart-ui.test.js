@@ -90,3 +90,61 @@ describe("fix: total de Coto distinto", () => {
     expect(doc.querySelector(".coto-unit-cart-box, .coto-unit-cart-warn")).toBeNull();
   });
 });
+
+describe("mini-carrito", () => {
+  const mini = (total) => `
+    <cart-float><ul class="dropdown-menu dropdown-carrito show"><div class="productos-carrito">
+      <card-product-float><li><a class="producto-carrito"><div class="info-producto">
+        <p class="titulo-producto text-truncate"> Jabón De Tocador DOVE Karité Y Vainilla 90 G </p>
+        <p class="precio"><span class="precio-final">$8.216,97</span></p></div></a></li></card-product-float>
+      <card-product-float><li><a class="producto-carrito"><div class="info-producto">
+        <p class="titulo-producto text-truncate"> Bolsa Residuo Grande 60x90 Flowi 10u </p>
+        <p class="precio"><span class="precio-final">$4.599,98</span></p></div></a></li></card-product-float>
+    </div><div class="precio-carrito"><div class="total-precio"><h4 class="roar-total">${total}</h4></div></div></ul></cart-float>`;
+
+  function setupMini(total = "$48.355,92", path = "/productos/x") {
+    const win = new EventTarget();
+    win.location = { pathname: path };
+    win.posted = [];
+    win.postMessage = (m) => win.posted.push(m);
+    win.MutationObserver = window.MutationObserver;
+    const doc = document.implementation.createHTMLDocument("mini");
+    doc.body.innerHTML = `<header></header>`;
+    installCartUi(win, doc);
+    const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
+    const open = () => { doc.querySelector("header").innerHTML = mini(total); };
+    return { win, doc, send, open };
+  }
+
+  it("al abrirse pide el análisis", async () => {
+    const { win, open } = setupMini();
+    open();
+    await tick();
+    expect(win.posted).toContainEqual({ source: "coto-unit", type: "cartRequest" });
+  });
+
+  it("muestra precio con promo por línea y totales", async () => {
+    const { doc, send, open } = setupMini();
+    open();
+    send({ type: "settings", selected: [], day: 1 });
+    send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("457"), 1, "200"), seq: 1 });
+    await tick();
+    const lines = doc.querySelectorAll(".coto-unit-mini-line");
+    expect(lines).toHaveLength(1);
+    expect(lines[0].textContent).toBe("$5.478 con promo");
+    expect(lines[0].closest("card-product-float").textContent).toContain("DOVE");
+    expect(doc.querySelector('.precio-final[data-coto-unit-strike]').textContent).toBe("$8.216,97");
+    const total = doc.querySelector(".coto-unit-mini-total");
+    expect(total.previousElementSibling.className).toBe("total-precio");
+    const when = new Date().getDay() === 1 ? "Hoy" : "Lunes";
+    expect([...total.children].map((e) => e.textContent)).toEqual(["Con promos: $37.454", `${when} con ICBC: $31.899`]);
+  });
+
+  it("si el total no coincide, no muestra nada", async () => {
+    const { doc, send, open } = setupMini("$50.000,00");
+    open();
+    send({ type: "cart", analysis: analyzeCart(CART_LINES, [], 1, "200"), seq: 1 });
+    await tick();
+    expect(doc.querySelector(".coto-unit-mini-line, .coto-unit-mini-total")).toBeNull();
+  });
+});

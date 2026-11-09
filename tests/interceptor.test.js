@@ -333,3 +333,25 @@ describe("fix: revisión final", () => {
     expect(max).toBeLessThanOrEqual(4);
   });
 });
+
+describe("v3: mini-carrito", () => {
+  const CART_URL = "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0&pushSite=CotoDigital";
+
+  it("cartRequest analiza el carrito guardado aunque no estés en /carrito", async () => {
+    const s = setup({ settings: { selected: [], day: 1 } });
+    s.win.location = { pathname: "/productos/x" };
+    await request(s.win, CART_URL);
+    await flush();
+    expect(s.env.posts.find((m) => m.type === "cart")).toBeUndefined();
+    s.send({ type: "cartRequest" });
+    for (let i = 0; i < 4; i++) await flush();
+    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.81, 2);
+  });
+
+  it("sin carrito guardado: no hace nada", async () => {
+    const s = setup({ settings: { selected: [], day: 1 } });
+    s.send({ type: "cartRequest" });
+    await flush(); await flush();
+    expect(s.env.posts.find((m) => m.type === "cart")).toBeUndefined();
+  });
+});

@@ -32,7 +32,7 @@ function boxLines(a, day, today) {
 }
 
 export function installCartUi(win, doc) {
-  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null };
+  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false };
   const onCart = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
   function renderWarnings(a) {
@@ -90,8 +90,59 @@ export function installCartUi(win, doc) {
     if (onCart()) win.postMessage?.({ source: SOURCE, type: "cartRequest" }, "*");
   }
 
+  // Mini-carrito (desplegable del ícono): precio con promo por línea y totales.
+  function renderMini(a) {
+    const menu = doc.querySelector(".dropdown-carrito");
+    if (!menu) return;
+    const shownTotal = parseMoney(menu.querySelector(".roar-total")?.textContent ?? null);
+    const ok = shownTotal === null || Math.abs(shownTotal - a.listTotal) <= 1;
+    const byName = new Map(a.lines.map((l) => [normName(l.name), l]));
+    for (const item of menu.querySelectorAll("card-product-float")) {
+      const line = byName.get(normName(item.querySelector(".titulo-producto")?.textContent));
+      const precio = item.querySelector("p.precio");
+      const coto = precio?.querySelector(".precio-final");
+      let el = item.querySelector(".coto-unit-mini-line");
+      const cheaper = ok && line && line.total < line.listTotal - 0.5;
+      if (!cheaper || !precio) {
+        el?.remove();
+        coto?.removeAttribute("data-coto-unit-strike");
+        continue;
+      }
+      if (!el) {
+        el = doc.createElement("div");
+        el.className = "coto-unit-mini-line";
+        precio.after(el);
+      }
+      const text = `${$(line.total)} con promo`;
+      if (el.textContent !== text) el.textContent = text;
+      if (!coto?.hasAttribute("data-coto-unit-strike")) coto?.setAttribute("data-coto-unit-strike", "");
+    }
+    const totalEl = menu.querySelector(".total-precio");
+    let box = menu.querySelector(".coto-unit-mini-total");
+    if (!ok || !totalEl) return box?.remove();
+    const lines = [`Con promos: ${$(a.total)}`];
+    if (a.today) lines.push(`${state.day === new Date().getDay() ? "Hoy" : dayName(state.day)} con ${a.today.promo.bank}: ${$(a.today.total)}`);
+    const text = lines.join("\n");
+    if (box && box.dataset.text === text) return;
+    if (!box) {
+      box = doc.createElement("div");
+      box.className = "coto-unit-mini-total";
+      totalEl.after(box);
+    }
+    box.dataset.text = text;
+    box.replaceChildren(...lines.map((t) => Object.assign(doc.createElement("div"), { textContent: t })));
+  }
+
+  function checkMini() {
+    const open = !!doc.querySelector(".dropdown-carrito.show");
+    if (open && !state.miniOpen) win.postMessage?.({ source: SOURCE, type: "cartRequest" }, "*");
+    state.miniOpen = open;
+  }
+
   function render() {
     checkPath();
+    checkMini();
+    if (state.analysis) renderMini(state.analysis);
     if (!onCart() || !state.analysis) return;
     if (!inSync(state.analysis)) return clear();
     renderWarnings(state.analysis);

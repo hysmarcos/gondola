@@ -138,9 +138,10 @@ export function installInterceptor(win, deps) {
   }
 
   // El mini-carrito pide getCarrito en todas las páginas: solo analizamos en /carrito.
-  async function onCart(body) {
+  // force: lo pidió la extensión (página /carrito o mini-carrito abierto).
+  async function onCart(body, force = false) {
     lastCartBody = body;
-    if (!onCartPage()) return;
+    if (!force && !onCartPage()) return;
     const items = Object.values(body?.output?.productoItems ?? {});
     const lines = await pool(items, 4, async (it) => {
       const plu = pluOf(it?.producto?.id);
@@ -181,7 +182,7 @@ export function installInterceptor(win, deps) {
         post({ type: "labels", labels: labelsFor(lastList.results, lastList.store, settings.selected, settings.day) });
       }
     } else if (msg.type === "cartRequest" && lastCartBody) {
-      onCart(lastCartBody).catch(() => {});
+      onCart(lastCartBody, true).catch(() => {});
     } else if (msg.type === "lookup" && msg.plu && msg.key) {
       onLookup(msg).catch(() => {});
     }
