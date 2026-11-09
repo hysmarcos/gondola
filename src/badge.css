@@ -18,7 +18,6 @@
 }
 
 .card-container[data-coto-unit-card] .bottom-botones {
-  align-self: stretch;
   margin-top: auto;
   padding-top: 8px;
 }
