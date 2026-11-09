@@ -86,6 +86,17 @@ describe("installBadges", () => {
     expect(n[0].previousElementSibling.className).toBe("plp-header__sort");
   });
 
+  it("ignora mensajes viejos que llegan tarde", async () => {
+    send({ source: "coto-unit", type: "labels", active: false, seq: 1000 });
+    send({ source: "coto-unit", type: "labels", active: true, labels, seq: 999 });
+    send({ source: "coto-unit", type: "notice", text: "No se pudo ordenar por precio por kg", seq: 999 });
+    await tick();
+    expect(document.querySelectorAll(".coto-unit-badge, .coto-unit-notice")).toHaveLength(0);
+    send({ source: "coto-unit", type: "labels", active: true, labels, seq: 1001 });
+    await tick();
+    expect(document.querySelectorAll(".coto-unit-badge")).toHaveLength(1);
+  });
+
   it("ignora mensajes de otros", async () => {
     send({ source: "otro", type: "labels", active: true, labels });
     await tick();

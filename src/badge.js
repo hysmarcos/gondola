@@ -38,7 +38,7 @@ function upsert(parent, cls, text) {
 }
 
 export function installBadges(win, doc) {
-  const state = { active: false, labels: {} };
+  const state = { active: false, labels: {}, seq: 0 };
 
   function clear() {
     doc.querySelectorAll(`.${BADGE}, .${MARK}`).forEach((el) => el.remove());
@@ -72,6 +72,11 @@ export function installBadges(win, doc) {
   win.addEventListener("message", (e) => {
     const m = e.data;
     if (!m || m.source !== SOURCE) return;
+    // Un pedido viejo que termina tarde no pisa al más nuevo.
+    if (typeof m.seq === "number") {
+      if (m.seq < state.seq) return;
+      state.seq = m.seq;
+    }
     if (m.type === "labels") {
       state.active = !!m.active;
       state.labels = m.active ? m.labels ?? {} : {};

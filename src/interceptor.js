@@ -20,9 +20,11 @@ export function installInterceptor(win, deps) {
   const origOpen = proto.open;
   const origAdd = proto.addEventListener;
   const cache = new Map();
+  let lastSeq = 0;
 
-  const post = (msg) => {
-    try { deps.post({ source: SOURCE, ...msg }); } catch { /* sin etiquetas, pero Coto sigue */ }
+  // seq ordena los mensajes: la etiqueta descarta los de pedidos más viejos.
+  const post = (seq, msg) => {
+    try { deps.post({ source: SOURCE, seq, ...msg }); } catch { /* sin etiquetas, pero Coto sigue */ }
   };
 
   async function fetchSorted(url, total) {
@@ -51,21 +53,21 @@ export function installInterceptor(win, deps) {
     return promise;
   }
 
-  async function transform(url, unit, body) {
+  async function transform({ url, unit, seq }, body) {
     if (!unit) {
-      post({ type: "labels", active: false });
+      post(seq, { type: "labels", active: false });
       return withSortOption(body, false);
     }
     try {
       const sorted = await getSorted(url, body.response.total_num_results ?? body.response.results.length);
       const { page, size } = requestedPage(url);
       const slice = sorted.results.slice((page - 1) * size, page * size);
-      post({ type: "labels", active: true, labels: sorted.labels });
-      if (sorted.capped) post({ type: "notice", text: NOTICE_CAP });
+      post(seq, { type: "labels", active: true, labels: sorted.labels });
+      if (sorted.capped) post(seq, { type: "notice", text: NOTICE_CAP });
       return withSortOption(withResults(body, slice), true);
     } catch {
-      post({ type: "labels", active: false });
-      post({ type: "notice", text: NOTICE_FAIL });
+      post(seq, { type: "labels", active: false });
+      post(seq, { type: "notice", text: NOTICE_FAIL });
       return withSortOption(body, true);
     }
   }
@@ -101,7 +103,11 @@ export function installInterceptor(win, deps) {
 
   // Guarda los listeners de "load" y "readystatechange" hasta tener la respuesta final.
   function hold(xhr, url, unit) {
-    const h = { url, unit, listeners: { load: [], readystatechange: [] }, on: {} };
+    // zone: open() corre dentro de la zona de Angular; liberamos ahí para que redibuje.
+    const h = {
+      url, unit, seq: ++lastSeq, zone: win.Zone?.current ?? null,
+      listeners: { load: [], readystatechange: [] }, on: {},
+    };
     xhr.__cotoHeld = h;
     for (const t of HELD) {
       Object.defineProperty(xhr, "on" + t, {
@@ -117,8 +123,12 @@ export function installInterceptor(win, deps) {
     };
     // El "load" nativo ya pasó sin oyentes; lo repetimos con un evento equivalente.
     const release = (ev) => {
-      replay("readystatechange", ev);
-      replay("load", { type: "load", target: xhr, currentTarget: xhr });
+      const run = () => {
+        replay("readystatechange", ev);
+        replay("load", { type: "load", target: xhr, currentTarget: xhr });
+      };
+      if (h.zone?.run) h.zone.run(run);
+      else run();
     };
 
     origAdd.call(xhr, "readystatechange", (ev) => {
@@ -129,7 +139,7 @@ export function installInterceptor(win, deps) {
       try { body = readBody(xhr); } catch { body = null; }
       if (!body) return release(ev);
 
-      transform(h.url, h.unit, body)
+      transform(h, body)
         .then((out) => serve(xhr, out))
         .catch(() => { /* queda la respuesta original */ })
         .finally(() => release(ev));

@@ -103,7 +103,7 @@ describe("installInterceptor", () => {
     expect(mine(body).status).toBe("");
     expect(urls(body.response.results)).toEqual(urls(s.all.slice(0, 24)));
     expect(s.env.fetched).toHaveLength(0);
-    expect(s.env.posts).toContainEqual({ source: "coto-unit", type: "labels", active: false });
+    expect(s.env.posts).toContainEqual(expect.objectContaining({ source: "coto-unit", type: "labels", active: false }));
   });
 
   it("orden por unidad: pide todo, ordena y devuelve la página 1", async () => {
@@ -149,12 +149,38 @@ describe("installInterceptor", () => {
   });
 });
 
+describe("Angular y zone.js", () => {
+  it("libera los listeners dentro de la zona donde se abrió el pedido", async () => {
+    const s = setup();
+    const ngZone = { name: "angular", inside: false, run(fn) { this.inside = true; try { return fn(); } finally { this.inside = false; } } };
+    s.win.Zone = { current: ngZone };
+    let ranInside = null;
+    await new Promise((resolve) => {
+      const x = new s.win.XMLHttpRequest();
+      x.open("GET", url("unit_price"));
+      s.win.Zone.current = { name: "root", run: (fn) => fn() };
+      x.addEventListener("load", () => { ranInside = ngZone.inside; resolve(); });
+      x.send();
+    });
+    expect(ranInside).toBe(true);
+  });
+
+  it("cada pedido de productos lleva un número creciente", async () => {
+    const s = setup();
+    await request(s.win, url("price"));
+    await request(s.win, url("unit_price"));
+    const seqs = s.env.posts.map((m) => m.seq);
+    expect(seqs.every((n) => typeof n === "number")).toBe(true);
+    expect(seqs[seqs.length - 1]).toBeGreaterThan(seqs[0]);
+  });
+});
+
 describe("límites y errores", () => {
   it("más de 1.000 productos: ordena 1.000 y avisa", async () => {
     const s = setup({ total: 1500 });
     await request(s.win, url("unit_price"));
     expect(s.env.fetched.map(pageOf)).toEqual([1, 2, 3, 4, 5]);
-    expect(s.env.posts).toContainEqual({ source: "coto-unit", type: "notice", text: "Se ordenaron los primeros 1.000 productos" });
+    expect(s.env.posts).toContainEqual(expect.objectContaining({ source: "coto-unit", type: "notice", text: "Se ordenaron los primeros 1.000 productos" }));
   });
 
   it("si falla una tanda, Coto recibe su respuesta y se avisa", async () => {
@@ -162,7 +188,7 @@ describe("límites y errores", () => {
     const { body } = await request(s.win, url("unit_price"));
     expect(urls(body.response.results)).toEqual(urls(s.all.slice(0, 24)));
     expect(mine(body).status).toBe("selected");
-    expect(s.env.posts).toContainEqual({ source: "coto-unit", type: "notice", text: "No se pudo ordenar por precio por kg" });
+    expect(s.env.posts).toContainEqual(expect.objectContaining({ source: "coto-unit", type: "notice", text: "No se pudo ordenar por precio por kg" }));
   });
 
   it("respuesta con forma rara: pasa intacta", async () => {
