@@ -1,0 +1,39 @@
+body {
+  width: 340px;
+  margin: 0;
+  padding: 12px 14px;
+  font: 13px/1.4 system-ui, sans-serif;
+  color: #222;
+  background: #fff;
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: #e30613;
+}
+
+h2 {
+  margin: 12px 0 4px;
+  font-size: 13px;
+}
+
+label {
+  display: block;
+  margin: 3px 0;
+  cursor: pointer;
+}
+
+label.day {
+  font-weight: 600;
+}
+
+select {
+  margin-left: 6px;
+  font: inherit;
+}
+
+.hint {
+  margin: 10px 0 0;
+  color: #555;
+}
