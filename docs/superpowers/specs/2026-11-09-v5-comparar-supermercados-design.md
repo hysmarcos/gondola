@@ -95,6 +95,8 @@ Todas puras y testeables, salvo el cableado.
 - Súper caído, HTTP ≠ 200, JSON roto, tiempo agotado → `"error"` → la fila muestra "—".
   No se reintenta hasta que se recarga la página. No se guarda en memoria.
 - Si `cmp` de Coto es `null` (precio dudoso) → no se pinta el bloque.
+- Si `precio otro / precio Coto` está fuera de `[0.4, 2.5]` → la fila muestra "—" con
+  título "Dato dudoso" (probable EAN mal cargado o pack distinto).
 - Si la extensión no tiene el permiso de un host (instalación vieja) → ese súper da
   `"error"`.
 - El service worker puede dormirse: la memoria vive en `chrome.storage.local`, no en
