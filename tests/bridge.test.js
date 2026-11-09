@@ -62,6 +62,16 @@ describe("installBridge", () => {
     const last = win.posted.filter((m) => m.type === "settings").at(-1);
     expect(last.selected.map((p) => p.id)).toEqual(["457", "449"]);
   });
+  it("manda los ajustes del popup: encendidos salvo que se apaguen", async () => {
+    const st = fakeStorage({ autoPromo: false });
+    const win = fakeWin();
+    installBridge(win, st, () => 0);
+    await tick();
+    expect(win.posted.find((m) => m.type === "settings")).toMatchObject({ autoPromo: false, notifyPromo: true, markBest: true });
+    await st.set({ markBest: false });
+    await tick();
+    expect(win.posted.filter((m) => m.type === "settings").at(-1).markBest).toBe(false);
+  });
 });
 
 describe("popup", () => {

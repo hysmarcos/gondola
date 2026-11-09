@@ -19,6 +19,7 @@ const sizeOf = (u) => Number(new URL(u).searchParams.get("num_results_per_page")
 // como en el navegador: si alguien los tapa en la instancia, el XHR no los ve.
 function makeFakeXHR(server) {
   const seen = [];
+  const sent = [];
   class FakeXHR {
     constructor() {
       this.readyState = 0;
@@ -27,7 +28,7 @@ function makeFakeXHR(server) {
       this._l = {};
       this._slot = {};
     }
-    open(method, u) { this._url = u; this.readyState = 1; }
+    open(method, u) { this._method = method; this._url = u; this.readyState = 1; }
     addEventListener(t, fn) { (this._l[t] ||= []).push(fn); }
     removeEventListener() {}
     _fire(t) {
@@ -35,10 +36,11 @@ function makeFakeXHR(server) {
       for (const fn of this._l[t] || []) fn.call(this, ev);
       this._slot[t]?.call(this, ev);
     }
-    send() {
+    send(payload) {
       seen.push(this._url);
+      sent.push({ url: this._url, method: this._method, payload });
       queueMicrotask(() => {
-        const body = server(this._url);
+        const body = server(this._url, payload);
         this._text = typeof body === "string" ? body : JSON.stringify(body);
         this.status = 200;
         this.readyState = 4;
@@ -56,19 +58,19 @@ function makeFakeXHR(server) {
       set(fn) { this._slot[t] = fn; },
     });
   }
-  return { FakeXHR, seen };
+  return { FakeXHR, seen, sent };
 }
 
 const PROMOS_URL = "https://www.coto.com.ar/promos-test";
 
-function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0, settings } = {}) {
+function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0, settings, lookupWaitMs } = {}) {
   const all = catalog(total);
   const server = serverBody ?? ((u) => {
     if (/getCarrito/.test(u)) return CARRITO_BODY;
     const { page, size } = { page: pageOf(u) || 1, size: sizeOf(u) || 24 };
     return apiBody(all.slice((page - 1) * size, page * size), total);
   });
-  const { FakeXHR, seen } = makeFakeXHR(server);
+  const { FakeXHR, seen, sent } = makeFakeXHR(server);
   const env = { time: 0, fetched: [], searched: [], posts: [], listeners: [] };
   const deps = {
     now: () => env.time,
@@ -76,6 +78,7 @@ function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0
     listen: (fn) => env.listeners.push(fn),
     promosUrl: PROMOS_URL,
     settingsWaitMs,
+    lookupWaitMs,
     fetch: async (u) => {
       if (u === PROMOS_URL) return { ok: true, json: async () => ({ result: PROMOS_RESULT }) };
       const plu = String(u).match(/\/search\/(\d+)\?/)?.[1];
@@ -95,7 +98,7 @@ function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0
   installInterceptor(win, deps);
   const send = (msg) => env.listeners.forEach((fn) => fn({ source: "coto-unit", ...msg }));
   if (settings) send({ type: "settings", ...settings });
-  return { win, env, seen, all, send };
+  return { win, env, seen, sent, all, send };
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -364,5 +367,123 @@ describe("revisión final: mini-carrito", () => {
     await request(s.win, "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0");
     for (let i = 0; i < 4; i++) await flush();
     expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.81, 2);
+  });
+});
+
+describe("v4: carrito vivo y promos NxM", () => {
+  const CART_URL = "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0&pushSite=CotoDigital";
+  const ADD_URL = "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/addOrRemoveItemToOrderV2?pushSite=CotoDigital";
+  const REC_URL = "https://api.coto.com.ar/api/v1/ms-digital-sitio-bff-web/api/v1/products/recommendations/complementarios-pdp?item_id=prod1&us=200";
+  const ADEREZO = {
+    data: {
+      id: "prod00000777", url: "_/R-00000777-00000777-200", sku_display_name: "Aderezo Caesar X 200 Ml",
+      product_format: "Mililitros", product_format_quantity: 100,
+      price: [{ store: "200", listPrice: 100, formatPrice: 50 }],
+      discounts: [{ discountText: "2x1", takingText: "Llevando 2", discountPrice: "$50" }],
+    },
+  };
+  const server = (u) => {
+    if (/getCarrito/.test(u)) return CARRITO_BODY;
+    if (/addOrRemoveItemToOrderV2/.test(u)) return { codigoError: "0" };
+    if (/recommendations/.test(u)) return apiBody([ADEREZO], 1);
+    return apiBody([], 0);
+  };
+  function add(win, payload) {
+    return new Promise((resolve) => {
+      const x = new win.XMLHttpRequest();
+      x.open("POST", ADD_URL);
+      x.addEventListener("load", () => resolve(x));
+      x.send(typeof payload === "string" ? payload : JSON.stringify(payload));
+    });
+  }
+  const sentQty = (s) => s.sent.filter((r) => /addOrRemove/.test(r.url)).map((r) => JSON.parse(r.payload).quantity);
+  const settle = async () => { for (let i = 0; i < 6; i++) await flush(); };
+
+  it("después del primer cartRequest analiza cada carrito nuevo, aunque pase el tiempo", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    s.win.location = { pathname: "/productos/x" };
+    s.send({ type: "cartRequest" });
+    s.env.time += 10 * 60 * 1000;
+    await request(s.win, CART_URL);
+    await settle();
+    expect(s.env.posts.filter((m) => m.type === "cart")).toHaveLength(1);
+  });
+
+  it("agregar un producto también activa el análisis del carrito", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    s.win.location = { pathname: "/productos/x" };
+    await add(s.win, { skuId: "sku00577935", prodId: "prod00577935", quantity: 3 });
+    await request(s.win, CART_URL);
+    await settle();
+    expect(s.env.posts.find((m) => m.type === "cart")).toBeDefined();
+  });
+
+  it("2x1: al agregar 1 manda 2 y avisa", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await request(s.win, REC_URL);
+    await add(s.win, { skuId: "sku00000777", prodId: "prod00000777", quantity: 1, sucPickUp: null });
+    expect(sentQty(s)).toEqual([2]);
+    const adj = s.env.posts.find((m) => m.type === "promoAdjust");
+    expect(adj).toMatchObject({ prodId: "prod00000777", from: 1, quantity: 2 });
+    expect(s.env.posts.find((m) => m.type === "promoNotice").text).toBe("Promo 2x1: sumamos 1 gratis");
+  });
+
+  it("2x1: clic rápido en + antes del refresco usa la cantidad que mandamos", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await request(s.win, REC_URL);
+    await add(s.win, { prodId: "prod00000777", quantity: 1 });
+    await add(s.win, { prodId: "prod00000777", quantity: 3 });
+    expect(sentQty(s)).toEqual([2, 4]);
+  });
+
+  it("3x2 desconocido: busca por PLU; con 1 solo avisa, con 2 suma el gratis", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await add(s.win, { prodId: "prod00299912", quantity: 1 });
+    await add(s.win, { prodId: "prod00299912", quantity: 2 });
+    expect(sentQty(s)).toEqual([1, 3]);
+    expect(s.env.posts.find((m) => m.type === "promoNotice").text).toBe("Promo 3x2: llevando 3 pagás 2");
+  });
+
+  it("la cantidad anterior sale del carrito", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await request(s.win, CART_URL); // DOVE 3x2 con 3 unidades
+    await settle();
+    await add(s.win, { prodId: "prod00299912", quantity: 5 });
+    expect(sentQty(s)).toEqual([6]);
+  });
+
+  it("bajar, borrar o body raro: se manda tal cual", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await request(s.win, REC_URL);
+    await add(s.win, { prodId: "prod00000777", quantity: 1 });
+    await add(s.win, { prodId: "prod00000777", quantity: 1 });
+    await add(s.win, { prodId: "prod00000777", quantity: 0 });
+    await add(s.win, "no es json");
+    expect(s.sent.filter((r) => /addOrRemove/.test(r.url)).at(-1).payload).toBe("no es json");
+    expect(s.sent.filter((r) => /addOrRemove/.test(r.url)).slice(0, 3).map((r) => JSON.parse(r.payload).quantity)).toEqual([2, 1, 0]);
+  });
+
+  it("con autoPromo apagado no reescribe", async () => {
+    const s = setup({ settings: { selected: [], day: 1, autoPromo: false }, serverBody: server });
+    await request(s.win, REC_URL);
+    await add(s.win, { prodId: "prod00000777", quantity: 1 });
+    expect(sentQty(s)).toEqual([1]);
+    expect(s.env.posts.find((m) => m.type === "promoAdjust")).toBeUndefined();
+  });
+
+  it("si la búsqueda por PLU tarda, manda sin cambios", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server, lookupWaitMs: 5 });
+    s.env.onSearch = () => new Promise(() => {});
+    await add(s.win, { prodId: "prod00299912", quantity: 2 });
+    expect(sentQty(s)).toEqual([2]);
+  });
+
+  it("las etiquetas de carruseles también van por id de producto", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await request(s.win, REC_URL);
+    await settle();
+    const labels = s.env.posts.filter((m) => m.type === "labels").at(-1).labels;
+    expect(labels.prod00000777).toBeDefined();
+    expect(labels["_/R-00000777-00000777-200"]).toBeDefined();
   });
 });

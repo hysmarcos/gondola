@@ -44,7 +44,10 @@ export function labelsFor(results, store, promos = [], day = 0) {
     const url = r?.data?.url;
     if (!url) continue;
     const u = unitPrice(r.data, store, promos, day);
-    if (u.group !== "sin_dato") labels[url] = u;
+    if (u.group === "sin_dato") continue;
+    labels[url] = u;
+    // Los carruseles de recomendaciones no tienen link: se buscan por id de producto.
+    if (r.data.id) labels[r.data.id] = u;
   }
   return labels;
 }

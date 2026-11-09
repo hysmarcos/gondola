@@ -4,6 +4,7 @@
 import { sortByUnitPrice, labelsFor } from "./sort.js";
 import { parsePromos } from "./banks.js";
 import { analyzeCart } from "./cart.js";
+import { parseNxM, adjustQty, promoNotice } from "./promo.js";
 import {
   isProductsUrl, isRecommendationsUrl, isCartUrl, isUnitSort, toNativeSort, cacheKey, pageUrl,
   requestedPage, storeOf, withSortOption, withResults, searchUrl, pluOf,
@@ -16,7 +17,8 @@ const SOURCE = "coto-unit";
 const NOTICE_FAIL = "No se pudo ordenar por precio por kg";
 const NOTICE_CAP = "Se ordenaron los primeros 1.000 productos";
 const HELD = ["load", "readystatechange"];
-const FORCE_CART_MS = 5000;
+const LOOKUP_WAIT_MS = 1500;
+const ADD_RE = /cCarritoActor\/addOrRemoveItemToOrderV2/;
 const PROMOS_URL = "https://www.coto.com.ar/rest/model/atg/actors/cProfileActor/getPromocionesMulticanal?enviroment=ag&pushSite=CotoDigital";
 
 export function installInterceptor(win, deps) {
@@ -24,18 +26,23 @@ export function installInterceptor(win, deps) {
   const proto = XHR.prototype;
   const origOpen = proto.open;
   const origAdd = proto.addEventListener;
+  const origSend = proto.send;
   const cache = new Map();
   const pluCache = new Map();
   let lastSeq = 0;
   let lastProductsUrl = null;
   let lastCart = null;
   let lastCartBody = null;
-  let forceCartUntil = -Infinity;
+  // Una vez que se abrió el mini-carrito, se entró a /carrito o se agregó algo, cada
+  // respuesta del carrito se analiza (las búsquedas por PLU tienen caché).
+  let cartWanted = false;
+  const byProd = new Map(); // prodId → data, de todo producto visto
+  const sentQty = new Map(); // prodId → última cantidad que mandamos (hasta el próximo carrito)
   let lastList = null; // última lista vista: { results, store } para volver a etiquetar si cambia el banco
   const onCartPage = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
   // Configuración de banco: llega desde la extensión. Esperamos un rato antes de la primera respuesta.
-  let settings = { selected: [], day: new Date().getDay() };
+  let settings = { selected: [], day: new Date().getDay(), autoPromo: true, notifyPromo: true };
   let settingsReady;
   const ready = new Promise((resolve) => { settingsReady = resolve; });
   (deps.setTimeout ?? setTimeout)(settingsReady, deps.settingsWaitMs ?? 500);
@@ -54,6 +61,10 @@ export function installInterceptor(win, deps) {
     return res.json();
   }
 
+  function index(results) {
+    for (const r of results ?? []) if (r?.data?.id) byProd.set(r.data.id, r.data);
+  }
+
   async function fetchSorted(url, total) {
     const count = Math.min(total, CAP);
     const pages = Math.max(1, Math.ceil(count / BATCH));
@@ -64,6 +75,7 @@ export function installInterceptor(win, deps) {
         return json.response.results;
       }),
     );
+    index(bodies.flat());
     const sorted = sortByUnitPrice(bodies.flat().slice(0, CAP), storeOf(url), settings.selected, settings.day);
     return { ...sorted, capped: total > CAP };
   }
@@ -83,6 +95,7 @@ export function installInterceptor(win, deps) {
   }
 
   async function transform({ url, unit, seq }, body) {
+    index(body.response.results);
     await ready;
     if (!unit) {
       lastList = { results: body.response.results, store: storeOf(url) };
@@ -111,7 +124,9 @@ export function installInterceptor(win, deps) {
     const promise = fetchJson(searchUrl(plu, lastProductsUrl))
       .then((json) => {
         const id = "prod" + plu.padStart(8, "0");
-        return (json?.response?.results ?? []).find((r) => r?.data?.id === id)?.data ?? null;
+        const data = (json?.response?.results ?? []).find((r) => r?.data?.id === id)?.data ?? null;
+        if (data) byProd.set(id, data);
+        return data;
       })
       .catch(() => null);
     pluCache.set(plu, { at: deps.now(), promise });
@@ -143,7 +158,8 @@ export function installInterceptor(win, deps) {
   // force: lo pidió la extensión (página /carrito o mini-carrito abierto).
   async function onCart(body, force = false) {
     lastCartBody = body;
-    if (!force && !onCartPage() && deps.now() > forceCartUntil) return;
+    sentQty.clear();
+    if (!force && !onCartPage() && !cartWanted) return;
     const items = Object.values(body?.output?.productoItems ?? {});
     const lines = await pool(items, 4, async (it) => {
       const plu = pluOf(it?.producto?.id);
@@ -162,6 +178,7 @@ export function installInterceptor(win, deps) {
 
   async function onRecommendations(body) {
     if (!Array.isArray(body?.response?.results)) return;
+    index(body.response.results);
     await ready;
     post({ type: "labels", labels: labelsFor(body.response.results, store(), settings.selected, settings.day) });
   }
@@ -177,16 +194,20 @@ export function installInterceptor(win, deps) {
   deps.listen?.((msg) => {
     if (msg?.source !== SOURCE) return;
     if (msg.type === "settings") {
-      settings = { selected: Array.isArray(msg.selected) ? msg.selected : [], day: Number(msg.day) || 0 };
+      settings = {
+        selected: Array.isArray(msg.selected) ? msg.selected : [],
+        day: Number(msg.day) || 0,
+        autoPromo: msg.autoPromo !== false,
+        notifyPromo: msg.notifyPromo !== false,
+      };
       settingsReady();
       postCart();
       if (lastList) {
         post({ type: "labels", labels: labelsFor(lastList.results, lastList.store, settings.selected, settings.day) });
       }
     } else if (msg.type === "cartRequest") {
-      // El mini-carrito se abrió: Coto puede pedir el carrito justo ahora; esa respuesta
-      // también se analiza aunque no estemos en /carrito.
-      forceCartUntil = deps.now() + FORCE_CART_MS;
+      // Se abrió el mini-carrito o /carrito: desde ahora cada carrito nuevo se analiza.
+      cartWanted = true;
       if (lastCartBody) onCart(lastCartBody, true).catch(() => {});
     } else if (msg.type === "lookup" && msg.plu && msg.key) {
       onLookup(msg).catch(() => {});
@@ -196,6 +217,65 @@ export function installInterceptor(win, deps) {
   fetchJson(deps.promosUrl ?? PROMOS_URL)
     .then((json) => post({ type: "promos", promos: parsePromos(json?.result) }))
     .catch(() => { /* sin promos: no hay línea de banco */ });
+
+  // Cantidad que tiene hoy el carrito para ese producto.
+  function cartQty(prodId) {
+    const items = Object.values(lastCartBody?.output?.productoItems ?? {});
+    return Number(items.find((it) => it?.producto?.id === prodId)?.cantidad) || 0;
+  }
+
+  // Dato del producto: del índice, o buscado por PLU con un tope de espera.
+  function productData(prodId) {
+    if (byProd.has(prodId)) return byProd.get(prodId);
+    const plu = pluOf(prodId);
+    if (!plu) return null;
+    const wait = new Promise((r) => (deps.setTimeout ?? setTimeout)(() => r(null), deps.lookupWaitMs ?? LOOKUP_WAIT_MS));
+    return Promise.race([lookupPlu(plu), wait]);
+  }
+
+  // Agregar al carrito: completa promos NxM antes de mandar. Devuelve el body a enviar.
+  function adjustAdd(payload, data) {
+    const { prodId } = payload;
+    const want = Number(payload.quantity);
+    const prev = sentQty.get(prodId) ?? cartQty(prodId);
+    const next = settings.autoPromo ? adjustQty(prev, want, parseNxM(data)) : want;
+    sentQty.set(prodId, next);
+    if (next !== want) post({ type: "promoAdjust", prodId, skuId: payload.skuId, from: want, quantity: next });
+    if (settings.notifyPromo && next > prev) {
+      const text = promoNotice(data, next, next - want);
+      if (text) post({ type: "promoNotice", prodId, text });
+    }
+    return next === want ? null : JSON.stringify({ ...payload, quantity: next });
+  }
+
+  function sendAdd(xhr, body) {
+    cartWanted = true;
+    let payload;
+    try { payload = JSON.parse(body); } catch { payload = null; }
+    const quantity = Number(payload?.quantity);
+    if (!payload?.prodId || !Number.isFinite(quantity)) return origSend.call(xhr, body);
+    const prev = sentQty.get(payload.prodId) ?? cartQty(payload.prodId);
+    // Bajar o borrar: no hace falta saber la promo.
+    if (quantity <= prev || (!settings.autoPromo && !settings.notifyPromo)) {
+      sentQty.set(payload.prodId, quantity);
+      return origSend.call(xhr, body);
+    }
+    const data = productData(payload.prodId);
+    if (!(data instanceof Promise)) {
+      return origSend.call(xhr, (data && adjustAdd(payload, data)) ?? body);
+    }
+    data
+      .then((d) => (d ? adjustAdd(payload, d) : null), () => null)
+      .then((out) => origSend.call(xhr, out ?? body));
+    return undefined;
+  }
+
+  proto.send = function (body) {
+    if (this.__cotoAdd) {
+      try { return sendAdd(this, body); } catch { return origSend.call(this, body); }
+    }
+    return origSend.call(this, body);
+  };
 
   function readJson(xhr) {
     return xhr.responseType === "json" ? xhr.response : JSON.parse(xhr.responseText);
@@ -234,6 +314,8 @@ export function installInterceptor(win, deps) {
       watch(this, onRecommendations);
     } else if (isCartUrl(url)) {
       watch(this, onCart);
+    } else if (ADD_RE.test(String(url)) && String(method).toUpperCase() === "POST") {
+      this.__cotoAdd = true;
     }
     return origOpen.call(this, method, realUrl, ...rest);
   };
