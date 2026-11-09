@@ -8,6 +8,7 @@ const SOURCE = "coto-unit";
 const BOX = "coto-unit-box";
 const BLOCK = "coto-unit-price";
 const MARK = "coto-unit-mark";
+const TAGS = "coto-unit-tags";
 const NOTICE = "coto-unit-notice";
 const KEY_RE = /_\/R-[\w-]+/;
 
@@ -129,7 +130,8 @@ export function installBadges(win, doc) {
 
   // ---------- Tarjetas de las listas ----------
 
-  function paintCardBlock(centro, name, label, key) {
+  // Cuerpo de la tarjeta en filas fijas, iguales en todas: precio, detalle, unidad.
+  function paintCardBlock(centro, name, label) {
     let block = centro.querySelector(":scope > ." + BLOCK);
     if (!block) {
       block = doc.createElement("div");
@@ -137,31 +139,50 @@ export function installBadges(win, doc) {
       if (name) name.after(block);
       else centro.prepend(block);
     }
-    // Sin oferta el lugar queda reservado (invisible): los precios vecinos quedan alineados.
-    const offer = upsert(block, "coto-unit-offer", label.offerText ?? " ");
-    setAttr(offer, "data-coto-unit-empty", !label.offerText);
     const priceRow = ensure(block, "coto-unit-pricerow");
     upsert(priceRow, "coto-unit-final", label.price != null ? $2(label.price) : null, null, "span");
-    // El precio grande dice en qué condición se paga: nadie paga $196 llevando uno solo.
-    upsert(priceRow, "coto-unit-cond", formatCond(label), null, "span");
     const regular = label.list != null && label.price != null && label.list > label.price + 0.5 ? $2(label.list) : null;
     upsert(priceRow, "coto-unit-sr", regular ? "Precio regular:" : null, null, "span");
     upsert(priceRow, "coto-unit-regular", regular, null, "s");
-    order(priceRow, ["coto-unit-final", "coto-unit-cond", "coto-unit-sr", "coto-unit-regular"]);
+    order(priceRow, ["coto-unit-final", "coto-unit-sr", "coto-unit-regular"]);
+    // Detalle: en qué condición se paga ese precio (nadie paga $196 llevando uno solo) y
+    // notas de la medida. Sin detalle la fila queda reservada: las tarjetas no saltan.
+    const detail = [formatCond(label), formatNote(label)].filter(Boolean).join(" · ");
+    const row = upsert(block, "coto-unit-detail", detail || " ");
+    setAttr(row, "data-coto-unit-empty", !detail);
     paintUnit(block, label, false, true);
-    upsert(block, "coto-unit-note", formatNote(label));
-    const best = state.markBest && key && state.best[key]
-      ? (state.bestScope === "lista" ? "Más barato de esta lista" : "Más barato de la categoría")
-      : null;
-    upsert(block, "coto-unit-best", best);
-    order(block, ["coto-unit-offer", "coto-unit-pricerow", "coto-unit-unit", "coto-unit-note", "coto-unit-best"]);
+    order(block, ["coto-unit-pricerow", "coto-unit-detail", "coto-unit-unit"]);
     return block;
   }
 
+  // Etiquetas sobre la imagen, arriba a la izquierda: más barato, la oferta (una sola vez)
+  // y el inicio de grupo al ordenar por unidad. Reemplazan las cucardas de Coto.
+  function paintTags(card, label, key) {
+    const best = state.markBest && key && state.best[key]
+      ? (state.bestScope === "lista" ? "Más barato de esta lista" : "Más barato de la categoría")
+      : null;
+    const mark = key && state.marks[key] ? groupMark(state.marks[key]) : null;
+    let tags = card.querySelector("." + TAGS);
+    // Sin nada que mostrar no se crea (crear y borrar en cada vuelta dispararía el observador).
+    if (!best && !label.offerText && !mark) return tags?.remove();
+    if (!tags) {
+      tags = doc.createElement("div");
+      tags.className = TAGS;
+      const area = card.querySelector(".top-imagen-promos .promos") ?? card.querySelector(".top-imagen-promos") ?? card;
+      area.prepend(tags);
+    }
+    upsert(tags, "coto-unit-best", best);
+    upsert(tags, "coto-unit-offer", label.offerText);
+    upsert(tags, MARK, mark);
+    order(tags, ["coto-unit-best", "coto-unit-offer", MARK]);
+  }
+
   // Qué partes de Coto repiten lo que ya muestra el bloque.
-  function cotoParts(centro) {
+  function cotoParts(card, centro) {
     const hide = new Set();
     const dim = new Set();
+    // Las cucardas de la imagen ("LLEVANDO 2", "2X1", "NO ACUMULABLE…"): ya están en las etiquetas.
+    for (const el of card.querySelectorAll(".top-imagen-promos .cucarda-promo")) hide.add(el);
     for (const el of centro.querySelectorAll(".descuentos-slot")) hide.add(el);
     for (const el of centro.querySelectorAll("h4.card-title")) if (!el.closest(".descuentos-slot")) hide.add(el);
     for (const el of centro.querySelectorAll("small")) {
@@ -181,6 +202,7 @@ export function installBadges(win, doc) {
 
   function restoreCard(card, centro) {
     centro.querySelector(":scope > ." + BLOCK)?.remove();
+    card.querySelector("." + TAGS)?.remove();
     for (const el of card.querySelectorAll(`[${HIDE}], [${DIM}]`)) {
       el.removeAttribute(HIDE);
       el.removeAttribute(DIM);
@@ -201,14 +223,14 @@ export function installBadges(win, doc) {
         restoreCard(card, centro);
       } else {
         setAttr(card, CARD, true);
-        paintCardBlock(centro, centro.querySelector(":scope > .nombre-producto, :scope > h3"), label, key);
-        const { hide, dim } = cotoParts(centro);
-        for (const el of centro.querySelectorAll(`[${HIDE}]`)) if (!hide.has(el)) el.removeAttribute(HIDE);
-        for (const el of centro.querySelectorAll(`[${DIM}]`)) if (!dim.has(el)) el.removeAttribute(DIM);
+        paintCardBlock(centro, centro.querySelector(":scope > .nombre-producto, :scope > h3"), label);
+        paintTags(card, label, key);
+        const { hide, dim } = cotoParts(card, centro);
+        for (const el of card.querySelectorAll(`[${HIDE}]`)) if (!hide.has(el)) el.removeAttribute(HIDE);
+        for (const el of card.querySelectorAll(`[${DIM}]`)) if (!dim.has(el)) el.removeAttribute(DIM);
         for (const el of hide) setAttr(el, HIDE, true);
         for (const el of dim) setAttr(el, DIM, true);
       }
-      upsert(card, MARK, key && state.marks[key] ? groupMark(state.marks[key]) : null);
     }
   }
 

@@ -28,39 +28,43 @@
   display: none !important;
 }
 
+/* Nombre: hasta 3 líneas completas, con el mismo alto en todas las tarjetas. */
+.card-container[data-coto-unit-card] .nombre-producto {
+  display: -webkit-box !important;
+  height: calc(1.3em * 3);
+  margin-bottom: 4px;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.3;
+  white-space: normal !important;
+  text-overflow: clip !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical;
+}
+
+/* Cuerpo en filas fijas: precio, detalle y precio por unidad quedan a la misma altura
+   en todas las tarjetas, haya o no oferta. */
 .coto-unit-price {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 30px 18px 34px;
+  justify-items: center;
   align-items: center;
-  gap: 6px;
+  row-gap: 4px;
   width: 100%;
-  margin: 8px 0 6px;
-  line-height: 1.25;
+  margin: 2px 0 8px;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
-}
-
-.coto-unit-offer {
-  max-width: 100%;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: #fdecec;
-  color: #b01f17;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  text-wrap: balance;
-}
-
-.coto-unit-offer[data-coto-unit-empty] {
-  visibility: hidden;
 }
 
 .coto-unit-pricerow {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: baseline;
   justify-content: center;
-  gap: 2px 8px;
+  gap: 8px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .coto-unit-final {
@@ -68,12 +72,6 @@
   font-weight: 500;
   color: #212529;
   letter-spacing: -0.01em;
-}
-
-.coto-unit-cond {
-  font-size: 12px;
-  font-weight: 600;
-  color: #b01f17;
 }
 
 /* Solo para lectores de pantalla. */
@@ -91,13 +89,29 @@
   color: #6b7177;
 }
 
-/* La fila del precio por unidad: el número para comparar y, si hace falta, por qué. */
+/* Detalle: cuándo vale el precio ("c/u llevando 2", "con Comunidad") y notas de medida. */
+.coto-unit-detail {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b01f17;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.coto-unit-detail[data-coto-unit-empty] {
+  visibility: hidden;
+}
+
+/* La fila del precio por unidad: el número para comparar y, con banco, cuál. */
 .coto-unit-unit {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 4px 8px;
+  gap: 8px;
+  max-width: 100%;
   padding: 6px 12px;
   border-radius: 10px;
   background: #eef4fb;
@@ -126,13 +140,51 @@
   color: #3b5f86;
 }
 
+/* "Sin impuestos": una sola línea, chica, al pie del bloque. */
+.card-container[data-coto-unit-card] [data-coto-unit-dim] {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Etiquetas sobre la imagen (arriba a la izquierda) ---------- */
+
+.coto-unit-tags {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 140px;
+}
+
+.coto-unit-tags > div {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
 .coto-unit-best {
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: #e3f3e6;
-  color: #1d6b2e;
-  font-size: 12px;
-  font-weight: 600;
+  background: #1d7a35;
+  color: #fff;
+}
+
+.coto-unit-offer {
+  background: #ffc107;
+  color: #212529;
+}
+
+.coto-unit-tags .coto-unit-mark {
+  margin: 0;
+  background: #eceef0;
+  color: #444;
 }
 
 /* ---------- Página de producto y carrusel ---------- */
@@ -216,12 +268,10 @@
 }
 
 .coto-unit-mark {
-  margin: 4px 0 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: #555;
+  font-size: 11px;
+  font-weight: 700;
+  color: #444;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
 }
 
 .coto-unit-notice {
