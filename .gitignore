@@ -2,3 +2,4 @@ node_modules/
 dist/
 .superpowers/
 dist-dev/
+.impeccable/hook.cache.json

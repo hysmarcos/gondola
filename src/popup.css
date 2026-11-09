@@ -84,19 +84,12 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
+/* Ícono de Góndola: el mismo de la barra de Chrome. */
 .mark {
-  display: grid;
-  place-items: center;
+  display: block;
+  flex: none;
   width: 34px;
   height: 34px;
-  border-radius: 10px;
-  background: var(--red);
-  color: #fff;
-}
-
-.mark .icon {
-  width: 19px;
-  height: 19px;
 }
 
 h1 {

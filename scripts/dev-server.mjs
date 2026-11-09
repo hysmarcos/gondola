@@ -50,7 +50,7 @@ createServer(async (req, res) => {
   if (path.includes("..") || !/^(dist|dist-dev|src|assets)\//.test(path)) return res.writeHead(404, headers).end();
   try {
     const body = await readFile(join(root, path));
-    const type = path.endsWith(".css") ? "text/css" : path.endsWith(".html") ? "text/html; charset=utf-8" : path.endsWith(".json") ? "application/json" : path.endsWith(".woff2") ? "font/woff2" : "text/javascript";
+    const type = path.endsWith(".css") ? "text/css" : path.endsWith(".html") ? "text/html; charset=utf-8" : path.endsWith(".json") ? "application/json" : path.endsWith(".woff2") ? "font/woff2" : path.endsWith(".svg") ? "image/svg+xml" : path.endsWith(".png") ? "image/png" : "text/javascript";
     res.writeHead(200, { ...headers, "Content-Type": type }).end(body);
   } catch {
     res.writeHead(404, headers).end();

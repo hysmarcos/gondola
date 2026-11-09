@@ -9,6 +9,9 @@ web
 ## Users
 Shoppers who buy at coto.com.ar and want to spend less. They compare products in a category, pick bank promos by day, and check the cart before paying. They install the extension from the Chrome Web Store, so they may know nothing about how it works.
 
+## Name
+Góndola ("Góndola para Coto"). The goal is an improved version of each supermarket's site: Coto first, then Carrefour, Día, Más and others, each as "Góndola para <store>". Own brand: navy #14284b with an amber #ffc233 highlight (icon in assets/icon/). Coto pages keep Coto's look.
+
 ## Product Purpose
 A Chrome extension (Manifest V3) that adds what Coto's site lacks for a careful shopper: sorting by price per kg/L/unit, a "real price to compare" on every product, bank promos that follow Coto's real rules, and a cart that shows what you will really pay. Success: the shopper picks the cheapest option without doing math, and Coto's own features (add, quantities, checkout) keep working.
 

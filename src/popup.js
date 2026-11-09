@@ -186,8 +186,8 @@ export async function renderPopup(doc, storage, meta = {}) {
   let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
 
   const header = el(doc, "header", { className: "top" }, [
-    el(doc, "span", { className: "mark" }, [icon(doc, ["M7.5 7.5h.01", "M3 6v5.2a2 2 0 0 0 .6 1.4l7.8 7.8a2 2 0 0 0 2.8 0l5.2-5.2a2 2 0 0 0 0-2.8L11.6 4.6A2 2 0 0 0 10.2 4H5a2 2 0 0 0-2 2z"])]),
-    el(doc, "div", {}, [el(doc, "h1", { textContent: "Precio por unidad" }), el(doc, "p", { className: "sub", textContent: "para comprar en Coto Digital" })]),
+    el(doc, "img", { className: "mark", src: "assets/icon/icon.svg", alt: "", attrs: { width: "34", height: "34" } }),
+    el(doc, "div", {}, [el(doc, "h1", { textContent: "Góndola" }), el(doc, "p", { className: "sub", textContent: "para Coto Digital" })]),
   ]);
 
   const panels = {};

@@ -1,21 +1,25 @@
 {
-  "name": "scratch-2026-11-09-1e870f",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
+  "name": "gondola",
+  "version": "0.12.0",
+  "private": true,
+  "description": "Góndola: extensión de Chrome que mejora la web de cada supermercado. Primero Coto: precio por kilo, promos bancarias, carrito real y comparador.",
+  "license": "MIT",
+  "author": "Marcos Hoyos",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hysmarcos/gondola.git"
   },
+  "type": "module",
   "scripts": {
     "test": "vitest run",
     "build": "node build.mjs",
     "fixtures": "node scripts/capture-fixtures.mjs",
-    "fixtures:vtex": "node scripts/capture-vtex-fixtures.mjs"
+    "fixtures:vtex": "node scripts/capture-vtex-fixtures.mjs",
+    "icons": "node scripts/icons.mjs"
   },
-  "keywords": [],
-  "type": "module",
   "devDependencies": {
     "@fontsource/poppins": "^5.2.7",
+    "@resvg/resvg-js": "^2.6.2",
     "esbuild": "^0.28.2",
     "jsdom": "^31.0.0",
     "vitest": "^5.1.0"
