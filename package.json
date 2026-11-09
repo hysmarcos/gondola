@@ -1,0 +1,21 @@
+{
+  "name": "scratch-2026-11-09-1e870f",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "build": "node build.mjs",
+    "fixtures": "node scripts/capture-fixtures.mjs"
+  },
+  "keywords": [],
+  "type": "module",
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jsdom": "^31.0.0",
+    "vitest": "^5.1.0"
+  }
+}
