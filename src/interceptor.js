@@ -240,7 +240,10 @@ export function installInterceptor(win, deps) {
     const prev = sentQty.get(prodId) ?? cartQty(prodId);
     const next = settings.autoPromo ? adjustQty(prev, want, parseNxM(data)) : want;
     sentQty.set(prodId, next);
-    if (next !== want) post({ type: "promoAdjust", prodId, skuId: payload.skuId, from: want, quantity: next });
+    if (next !== want) {
+      try { deps.pin?.(prodId, want, next); } catch { /* el carrito igual queda bien */ }
+      post({ type: "promoAdjust", prodId, skuId: payload.skuId, from: want, quantity: next });
+    }
     if (settings.notifyPromo && next > prev) {
       const text = promoNotice(data, next, next - want);
       if (text) post({ type: "promoNotice", prodId, text });
@@ -373,4 +376,11 @@ export function installInterceptor(win, deps) {
         .finally(() => release(ev));
     });
   }
+
+  // Para promo-clicks.js (mismo mundo): datos del producto y ajustes, sin red.
+  return {
+    dataFor: (prodId) => byProd.get(prodId) ?? null,
+    autoPromo: () => settings.autoPromo,
+    notify: (prodId, text) => { if (settings.notifyPromo) post({ type: "promoNotice", prodId, text }); },
+  };
 }

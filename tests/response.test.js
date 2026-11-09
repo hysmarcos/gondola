@@ -74,3 +74,11 @@ describe("respuestas", () => {
     });
   });
 });
+
+describe("v4: isCartUrl", () => {
+  it("solo getCarrito, no getCarritoOrdenado", async () => {
+    const { isCartUrl } = await import("../src/response.js");
+    expect(isCartUrl("https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0&_t=1")).toBe(true);
+    expect(isCartUrl("https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarritoOrdenado?_t=1")).toBe(false);
+  });
+});

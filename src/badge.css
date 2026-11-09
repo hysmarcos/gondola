@@ -127,8 +127,10 @@
 }
 
 /* Líneas secundarias de Coto: siguen ahí, pero no compiten con el precio. */
-[data-coto-unit-dim] {
+[data-coto-unit-dim],
+[data-coto-unit-dim] * {
   font-size: 11px !important;
+  font-weight: 400 !important;
   color: #8a8a8a !important;
 }
 

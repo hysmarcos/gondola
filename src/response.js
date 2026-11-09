@@ -23,7 +23,8 @@ export function isRecommendationsUrl(url) {
 }
 
 export function isCartUrl(url) {
-  return /cCarritoActor\/getCarrito/.test(String(url));
+  // getCarritoOrdenado (página /carrito) tiene otra forma: no es el carrito que leemos.
+  return /cCarritoActor\/getCarrito(?![A-Za-z])/.test(String(url));
 }
 
 const DEFAULT_TEMPLATE =

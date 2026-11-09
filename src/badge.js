@@ -38,6 +38,12 @@ export function formatBank(label, day, today) {
   return `${when} con ${label.bankName}: ${$(label.bankValue)}/${unit}`;
 }
 
+// Versión corta para el carrusel, donde las tarjetas son angostas: "ICBC: $275".
+export function formatBankShort(label) {
+  if (!UNIT_TEXT[label?.group] || label.bankValue == null || !label.bankName) return null;
+  return `${label.bankName}: ${$(label.bankValue)}`;
+}
+
 export function formatBlocked(reason) {
   if (reason === "oferta") return "Banco no aplica: ya está en oferta";
   if (reason === "excluido") return "Banco no aplica: excluido de promos";
@@ -81,7 +87,7 @@ export function installBadges(win, doc) {
     upsert(box, "coto-unit-cap", mini ? null : "Precio real para comparar");
     upsert(box, "coto-unit-value", value);
     upsert(box, "coto-unit-note", mini ? null : formatNote(label));
-    upsert(box, "coto-unit-bank", formatBank(label, state.day, today()));
+    upsert(box, "coto-unit-bank", mini ? formatBankShort(label) : formatBank(label, state.day, today()));
     upsert(box, "coto-unit-bankno", mini ? null : formatBlocked(label.bankBlocked));
     return box;
   }

@@ -71,10 +71,11 @@ function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0
     return apiBody(all.slice((page - 1) * size, page * size), total);
   });
   const { FakeXHR, seen, sent } = makeFakeXHR(server);
-  const env = { time: 0, fetched: [], searched: [], posts: [], listeners: [] };
+  const env = { time: 0, fetched: [], searched: [], posts: [], listeners: [], pins: [] };
   const deps = {
     now: () => env.time,
     post: (m) => env.posts.push(m),
+    pin: (...a) => env.pins.push(a),
     listen: (fn) => env.listeners.push(fn),
     promosUrl: PROMOS_URL,
     settingsWaitMs,
@@ -95,10 +96,10 @@ function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0
     },
   };
   const win = { XMLHttpRequest: FakeXHR, location: { pathname: "/carrito" } };
-  installInterceptor(win, deps);
+  const api = installInterceptor(win, deps);
   const send = (msg) => env.listeners.forEach((fn) => fn({ source: "coto-unit", ...msg }));
   if (settings) send({ type: "settings", ...settings });
-  return { win, env, seen, sent, all, send };
+  return { win, env, seen, sent, all, send, api };
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -423,6 +424,7 @@ describe("v4: carrito vivo y promos NxM", () => {
     await request(s.win, REC_URL);
     await add(s.win, { skuId: "sku00000777", prodId: "prod00000777", quantity: 1, sucPickUp: null });
     expect(sentQty(s)).toEqual([2]);
+    expect(s.env.pins).toEqual([["prod00000777", 1, 2]]);
     const adj = s.env.posts.find((m) => m.type === "promoAdjust");
     expect(adj).toMatchObject({ prodId: "prod00000777", from: 1, quantity: 2 });
     expect(s.env.posts.find((m) => m.type === "promoNotice").text).toBe("Promo 2x1: sumamos 1 gratis");
@@ -476,6 +478,16 @@ describe("v4: carrito vivo y promos NxM", () => {
     s.env.onSearch = () => new Promise(() => {});
     await add(s.win, { prodId: "prod00299912", quantity: 2 });
     expect(sentQty(s)).toEqual([2]);
+  });
+
+  it("expone datos y ajustes para los clics de promo", async () => {
+    const s = setup({ settings: { selected: [], day: 1, autoPromo: false }, serverBody: server });
+    await request(s.win, REC_URL);
+    expect(s.api.dataFor("prod00000777").sku_display_name).toBe("Aderezo Caesar X 200 Ml");
+    expect(s.api.dataFor("prod99")).toBeNull();
+    expect(s.api.autoPromo()).toBe(false);
+    s.api.notify("prod00000777", "hola");
+    expect(s.env.posts.at(-1)).toMatchObject({ type: "promoNotice", text: "hola" });
   });
 
   it("las etiquetas de carruseles también van por id de producto", async () => {

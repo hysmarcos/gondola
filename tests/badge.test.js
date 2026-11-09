@@ -223,6 +223,9 @@ describe("v4: carrusel de recomendaciones", () => {
     expect(boxes[0].previousElementSibling.className).toBe("mini-product-card__price-section");
     expect(boxes[0].querySelector(".coto-unit-value").textContent).toBe("$189 /10 m");
     expect(boxes[0].querySelector(".coto-unit-cap")).toBeNull();
+    send({ type: "labels", labels: { prod00632358: L(189.44, { group: "rollo10m", bankValue: 132.61, bankName: "ICBC" }) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-box--mini .coto-unit-bank").textContent).toBe("ICBC: $133");
     expect(doc.querySelector(".mini-product-card__reference-price").hasAttribute("data-coto-unit-dim")).toBe(true);
   });
 });
