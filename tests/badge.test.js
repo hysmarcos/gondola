@@ -1,135 +1,140 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
-import { installBadges, formatBadge, formatBank, groupMark } from "../src/badge.js";
+import { describe, it, expect } from "vitest";
+import { installBadges, formatValue, formatNote, formatBank, formatBlocked, groupMark } from "../src/badge.js";
 
-const KEY = "_/R-00286626-00286626-200";
-const KEY2 = "_/R-00012849-00012849-200";
+const K = (n) => `_/R-0000000${n}-0000000${n}-200`;
+const offerCard = (key, name = "Ravioles") => `
+  <div class="producto-card"><div class="card-container">
+    <a href="/productos/x/${key}">foto</a>
+    <div class="centro-precios"><h3 class="nombre-producto">${name}</h3>
+      <div class="descuentos-slot"><small class="offer-crum">PRECIO CON 25%DTO</small><h4 class="card-title">$2.588,72</h4></div>
+      <div><small class="card-text">Precio Regular: $3.459,00</small><small>Precio sin impuestos nacionales: $2.858,68</small></div>
+      <div><small class="card-text">Precio por 1 Kilo: $6.918,00</small></div>
+      <div class="bottom-botones"><button>Agregar</button></div>
+    </div></div></div>`;
+const plainCard = (key) => `
+  <div class="producto-card"><div class="card-container">
+    <a href="/productos/x/${key}"></a>
+    <div class="centro-precios"><h3 class="nombre-producto">Ravioles</h3><h4 class="card-title">$4.550,00</h4>
+      <div class="bottom-botones"><button>Agregar</button></div></div></div></div>`;
 
-const card = (key) => `
-  <div class="producto-card"><constructor-result-item><div class="card-container">
-    <a href="/productos/ravioles/${key}"><h3>Ravioles</h3></a>
-    <div class="centro-precios"><h4>$3.459</h4><button>Agregar</button></div>
-  </div></constructor-result-item></div>`;
-
-const send = (data) => window.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
+const L = (value, extra = {}) => ({ group: "kg", value, drained: false, take: 1, note: null, bankValue: null, bankName: null, bankBlocked: null, ...extra });
 const tick = () => new Promise((r) => setTimeout(r, 0));
-const L1 = { group: "kg", value: 5177.44, drained: false, take: 1, bankValue: 3624.2, bankName: "ICBC" };
-const L2 = { group: "kg", value: 9597.08, drained: false, take: 1, bankValue: null, bankName: null };
-const text = (sel) => document.querySelector(sel)?.textContent ?? null;
+
+function setup(html, path = "/productos/categorias/x") {
+  const win = new EventTarget();
+  win.location = { pathname: path };
+  win.posted = [];
+  win.postMessage = (m) => win.posted.push(m);
+  win.MutationObserver = window.MutationObserver;
+  const doc = document.implementation.createHTMLDocument("x");
+  doc.body.innerHTML = html;
+  installBadges(win, doc);
+  const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
+  return { win, doc, send };
+}
 
 describe("textos", () => {
-  it("formatea la línea principal", () => {
-    expect(formatBadge({ group: "kg", value: 5177.4, drained: false, take: 1 })).toBe("$5.177/kg final");
-    expect(formatBadge({ group: "L", value: 3000, drained: true, take: 1 })).toBe("$3.000/L escurrido");
-    expect(formatBadge({ group: "L", value: 1666.08, drained: false, take: 3 })).toBe("$1.666/L llevando 3");
-    expect(formatBadge({ group: "unidad", value: 950, drained: false })).toBe("$950/unidad final");
-    expect(formatBadge({ group: "sin_dato", value: null })).toBeNull();
-    expect(groupMark("L")).toBe("▸ Por litro");
-  });
-
-  it("formatea la línea del banco", () => {
-    expect(formatBank(L1, 1, 1)).toBe("Hoy con ICBC: $3.624/kg");
-    expect(formatBank(L1, 2, 1)).toBe("Martes con ICBC: $3.624/kg");
-    expect(formatBank(L2, 1, 1)).toBeNull();
+  it("valor, nota, banco y bloqueo", () => {
+    expect(formatValue(L(5177.4))).toBe("$5.177 /kg");
+    expect(formatValue(L(206.35, { group: "rollo10m" }))).toBe("$206 /10 m");
+    expect(formatValue(L(555.55, { group: "panos100" }))).toBe("$556 /100 paños");
+    expect(formatValue(L(396.17, { group: "m2" }))).toBe("$396 /m²");
+    expect(formatValue(L(null, { group: "sin_dato" }))).toBeNull();
+    expect(formatNote(L(1, { take: 3, drained: true, note: "doble hoja" }))).toBe("llevando 3 · escurrido · doble hoja");
+    expect(formatNote(L(1))).toBeNull();
+    expect(formatBank(L(1, { bankValue: 3624.2, bankName: "ICBC" }), 1, 1)).toBe("Hoy con ICBC: $3.624/kg");
+    expect(formatBank(L(1, { bankValue: 3624.2, bankName: "ICBC" }), 2, 1)).toBe("Martes con ICBC: $3.624/kg");
+    expect(formatBlocked("oferta")).toBe("Banco no aplica: ya está en oferta");
+    expect(formatBlocked("excluido")).toBe("Banco no aplica: excluido de promos");
+    expect(formatBlocked(null)).toBeNull();
+    expect(groupMark("rollo10m")).toBe("▸ Por 10 m");
   });
 });
 
-describe("installBadges", () => {
-  beforeAll(() => installBadges(window, document));
-  beforeEach(async () => {
+describe("tarjeta", () => {
+  it("caja después del precio en oferta y atenúa las líneas de Coto", async () => {
+    const { doc, send } = setup(offerCard(K(1)));
+    send({ type: "labels", labels: { [K(1)]: L(5177.44, { bankBlocked: "oferta" }) } });
+    await tick();
+    const box = doc.querySelector(".coto-unit-box");
+    expect(box.previousElementSibling.className).toBe("descuentos-slot");
+    expect(box.querySelector(".coto-unit-cap").textContent).toBe("Precio real para comparar");
+    expect(box.querySelector(".coto-unit-value").textContent).toBe("$5.177 /kg");
+    expect(box.querySelector(".coto-unit-bankno").textContent).toBe("Banco no aplica: ya está en oferta");
+    const smalls = [...doc.querySelectorAll(".centro-precios small:not(.offer-crum)")];
+    expect(smalls.every((s) => s.hasAttribute("data-coto-unit-dim"))).toBe(true);
+    expect(smalls[0].hasAttribute("data-coto-unit-strike")).toBe(true);
+    expect(doc.querySelector(".bottom-botones button").textContent).toBe("Agregar");
+  });
+
+  it("sin oferta: caja después del h4 y línea de banco", async () => {
+    const { doc, send } = setup(plainCard(K(2)));
     send({ type: "settings", selected: [], day: new Date().getDay() });
-    send({ type: "labels", labels: {}, marks: null, seq: 0 });
-    document.body.innerHTML = `<div class="plp-header__sort"><select id="plpSort"></select></div><div id="grid">${card(KEY)}</div>`;
+    send({ type: "labels", labels: { [K(2)]: L(9100, { bankValue: 6370, bankName: "ICBC", take: 3 }) } });
     await tick();
+    const box = doc.querySelector(".coto-unit-box");
+    expect(box.previousElementSibling.tagName).toBe("H4");
+    expect(box.querySelector(".coto-unit-note").textContent).toBe("llevando 3");
+    expect(box.querySelector(".coto-unit-bank").textContent).toBe("Hoy con ICBC: $6.370/kg");
   });
 
-  it("muestra etiqueta y línea de banco sin orden por unidad", async () => {
-    send({ type: "labels", labels: { [KEY]: L1 }, marks: null, seq: 1 });
+  it("'Más barato' solo con 3 o más tarjetas del grupo", async () => {
+    const { doc, send } = setup(plainCard(K(1)) + plainCard(K(2)) + plainCard(K(3)));
+    send({ type: "labels", labels: { [K(1)]: L(900), [K(2)]: L(500, { bankValue: 450, bankName: "X" }), [K(3)]: L(700) } });
     await tick();
-    expect(text(".coto-unit-badge")).toBe("$5.177/kg final");
-    expect(text(".coto-unit-bank")).toBe("Hoy con ICBC: $3.624/kg");
-    expect(document.querySelector(".coto-unit-mark")).toBeNull();
-    const c = document.querySelector(".card-container");
-    expect(c.firstElementChild.tagName).toBe("A");
+    const best = doc.querySelectorAll(".coto-unit-best");
+    expect(best).toHaveLength(1);
+    expect(best[0].textContent).toBe("Más barato por kg");
+    expect(best[0].closest(".card-container").querySelector("a").getAttribute("href")).toContain(K(2));
+
+    const two = setup(plainCard(K(1)) + plainCard(K(2)));
+    two.send({ type: "labels", labels: { [K(1)]: L(900), [K(2)]: L(500) } });
+    await tick();
+    expect(two.doc.querySelector(".coto-unit-best")).toBeNull();
   });
 
-  it("junta etiquetas de varios mensajes (carruseles)", async () => {
-    send({ type: "labels", labels: { [KEY]: L1 }, marks: null, seq: 2 });
-    send({ type: "labels", labels: { [KEY2]: L2 } });
-    document.getElementById("grid").insertAdjacentHTML("beforeend", card(KEY2));
+  it("marcas de grupo por seq y aviso", async () => {
+    const { doc, send } = setup(`<div class="plp-header__sort"></div>` + plainCard(K(1)));
+    send({ type: "labels", labels: { [K(1)]: L(1) }, marks: { [K(1)]: "kg" }, seq: 5 });
+    send({ type: "labels", labels: {}, marks: null, seq: 4 });
+    send({ type: "notice", text: "Se ordenaron los primeros 1.000 productos", seq: 5 });
     await tick();
-    expect(document.querySelectorAll(".coto-unit-badge")).toHaveLength(2);
-    expect(document.querySelectorAll(".coto-unit-bank")).toHaveLength(1);
+    expect(doc.querySelector(".coto-unit-mark").textContent).toBe("▸ Por kilo");
+    expect(doc.querySelector(".coto-unit-notice")).not.toBeNull();
+    send({ type: "labels", labels: {}, marks: null, seq: 6 });
+    await tick();
+    expect(doc.querySelector(".coto-unit-mark, .coto-unit-notice")).toBeNull();
   });
 
-  it("marcas de grupo: solo del mensaje más nuevo; null las borra", async () => {
-    send({ type: "labels", labels: { [KEY]: L1 }, marks: { [KEY]: "kg" }, seq: 10 });
+  it("al cambiar configuración borra líneas de banco viejas", async () => {
+    const { doc, send } = setup(plainCard(K(1)));
+    send({ type: "settings", selected: [{ id: "457" }], day: 1 });
+    send({ type: "labels", labels: { [K(1)]: L(1000, { bankValue: 700, bankName: "ICBC" }) } });
     await tick();
-    expect(text(".coto-unit-mark")).toBe("▸ Por kilo");
-    send({ type: "labels", labels: { [KEY]: L1 }, marks: null, seq: 9 });
+    expect(doc.querySelector(".coto-unit-bank")).not.toBeNull();
+    send({ type: "settings", selected: [{ id: "457" }], day: 3 });
     await tick();
-    expect(text(".coto-unit-mark")).toBe("▸ Por kilo");
-    send({ type: "labels", labels: { [KEY]: L1 }, marks: null, seq: 11 });
-    await tick();
-    expect(document.querySelector(".coto-unit-mark")).toBeNull();
-  });
-
-  it("aviso: aparece una vez y se va con un orden nativo", async () => {
-    send({ type: "notice", text: "Se ordenaron los primeros 1.000 productos", seq: 20 });
-    send({ type: "notice", text: "Se ordenaron los primeros 1.000 productos", seq: 20 });
-    await tick();
-    expect(document.querySelectorAll(".coto-unit-notice")).toHaveLength(1);
-    expect(document.querySelector(".coto-unit-notice").previousElementSibling.className).toBe("plp-header__sort");
-    send({ type: "labels", labels: {}, marks: null, seq: 21 });
-    await tick();
-    expect(document.querySelector(".coto-unit-notice")).toBeNull();
+    expect(doc.querySelector(".coto-unit-bank")).toBeNull();
   });
 
   it("ignora mensajes de otros", async () => {
-    const KEY3 = "_/R-00000003-00000003-200";
-    document.getElementById("grid").innerHTML = card(KEY3);
-    window.dispatchEvent(new MessageEvent("message", { data: { source: "otro", type: "labels", labels: { [KEY3]: L1 } } }));
+    const { win, doc } = setup(plainCard(K(1)));
+    win.dispatchEvent(new MessageEvent("message", { data: { source: "otro", type: "labels", labels: { [K(1)]: L(1) } } }));
     await tick();
-    expect(document.querySelector(".coto-unit-badge")).toBeNull();
+    expect(doc.querySelector(".coto-unit-box")).toBeNull();
   });
 });
 
 describe("página de producto", () => {
-  it("pide la etiqueta por PLU y la pone después del precio", async () => {
-    const posted = [];
-    const win = new EventTarget();
-    win.location = { pathname: "/productos/ravioles/_/R-00217832-00217832-200" };
-    win.postMessage = (m) => posted.push(m);
-    win.MutationObserver = window.MutationObserver;
-    const doc = document.implementation.createHTMLDocument("pdp");
-    doc.body.innerHTML = `<article><h2>Ravioles</h2><div><span class="price h3">$2.738,54</span></div><button>Agregar</button></article>`;
-    installBadges(win, doc);
-    expect(posted).toContainEqual({ source: "coto-unit", type: "lookup", plu: "217832", key: "_/R-00217832-00217832-200" });
-    win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", type: "labels", labels: { "_/R-00217832-00217832-200": L2 } } }));
+  it("pide por PLU y pone la caja después del precio", async () => {
+    const key = "_/R-00217832-00217832-200";
+    const { win, doc, send } = setup(`<article><div><span class="price h3">$2.738,54</span></div></article>`, `/productos/ravioles/${key}`);
+    expect(win.posted).toContainEqual({ source: "coto-unit", type: "lookup", plu: "217832", key });
+    send({ type: "labels", labels: { [key]: L(9597.08) } });
     await tick();
-    const box = doc.querySelector(".coto-unit-pdp");
+    const box = doc.querySelector(".coto-unit-box");
     expect(box.previousElementSibling.className).toBe("price h3");
-    expect(box.querySelector(".coto-unit-badge").textContent).toBe("$9.597/kg final");
-  });
-});
-
-describe("fix: cambio de configuración", () => {
-  it("borra las líneas de banco viejas cuando cambia el día o las promos", async () => {
-    const doc = document.implementation.createHTMLDocument("x");
-    const win = new EventTarget();
-    win.location = { pathname: "/" };
-    win.postMessage = () => {};
-    win.MutationObserver = window.MutationObserver;
-    doc.body.innerHTML = card(KEY);
-    installBadges(win, doc);
-    const sendW = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
-    sendW({ type: "settings", selected: [{ id: "457" }], day: 1 });
-    sendW({ type: "labels", labels: { [KEY]: L1 } });
-    await tick();
-    expect(doc.querySelector(".coto-unit-bank")).not.toBeNull();
-    sendW({ type: "settings", selected: [{ id: "457" }], day: 3 });
-    await tick();
-    expect(doc.querySelector(".coto-unit-bank")).toBeNull();
-    expect(doc.querySelector(".coto-unit-badge").textContent).toBe("$5.177/kg final");
+    expect(box.querySelector(".coto-unit-value").textContent).toBe("$9.597 /kg");
   });
 });

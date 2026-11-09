@@ -1,24 +1,33 @@
-// Etiquetas "$X/kg final" y "Hoy con <banco>" en las tarjetas nativas de Coto y en la
-// página de producto. Solo agrega nodos.
+// Caja "Precio real para comparar" en las tarjetas nativas de Coto y en la página de
+// producto. Solo agrega nodos y atributos data-coto-unit-*; no borra nada de Coto.
 import { dayName } from "./banks.js";
 
 const SOURCE = "coto-unit";
-const BADGE = "coto-unit-badge";
-const BANK = "coto-unit-bank";
+const BOX = "coto-unit-box";
 const MARK = "coto-unit-mark";
+const BEST = "coto-unit-best";
 const NOTICE = "coto-unit-notice";
-const PDP = "coto-unit-pdp";
 const KEY_RE = /_\/R-[\w-]+/;
+const MIN_FOR_BEST = 3;
 
-const UNIT_TEXT = { kg: "kg", L: "L", unidad: "unidad" };
-const MARK_TEXT = { kg: "▸ Por kilo", L: "▸ Por litro", unidad: "▸ Por unidad" };
+const UNIT_TEXT = { kg: "kg", L: "L", unidad: "unidad", m2: "m²", m: "m", rollo10m: "10 m", panos100: "100 paños" };
+const MARK_TEXT = { kg: "Por kilo", L: "Por litro", unidad: "Por unidad", m2: "Por m²", m: "Por metro", rollo10m: "Por 10 m", panos100: "Por 100 paños" };
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+const $ = (n) => "$" + money.format(n);
 
-export function formatBadge(label) {
+export function formatValue(label) {
   const unit = UNIT_TEXT[label?.group];
   if (!unit || label.value == null) return null;
-  const suffix = label.take > 1 ? `llevando ${label.take}` : label.drained ? "escurrido" : "final";
-  return `$${money.format(label.value)}/${unit} ${suffix}`;
+  return `${$(label.value)} /${unit}`;
+}
+
+export function formatNote(label) {
+  const parts = [
+    label?.take > 1 ? `llevando ${label.take}` : null,
+    label?.drained ? "escurrido" : null,
+    label?.note ?? null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
 }
 
 // day: día de compra elegido; today: día de hoy (0 = domingo).
@@ -26,44 +35,95 @@ export function formatBank(label, day, today) {
   const unit = UNIT_TEXT[label?.group];
   if (!unit || label.bankValue == null || !label.bankName) return null;
   const when = day === today ? "Hoy" : dayName(day);
-  return `${when} con ${label.bankName}: $${money.format(label.bankValue)}/${unit}`;
+  return `${when} con ${label.bankName}: ${$(label.bankValue)}/${unit}`;
+}
+
+export function formatBlocked(reason) {
+  if (reason === "oferta") return "Banco no aplica: ya está en oferta";
+  if (reason === "excluido") return "Banco no aplica: excluido de promos";
+  return null;
 }
 
 export function groupMark(group) {
-  return MARK_TEXT[group];
+  return MARK_TEXT[group] ? "▸ " + MARK_TEXT[group] : null;
 }
 
-function upsert(parent, cls, text) {
+function upsert(parent, cls, text, before = null) {
   let el = parent.querySelector(":scope > ." + cls);
-  if (!text) {
-    el?.remove();
-    return;
-  }
+  if (!text) return el?.remove();
   if (!el) {
     el = parent.ownerDocument.createElement("div");
     el.className = cls;
-    parent.appendChild(el);
+    if (before) parent.insertBefore(el, before);
+    else parent.appendChild(el);
   }
   if (el.textContent !== text) el.textContent = text;
+  return el;
 }
 
 export function installBadges(win, doc) {
   const today = () => new Date().getDay();
   const state = { labels: {}, marks: {}, seq: 0, day: today(), path: null, sig: undefined };
 
-  function paint(target, label) {
-    upsert(target, BADGE, label ? formatBadge(label) : null);
-    upsert(target, BANK, label ? formatBank(label, state.day, today()) : null);
+  // Caja con el precio para comparar. anchor: después de qué nodo va.
+  function paintBox(container, anchor, label) {
+    let box = container.querySelector("." + BOX);
+    const value = label ? formatValue(label) : null;
+    if (!value) return box?.remove();
+    if (!box) {
+      box = doc.createElement("div");
+      box.className = BOX;
+      if (anchor) anchor.after(box);
+      else container.appendChild(box);
+    }
+    upsert(box, "coto-unit-cap", "Precio real para comparar");
+    upsert(box, "coto-unit-value", value);
+    upsert(box, "coto-unit-note", formatNote(label));
+    upsert(box, "coto-unit-bank", formatBank(label, state.day, today()));
+    upsert(box, "coto-unit-bankno", formatBlocked(label.bankBlocked));
+    return box;
+  }
+
+  // Las líneas secundarias de Coto pasan a chicas y grises; "Precio Regular" tachado.
+  function dimCoto(centro) {
+    for (const s of centro.querySelectorAll("small")) {
+      const t = s.textContent;
+      if (/precio regular/i.test(t)) {
+        s.setAttribute("data-coto-unit-dim", "");
+        s.setAttribute("data-coto-unit-strike", "");
+      } else if (/sin impuestos|precio por \d/i.test(t)) {
+        s.setAttribute("data-coto-unit-dim", "");
+      }
+    }
   }
 
   function renderCards() {
+    const byGroup = new Map();
     for (const link of doc.querySelectorAll('a[href*="_/R-"]')) {
       const card = link.closest(".card-container");
       if (!card) continue;
       const key = link.getAttribute("href").match(KEY_RE)?.[0];
       const label = key ? state.labels[key] : null;
-      paint(card.querySelector(".centro-precios") ?? card, label);
+      const centro = card.querySelector(".centro-precios") ?? card;
+      const anchor = centro.querySelector(".descuentos-slot") ?? centro.querySelector("h4.card-title");
+      const box = paintBox(centro, anchor, label);
+      if (box) {
+        dimCoto(centro);
+        if (!byGroup.has(label.group)) byGroup.set(label.group, []);
+        byGroup.get(label.group).push({ box, price: label.bankValue ?? label.value });
+      }
       upsert(card, MARK, key && state.marks[key] ? groupMark(state.marks[key]) : null);
+    }
+    // "Más barato por <u>": la de menor precio de su grupo, si hay al menos 3 visibles.
+    const winners = new Set();
+    for (const [group, list] of byGroup) {
+      if (list.length < MIN_FOR_BEST) continue;
+      const min = list.reduce((a, b) => (b.price < a.price ? b : a));
+      winners.add(min.box);
+      upsert(min.box, BEST, `Más barato por ${UNIT_TEXT[group]}`, min.box.firstChild);
+    }
+    for (const el of doc.querySelectorAll("." + BEST)) {
+      if (!winners.has(el.parentElement)) el.remove();
     }
   }
 
@@ -73,16 +133,9 @@ export function installBadges(win, doc) {
 
   function renderPdp() {
     const key = pdpKey();
-    const label = key ? state.labels[key] : null;
     const price = doc.querySelector(".price");
-    let box = doc.querySelector("." + PDP);
-    if (!label || !price) return box?.remove();
-    if (!box) {
-      box = doc.createElement("div");
-      box.className = PDP;
-      price.after(box);
-    }
-    paint(box, label);
+    if (!key || !price) return;
+    paintBox(price.parentElement, price, state.labels[key]);
   }
 
   function render() {
@@ -123,6 +176,7 @@ export function installBadges(win, doc) {
         for (const l of Object.values(state.labels)) {
           l.bankValue = null;
           l.bankName = null;
+          l.bankBlocked = null;
         }
       }
       state.sig = sig;
