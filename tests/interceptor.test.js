@@ -195,6 +195,24 @@ describe("Angular y zone.js", () => {
     expect(ranInside).toBe(true);
   });
 
+  // zone.js parchea EventTarget.prototype.addEventListener después de nosotros. Si tapamos
+  // addEventListener en el prototipo del XHR, los pedidos ajenos (ej. la caja) salen de la
+  // zona de Angular y la página no se redibuja.
+  it("los pedidos que no son de productos usan el addEventListener que esté vigente", () => {
+    class Target { addEventListener() { this.native = true; } }
+    class XHR extends Target { open() {} send() {} }
+    installInterceptor({ XMLHttpRequest: XHR, location: { pathname: "/caja/" } }, {
+      now: () => 0, post: () => {}, fetch: async () => ({ ok: false }), settingsWaitMs: 0,
+    });
+    const zoned = [];
+    Target.prototype.addEventListener = function (t) { zoned.push(t); };
+    const x = new XHR();
+    x.open("GET", "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=1");
+    zoned.length = 0;
+    x.addEventListener("load", () => {});
+    expect(zoned).toEqual(["load"]);
+  });
+
   it("cada pedido de productos lleva un número creciente", async () => {
     const s = setup();
     await request(s.win, url("price"));

@@ -404,15 +404,6 @@ export function installInterceptor(win, deps) {
     return origOpen.call(this, method, realUrl, ...rest);
   };
 
-  proto.addEventListener = function (type, fn, ...rest) {
-    const h = this.__cotoHeld;
-    if (h && HELD.includes(type)) {
-      h.listeners[type].push(fn);
-      return undefined;
-    }
-    return origAdd.call(this, type, fn, ...rest);
-  };
-
   // Guarda los listeners de "load" y "readystatechange" hasta tener la respuesta final.
   function hold(xhr, url, unit) {
     // zone: open() corre dentro de la zona de Angular; liberamos ahí para que redibuje.
@@ -421,6 +412,19 @@ export function installInterceptor(win, deps) {
       listeners: { load: [], readystatechange: [] }, on: {},
     };
     xhr.__cotoHeld = h;
+    // Solo en este XHR: tapar addEventListener en el prototipo saca a todos los demás
+    // pedidos de la zona de Angular (zone.js lo parchea después) y la caja no se dibuja.
+    Object.defineProperty(xhr, "addEventListener", {
+      configurable: true,
+      writable: true,
+      value(type, fn, ...rest) {
+        if (HELD.includes(type)) {
+          h.listeners[type].push(fn);
+          return undefined;
+        }
+        return proto.addEventListener.call(this, type, fn, ...rest);
+      },
+    });
     for (const t of HELD) {
       Object.defineProperty(xhr, "on" + t, {
         configurable: true,
