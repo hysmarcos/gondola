@@ -65,14 +65,14 @@ const STATUS_TEXT = {
   pending: "Consultando otros súper",
 };
 
-// Íconos dibujados (trazo 2, 24x24).
-const CIRCLE = "M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18z";
+// Íconos: solo flechitas, sin alarmas. Abajo: en otro súper está más barato (el precio
+// baja); arriba: los demás están más caros (Coto conviene); "=" igual; "–" sin datos.
 const STATUS_ICON = {
-  worse: ["M12 8.5v4.5", "M12 16.5h.01", "M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"],
-  better: [CIRCLE, "M8 12.5l2.7 2.7L16 9.8"],
-  equal: [CIRCLE, "M8.5 10h7", "M8.5 14h7"],
-  none: [CIRCLE, "M8.5 12h7"],
-  pending: [CIRCLE, "M8 12h.01", "M12 12h.01", "M16 12h.01"],
+  worse: ["M12 6v12", "M7.5 13.5 12 18l4.5-4.5"],
+  better: ["M12 18V6", "M7.5 10.5 12 6l4.5 4.5"],
+  equal: ["M7.5 10h9", "M7.5 14h9"],
+  none: ["M8 12h8"],
+  pending: ["M8 12h.01", "M12 12h.01", "M16 12h.01"],
 };
 
 function priceText(r) {

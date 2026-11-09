@@ -652,8 +652,9 @@
   stroke-linejoin: round;
 }
 
-.coto-unit-cmp--icon[data-state="worse"] .coto-unit-cmp-btn { background: #fdecec; color: #b01f17; }
-.coto-unit-cmp--icon[data-state="better"] .coto-unit-cmp-btn { background: #e3f3e6; color: #1d7a35; }
+/* Colores suaves: el ícono informa, no alarma. */
+.coto-unit-cmp--icon[data-state="worse"] .coto-unit-cmp-btn { background: #fbefe9; color: #a5512d; }
+.coto-unit-cmp--icon[data-state="better"] .coto-unit-cmp-btn { background: #eaf4ec; color: #2f7a43; }
 .coto-unit-cmp--icon[data-state="equal"] .coto-unit-cmp-btn { background: #eceef0; color: #51585e; }
 .coto-unit-cmp--icon[data-state="none"] .coto-unit-cmp-btn,
 .coto-unit-cmp--icon[data-state="pending"] .coto-unit-cmp-btn { background: #f3f4f5; color: #8a9096; }
@@ -771,7 +772,7 @@
   font-weight: 700;
 }
 
-.coto-unit-cmp-pop .coto-unit-cmp-row--lower .coto-unit-cmp-delta { color: #b01f17; }
+.coto-unit-cmp-pop .coto-unit-cmp-row--lower .coto-unit-cmp-delta { color: #a5512d; }
 .coto-unit-cmp-pop .coto-unit-cmp-row--higher .coto-unit-cmp-delta,
 .coto-unit-cmp-pop .coto-unit-cmp-row--equal .coto-unit-cmp-delta { color: #6b7177; }
 .coto-unit-cmp-pop .coto-unit-cmp-row--none .coto-unit-cmp-price,
