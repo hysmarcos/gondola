@@ -9,7 +9,9 @@ const WARN = "coto-unit-cart-warn";
 const BOX = "coto-unit-cart-box";
 const CMP = "coto-unit-cmp";
 const EAN_ATTR = "data-coto-unit-ean";
-const CMP_SEL = `card-product .${CMP}`;
+// Solo el bloque propio del carrito (hijo directo de su destino, ver paintLine); nunca
+// el de una caja de precio de badge.js.
+const CMP_SEL = `card-product .c__item-detail > .${CMP}, card-product > .${CMP}`;
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const $ = (n) => "$" + money.format(n);
 
@@ -39,12 +41,25 @@ function boxLines(a, day, today) {
 export function installCartUi(win, doc, { compare } = {}) {
   const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true };
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
+  let scheduled = false;
+
+  // Un lote de respuestas llega junto: un solo repintado por cuadro, no uno por EAN.
+  // Si el usuario apagó la comparación mientras tanto, la respuesta no pinta.
+  function renderSoon() {
+    if (scheduled) return;
+    scheduled = true;
+    const run = () => {
+      scheduled = false;
+      if (state.compare) render();
+    };
+    if (typeof win.requestAnimationFrame === "function") win.requestAnimationFrame(run);
+    else queueMicrotask(run);
+  }
 
   function ask(ean) {
     if (!state.compare || requested.has(ean)) return;
     requested.add(ean);
-    // Si el usuario apagó la comparación mientras tanto, la respuesta no pinta.
-    compare.request(ean).then(() => state.compare && render());
+    compare.request(ean).then(renderSoon);
   }
 
   // Una línea del carrito por tarjeta: mejor precio de otro súper, si hay EAN y precio de Coto.

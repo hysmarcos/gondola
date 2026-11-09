@@ -30,7 +30,10 @@ export function sortByUnitPrice(results, store, promos = [], day = 0) {
   for (const g of order) {
     groups.get(g).forEach(({ r, u }, i) => {
       sorted.push(r);
-      labels[r.data.url] = u;
+      const label = { ...u, ...compareFields(r.data, store) };
+      labels[r.data.url] = label;
+      // Igual que labelsFor: los carruseles buscan por id de producto.
+      if (r.data.id) labels[r.data.id] = label;
       if (i === 0) marks[r.data.url] = g;
     });
   }

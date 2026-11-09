@@ -46,7 +46,15 @@ function plan(rows, variant) {
   if (lower.length) {
     const best = lower.reduce((a, b) => (b.unit < a.unit ? b : a));
     const money = formatMoney(best.unit);
-    return [{ cls: `${CMP}-best ${CMP}-best--lower`, text: `${best.name} ${money} ▼`, label: `${best.name}: ${money}, más barato` }];
+    // Si ese precio es llevando varios, se dice: sin eso el número engaña.
+    const take = best.qty > 1 ? { text: ` (x${best.qty})`, label: `, llevando ${best.qty}` } : { text: "", label: "" };
+    return [
+      {
+        cls: `${CMP}-best ${CMP}-best--lower`,
+        text: `${best.name} ${money} ▼${take.text}`,
+        label: `${best.name}: ${money}, más barato${take.label}`,
+      },
+    ];
   }
   if (rows.some((r) => r.unit !== null)) return [{ cls: `${CMP}-best ${CMP}-best--higher`, text: "Coto el más barato" }];
   if (rows.some((r) => r.state === "pending")) return [{ cls: `${CMP}-best ${CMP}-best--pending`, text: "…" }];

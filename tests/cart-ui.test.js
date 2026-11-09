@@ -13,7 +13,7 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 function setup(path = "/carrito", total = "$48.355,92", opts = {}) {
   const win = new EventTarget();
   win.location = { pathname: path };
-  win.MutationObserver = window.MutationObserver;
+  win.MutationObserver = opts.MutationObserver ?? window.MutationObserver;
   const doc = document.implementation.createHTMLDocument("cart");
   const line = (name) => `<card-product><div class="c__item-detail"><a class="title">  ${name} </a></div><input value="1"></card-product>`;
   doc.body.innerHTML = `
@@ -165,6 +165,12 @@ function fakeCompare() {
       waiting.get(ean)?.(res);
       await tick();
     },
+    // Como el cliente real: un lote entero se resuelve de una vez.
+    async resolveAll(eans, res) {
+      for (const e of eans) done.set(e, res);
+      for (const e of eans) waiting.get(e)?.(res);
+      await tick();
+    },
   };
 }
 
@@ -192,7 +198,7 @@ describe("v5: comparar con otros súper en el carrito", () => {
     await tick();
     expect(bests(doc)).toEqual(["…"]);
     await compare.resolve(EAN_DOVE, RES);
-    expect(bests(doc)).toEqual(["Día $1.899 ▼"]);
+    expect(bests(doc)).toEqual(["Día $1.899 ▼ (x2)"]);
     const best = doc.querySelector(".coto-unit-cmp-best");
     expect(best.closest(".c__item-detail").parentElement.textContent).toContain("DOVE");
     expect(doc.querySelectorAll(".coto-unit-cmp")).toHaveLength(1);
@@ -231,14 +237,14 @@ describe("v5: comparar con otros súper en el carrito", () => {
     send({ type: "cart", analysis: withEan(true), seq: 1 });
     await tick();
     await compare.resolve(EAN_DOVE, RES);
-    expect(bests(doc)).toEqual(["Día $1.899 ▼", "…"]);
+    expect(bests(doc)).toEqual(["Día $1.899 ▼ (x2)", "…"]);
     send({ type: "settings", selected: [], day: 1, compareStores: false });
     expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
     await compare.resolve(EAN_TRES, RES);
     expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
     // Al volver a encender se pinta con lo ya sabido, sin pedir de nuevo.
     send({ type: "settings", selected: [], day: 1, compareStores: true });
-    expect(bests(doc)).toEqual(["Día $1.899 ▼", "Día $1.899 ▼"]);
+    expect(bests(doc)).toEqual(["Día $1.899 ▼ (x2)", "Día $1.899 ▼ (x2)"]);
     expect(compare.asked).toEqual([EAN_DOVE, EAN_TRES]);
   });
 
@@ -248,10 +254,93 @@ describe("v5: comparar con otros súper en el carrito", () => {
     send({ type: "cart", analysis: withEan(), seq: 1 });
     await tick();
     await compare.resolve(EAN_DOVE, RES);
-    expect(bests(doc)).toEqual(["Día $1.899 ▼"]);
+    expect(bests(doc)).toEqual(["Día $1.899 ▼ (x2)"]);
     const next = withEan();
     next.lines = next.lines.map((l) => (l.id === "prod00299912" ? { ...l, ean: null, cmp: null } : l));
     send({ type: "cart", analysis: next, seq: 2 });
     expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+  });
+
+  it("un lote de EAN que llega junto repinta una sola vez", async () => {
+    class NoMO {
+      observe() {}
+      disconnect() {}
+    }
+    const compare = fakeCompare();
+    const { doc, send } = setup("/carrito", undefined, { compare, MutationObserver: NoMO });
+    // Tercera tarjeta con EAN propio, para que el lote sea de 3.
+    const EAN_X = "7791293031259";
+    doc.body.insertAdjacentHTML("afterbegin", `<card-product><div class="c__item-detail"><a class="title">Otro producto</a></div></card-product>`);
+    const a = withEan(true);
+    a.lines = [...a.lines, { ...a.lines[0], id: "x", name: "Otro producto", missing: 0, ean: EAN_X, cmp: CMP }];
+    send({ type: "cart", analysis: a, seq: 1 });
+    await tick();
+    expect(compare.asked).toEqual([EAN_X, EAN_DOVE, EAN_TRES]);
+    let passes = 0;
+    const qsa = doc.querySelectorAll.bind(doc);
+    doc.querySelectorAll = (sel) => {
+      if (sel === "card-product") passes++;
+      return qsa(sel);
+    };
+    await compare.resolveAll([EAN_X, EAN_DOVE, EAN_TRES], RES);
+    expect(passes).toBe(1);
+    expect(bests(doc)).toEqual(Array(3).fill("Día $1.899 ▼ (x2)"));
+  });
+
+  it("apagar o limpiar solo borra el bloque del carrito, no el de una caja de precio", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup("/carrito", undefined, { compare });
+    // Bloque de badge.js: va dentro de .coto-unit-box, nunca es hijo directo del detalle.
+    const card = doc.querySelector("card-product");
+    card.insertAdjacentHTML("beforeend", `<div class="coto-unit-box"><div class="coto-unit-cmp" id="ajeno"></div></div>`);
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await tick();
+    await compare.resolve(EAN_DOVE, RES);
+    expect(doc.querySelectorAll(".c__item-detail > .coto-unit-cmp")).toHaveLength(1);
+    send({ type: "settings", selected: [], day: 1, compareStores: false });
+    expect(doc.querySelector(".c__item-detail > .coto-unit-cmp")).toBeNull();
+    expect(doc.getElementById("ajeno")).not.toBeNull();
+    send({ type: "settings", selected: [], day: 1, compareStores: true });
+    await tick();
+    expect(doc.querySelectorAll(".c__item-detail > .coto-unit-cmp")).toHaveLength(1);
+    // Total que no coincide: clear() borra lo del carrito y deja lo ajeno.
+    doc.querySelector(".card-body-container").firstChild.textContent = "Total: $1,00 ";
+    send({ type: "cart", analysis: withEan(), seq: 2 });
+    await tick();
+    expect(doc.querySelector(".c__item-detail > .coto-unit-cmp")).toBeNull();
+    expect(doc.getElementById("ajeno")).not.toBeNull();
+  });
+
+  it("aviso de promo y comparación en la misma tarjeta: se asienta y no vuelve a tocar el DOM", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup("/carrito", "$51.094,91", { compare });
+    const analysis = () => {
+      const a = analyzeCart(dove4, [], today, "200");
+      a.lines = a.lines.map((l) => (l.id === "prod00299912" ? { ...l, ean: EAN_DOVE, cmp: CMP } : l));
+      return a;
+    };
+    let seq = 1;
+    send({ type: "cart", analysis: analysis(), seq: seq++ });
+    await tick();
+    await compare.resolve(EAN_DOVE, RES);
+    for (let i = 0; i < 3; i++) {
+      send({ type: "cart", analysis: analysis(), seq: seq++ });
+      await tick();
+    }
+    const detail = doc.querySelector(".coto-unit-cart-warn").parentElement;
+    expect(detail.querySelector(":scope > .coto-unit-cmp")).not.toBeNull();
+    const order = () => [...detail.children].map((c) => c.className);
+    const before = order();
+    const records = [];
+    const mo = new MutationObserver((r) => records.push(...r));
+    mo.observe(doc.body, { childList: true, subtree: true, attributes: true, characterData: true });
+    send({ type: "cart", analysis: analysis(), seq: seq++ });
+    await tick();
+    send({ type: "cart", analysis: analysis(), seq: seq++ });
+    await tick();
+    mo.disconnect();
+    expect(records).toHaveLength(0);
+    expect(order()).toEqual(before);
+    expect(order()).toEqual(["title", "coto-unit-cart-warn", "coto-unit-cmp"]);
   });
 });

@@ -76,12 +76,25 @@ export function installBadges(win, doc, { compare } = {}) {
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
   let watching = new WeakMap(); // caja -> EAN que espera verse para pedirse
   let io = null;
+  let scheduled = false;
+
+  // Un lote de respuestas llega junto: un solo repintado por cuadro, no uno por EAN.
+  // Si el usuario apagó la comparación mientras tanto, la respuesta no pinta.
+  function renderSoon() {
+    if (scheduled) return;
+    scheduled = true;
+    const run = () => {
+      scheduled = false;
+      if (state.compare) render();
+    };
+    if (typeof win.requestAnimationFrame === "function") win.requestAnimationFrame(run);
+    else queueMicrotask(run);
+  }
 
   function ask(ean) {
     if (!state.compare || requested.has(ean)) return;
     requested.add(ean);
-    // Si el usuario apagó la comparación mientras tanto, la respuesta no pinta.
-    compare.request(ean).then(() => state.compare && render());
+    compare.request(ean).then(renderSoon);
   }
 
   // Pide el EAN la primera vez que la caja entra en pantalla (o enseguida si no se puede saber).

@@ -26,7 +26,7 @@ function setup(html, path = "/productos/categorias/x", opts) {
   win.location = { pathname: path };
   win.posted = [];
   win.postMessage = (m) => win.posted.push(m);
-  win.MutationObserver = window.MutationObserver;
+  win.MutationObserver = opts?.MutationObserver ?? window.MutationObserver;
   const doc = document.implementation.createHTMLDocument("x");
   doc.body.innerHTML = html;
   if (opts?.IntersectionObserver) win.IntersectionObserver = opts.IntersectionObserver;
@@ -274,6 +274,12 @@ function fakeCompare() {
       waiting.get(ean)?.(res);
       await tick();
     },
+    // Como el cliente real: un lote entero se resuelve de una vez.
+    async resolveAll(eans, res) {
+      for (const e of eans) done.set(e, res);
+      for (const e of eans) waiting.get(e)?.(res);
+      await tick();
+    },
   };
 }
 
@@ -380,5 +386,49 @@ describe("v5: comparar con otros súper", () => {
     await tick();
     expect(compare.asked).toEqual([EAN_A]);
     expect(observers[0].targets.has(box)).toBe(false);
+  });
+
+  // Sin el observador de la página, para contar solo los repintados por respuestas.
+  class NoMO {
+    observe() {}
+    disconnect() {}
+  }
+  // Cuenta pasadas de render: cada una recorre los links de tarjetas una vez.
+  function countPasses(doc) {
+    const counter = { n: 0 };
+    const qsa = doc.querySelectorAll.bind(doc);
+    doc.querySelectorAll = (sel) => {
+      if (sel === 'a[href*="_/R-"]') counter.n++;
+      return qsa(sel);
+    };
+    return counter;
+  }
+
+  it("un lote de 3 EAN que llega junto repinta una sola vez", async () => {
+    const compare = fakeCompare();
+    const EAN_C = "7790070318237";
+    const { doc, send } = setup(offerCard(K(1)) + offerCard(K(2)) + offerCard(K(3)), undefined, { compare, MutationObserver: NoMO });
+    send({
+      type: "labels",
+      labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }), [K(2)]: L(10, { ean: EAN_B, cmp: CMP }), [K(3)]: L(20, { ean: EAN_C, cmp: CMP }) },
+    });
+    await tick();
+    expect(compare.asked).toEqual([EAN_A, EAN_B, EAN_C]);
+    const passes = countPasses(doc);
+    await compare.resolveAll([EAN_A, EAN_B, EAN_C], RES);
+    expect(passes.n).toBe(1);
+    expect(prices(doc)).toEqual(Array(3).fill(["▼ $2.049", "▼ $1.899", "= $2.229"]).flat());
+  });
+
+  it("un lote que llega con la comparación apagada no repinta", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup(offerCard(K(1)) + offerCard(K(2)), undefined, { compare, MutationObserver: NoMO });
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }), [K(2)]: L(10, { ean: EAN_B, cmp: CMP }) } });
+    await tick();
+    send({ type: "settings", selected: [], day: 1, compareStores: false });
+    const passes = countPasses(doc);
+    await compare.resolveAll([EAN_A, EAN_B], RES);
+    expect(passes.n).toBe(0);
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
   });
 });

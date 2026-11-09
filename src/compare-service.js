@@ -34,9 +34,10 @@ export function createCompareService({ fetch, cache, stores = STORES, concurrenc
   const inflight = new Map(); // "<storeId>:<ean>" -> Promise<Offer | "missing" | "error">
 
   // Pedido con límite por súper y tiempo máximo. Lanza si falla.
+  // Sin cookies: las sesiones del usuario en esos súper nunca viajan.
   function request(store, url, init = {}) {
     return limiters.get(store.id)(async () => {
-      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+      const res = await fetch(url, { ...init, credentials: "omit", signal: AbortSignal.timeout(timeoutMs) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     });
@@ -52,7 +53,8 @@ export function createCompareService({ fetch, cache, stores = STORES, concurrenc
   }
 
   async function offerFor(store, hit) {
-    if (!hit) return "missing";
+    // Sin stock no hay oferta posible: no vale la pena simular carritos.
+    if (!hit || hit.stock <= 0) return "missing";
     const [s1, s2, s3] = await Promise.all([1, 2, 3].map((q) => simulate(store, hit, q)));
     return bestOffer(hit, { 1: s1, 2: s2, 3: s3 }) ?? "missing";
   }

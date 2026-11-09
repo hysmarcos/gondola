@@ -14,7 +14,7 @@ function memStorage() {
 const EAN = "7790742348302";
 
 // Fetch falso: busca por EAN y simula carritos. `absent` = EAN que no vuelven; `fail` = hosts con HTTP 500.
-function fakeFetch({ absent = [], fail = [], delay = 0 } = {}) {
+function fakeFetch({ absent = [], fail = [], delay = 0, stock = 9 } = {}) {
   const calls = [];
   const active = {};
   const maxActive = {};
@@ -22,7 +22,7 @@ function fakeFetch({ absent = [], fail = [], delay = 0 } = {}) {
     const u = new URL(url);
     const host = u.host;
     const isSim = init.method === "POST";
-    calls.push({ host, kind: isSim ? "sim" : "search", url });
+    calls.push({ host, kind: isSim ? "sim" : "search", url, init });
     active[host] = (active[host] || 0) + 1;
     maxActive[host] = Math.max(maxActive[host] || 0, active[host]);
     try {
@@ -44,7 +44,7 @@ function fakeFetch({ absent = [], fail = [], delay = 0 } = {}) {
         json: async () =>
           eans.map((ean) => ({
             productName: "P " + ean,
-            items: [{ ean, itemId: "1000", sellers: [{ sellerId: "1", commertialOffer: { Price: 1000, AvailableQuantity: 9 } }] }],
+            items: [{ ean, itemId: "1000", sellers: [{ sellerId: "1", commertialOffer: { Price: 1000, AvailableQuantity: stock } }] }],
           })),
       };
     } finally {
@@ -189,5 +189,24 @@ describe("createCompareService", () => {
     const r = await svc.compare([EAN]);
     expect(r[EAN].carrefour.unit).toBe(1000);
     expect(r[EAN].dia.unit).toBe(1000);
+  });
+
+  it("nunca manda cookies a los otros super (busqueda y simulacion)", async () => {
+    const f = fakeFetch();
+    const svc = createCompareService({ fetch: f, cache: createPriceCache(memStorage()) });
+    await svc.compare([EAN]);
+    for (const kind of ["search", "sim"]) {
+      const calls = f.calls.filter((c) => c.kind === kind);
+      expect(calls.length).toBeGreaterThan(0);
+      expect(calls.every((c) => c.init.credentials === "omit")).toBe(true);
+    }
+  });
+
+  it("sin stock en la busqueda es missing sin simular", async () => {
+    const f = fakeFetch({ stock: 0 });
+    const svc = createCompareService({ fetch: f, cache: createPriceCache(memStorage()) });
+    const r = await svc.compare([EAN]);
+    expect(r[EAN]).toEqual({ carrefour: "missing", dia: "missing", mas: "missing" });
+    expect(f.calls.filter((c) => c.kind === "sim").length).toBe(0);
   });
 });

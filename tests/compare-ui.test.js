@@ -79,8 +79,13 @@ describe("paintCompare", () => {
     paintCompare(b, compareRows(CMP, RESULTS), "mini");
     const best = b.querySelector(".coto-unit-cmp-best");
     expect(b.querySelectorAll(".coto-unit-cmp-row")).toHaveLength(0);
-    expect(best.textContent).toBe("Día $1.899 ▼");
+    // Día solo es más barato llevando 2: se dice, para no mentir con el precio.
+    expect(best.textContent).toBe("Día $1.899 ▼ (x2)");
+    expect(best.getAttribute("aria-label")).toBe("Día: $1.899, más barato, llevando 2");
     expect(best.classList.contains("coto-unit-cmp-best--lower")).toBe(true);
+    paintCompare(b, compareRows(CMP, { ...RESULTS, dia: "missing" }), "mini");
+    expect(b.querySelector(".coto-unit-cmp-best").textContent).toBe("Carrefour $2.049 ▼");
+    expect(b.querySelector(".coto-unit-cmp-best").getAttribute("aria-label")).toBe("Carrefour: $2.049, más barato");
     paintCompare(b, compareRows(CMP, { carrefour: { unit: 2600, qty: 1 }, dia: "missing", mas: RESULTS.mas }), "mini");
     expect(b.querySelector(".coto-unit-cmp-best").textContent).toBe("Coto el más barato");
     expect(b.querySelector(".coto-unit-cmp-best").classList.contains("coto-unit-cmp-best--higher")).toBe(true);

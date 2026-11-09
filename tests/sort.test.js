@@ -26,7 +26,7 @@ describe("sortByUnitPrice", () => {
     const { labels, marks } = sortByUnitPrice(input, "200");
     expect(marks).toEqual({ L1: "L", kg1: "kg", u1: "unidad" });
     expect(labels.X).toBeUndefined();
-    expect(labels.L2).toEqual({ group: "L", value: 200, drained: false, note: null, take: 1, bankValue: null, bankName: null, bankBlocked: null });
+    expect(labels.L2).toEqual({ group: "L", value: 200, drained: false, note: null, take: 1, bankValue: null, bankName: null, bankBlocked: null, ean: null, cmp: null });
   });
 
   it("ordena por el precio con banco cuando hay promo", () => {
@@ -86,5 +86,19 @@ describe("labelsFor con EAN", () => {
     expect(labels.E1.ean).toBe("7790742348302");
     expect(labels.E1.cmp).toEqual({ unit: 100, qty: 1 });
     expect(labels.E2).toMatchObject({ ean: null, cmp: null });
+  });
+});
+
+describe("sortByUnitPrice con EAN", () => {
+  it("las etiquetas del orden por kg/L llevan ean y cmp como labelsFor", () => {
+    const r = item("E1", "Kilo", 150);
+    r.data.product_main_ean = "7790742348302";
+    r.data.id = "00012345";
+    const { labels } = sortByUnitPrice([r, item("E2", "Kilo", 200)], "200");
+    expect(labels.E1.ean).toBe("7790742348302");
+    expect(labels.E1.cmp).toEqual({ unit: 100, qty: 1 });
+    expect(labels["00012345"]).toBe(labels.E1);
+    expect(labels.E2).toMatchObject({ ean: null, cmp: null });
+    expect(labels).toEqual(labelsFor([r, item("E2", "Kilo", 200)], "200"));
   });
 });
