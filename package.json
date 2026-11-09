@@ -9,7 +9,8 @@
   "scripts": {
     "test": "vitest run",
     "build": "node build.mjs",
-    "fixtures": "node scripts/capture-fixtures.mjs"
+    "fixtures": "node scripts/capture-fixtures.mjs",
+    "fixtures:vtex": "node scripts/capture-vtex-fixtures.mjs"
   },
   "keywords": [],
   "type": "module",
