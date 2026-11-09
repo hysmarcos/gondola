@@ -67,7 +67,7 @@ describe("installBridge", () => {
     const win = fakeWin();
     installBridge(win, st, () => 0);
     await tick();
-    expect(win.posted.find((m) => m.type === "settings")).toMatchObject({ autoPromo: false, notifyPromo: true, markBest: true });
+    expect(win.posted.find((m) => m.type === "settings")).toMatchObject({ autoPromo: false, notifyPromo: true, markBest: true, comunidad: true });
     await st.set({ markBest: false });
     await tick();
     expect(win.posted.filter((m) => m.type === "settings").at(-1).markBest).toBe(false);
@@ -148,6 +148,7 @@ describe("popup", () => {
     const auto = document.querySelector('input[name="autoPromo"]');
     expect(auto.checked).toBe(true);
     expect(document.querySelector('input[name="markBest"]').checked).toBe(false);
+    expect(document.querySelector('input[name="comunidad"]').checked).toBe(true);
     auto.checked = false;
     await change(auto);
     expect(st.data.autoPromo).toBe(false);

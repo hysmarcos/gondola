@@ -128,7 +128,8 @@ describe("installInterceptor", () => {
     const { body } = await request(s.win, url("price"));
     expect(mine(body).status).toBe("");
     expect(urls(body.response.results)).toEqual(urls(s.all.slice(0, 24)));
-    expect(s.env.fetched).toHaveLength(0);
+    // v5: la categoría se baja en segundo plano para "Más barato de la categoría".
+    expect(s.env.fetched.map(pageOf)).toEqual([1, 2]);
     const msg = s.env.posts.find((m) => m.type === "labels");
     expect(msg.marks).toBeNull();
     expect(Object.keys(msg.labels)).toHaveLength(24);
@@ -584,5 +585,36 @@ describe("revisión v4: clics rápidos y fallas", () => {
     await settle();
     await open(s.win, { prodId: "prod00000777", quantity: 1 }).done; // "−" de 2 a 1
     expect(qty(s)).toEqual([2, 1]);
+  });
+});
+
+describe("v5: más barato de la categoría", () => {
+  it("orden nativo: baja la categoría en segundo plano y publica el más barato", async () => {
+    const s = setup();
+    await request(s.win, url("price"));
+    for (let i = 0; i < 6; i++) await flush();
+    const best = s.env.posts.filter((m) => m.type === "best").at(-1);
+    expect(best.best).toEqual({ p249: "kg" });
+    expect(s.env.fetched.map(pageOf)).toEqual([1, 2]);
+  });
+
+  it("la caché se comparte: pasar a orden por unidad no vuelve a bajar", async () => {
+    const s = setup();
+    await request(s.win, url("price"));
+    for (let i = 0; i < 6; i++) await flush();
+    await request(s.win, url("unit_price"));
+    expect(s.env.fetched).toHaveLength(2);
+    expect(s.env.posts.filter((m) => m.type === "best").at(-1).best).toEqual({ p249: "kg" });
+  });
+
+  it("el ajuste Comunidad cambia la caché y vuelve a publicar el más barato", async () => {
+    const s = setup({ settings: { selected: [], day: 1 } });
+    await request(s.win, url("price"));
+    for (let i = 0; i < 6; i++) await flush();
+    const before = s.env.posts.filter((m) => m.type === "best").length;
+    s.send({ type: "settings", selected: [], day: 1, comunidad: false });
+    for (let i = 0; i < 6; i++) await flush();
+    expect(s.env.posts.filter((m) => m.type === "best").length).toBeGreaterThan(before);
+    expect(s.env.fetched).toHaveLength(4);
   });
 });

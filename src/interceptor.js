@@ -44,7 +44,7 @@ export function installInterceptor(win, deps) {
   const onCartPage = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
   // Configuración de banco: llega desde la extensión. Esperamos un rato antes de la primera respuesta.
-  let settings = { selected: [], day: new Date().getDay(), autoPromo: true, notifyPromo: true };
+  let settings = { selected: [], day: new Date().getDay(), autoPromo: true, notifyPromo: true, comunidad: true };
   let settingsReady;
   const ready = new Promise((resolve) => { settingsReady = resolve; });
   (deps.setTimeout ?? setTimeout)(settingsReady, deps.settingsWaitMs ?? 500);
@@ -55,7 +55,8 @@ export function installInterceptor(win, deps) {
   };
 
   const store = () => storeOf(lastProductsUrl ?? searchUrl("x"));
-  const sig = () => settings.selected.map((p) => p.id).join(",") + "@" + settings.day;
+  const sig = () => settings.selected.map((p) => p.id).join(",") + "@" + settings.day + (settings.comunidad ? "" : "#sin-comunidad");
+  const opts = () => ({ comunidad: settings.comunidad });
 
   async function fetchJson(u) {
     const res = await deps.fetch(u);
@@ -78,12 +79,13 @@ export function installInterceptor(win, deps) {
       }),
     );
     index(bodies.flat());
-    const sorted = sortByUnitPrice(bodies.flat().slice(0, CAP), storeOf(url), settings.selected, settings.day);
+    const sorted = sortByUnitPrice(bodies.flat().slice(0, CAP), storeOf(url), settings.selected, settings.day, opts());
     return { ...sorted, capped: total > CAP };
   }
 
   function getSorted(url, total) {
-    const key = cacheKey(url) + "#" + sig();
+    // Mismo listado con cualquier orden: la caché se comparte entre orden nativo y por unidad.
+    const key = cacheKey(toNativeSort(url)) + "#" + sig();
     const hit = cache.get(key);
     if (hit && deps.now() - hit.at < TTL) return hit.promise;
     const promise = fetchSorted(url, total);
@@ -93,23 +95,36 @@ export function installInterceptor(win, deps) {
   }
 
   function pageLabels(body, url) {
-    return labelsFor(body.response.results, storeOf(url), settings.selected, settings.day);
+    return labelsFor(body.response.results, storeOf(url), settings.selected, settings.day, opts());
+  }
+
+  // "Más barato de la categoría": sale de la categoría entera, no de la página visible.
+  let lastBest = null; // { url, total } del último listado, para recalcular si cambia el banco
+  function postBest(url, total, seq) {
+    lastBest = { url, total };
+    getSorted(url, total)
+      .then((sorted) => { if (lastBest?.url === url) post({ type: "best", best: sorted.best, seq }); })
+      .catch(() => { /* sin cartel, el resto sigue */ });
   }
 
   async function transform({ url, unit, seq }, body) {
     index(body.response.results);
     await ready;
+    const total = body.response.total_num_results ?? body.response.results.length;
     if (!unit) {
       lastList = { results: body.response.results, store: storeOf(url) };
       post({ type: "labels", labels: pageLabels(body, url), marks: null, seq });
+      postBest(url, total, seq);
       return withSortOption(body, false);
     }
     try {
-      const sorted = await getSorted(url, body.response.total_num_results ?? body.response.results.length);
+      const sorted = await getSorted(url, total);
       const { page, size } = requestedPage(url);
       const slice = sorted.results.slice((page - 1) * size, page * size);
       lastList = { results: sorted.results, store: storeOf(url) };
       post({ type: "labels", labels: sorted.labels, marks: sorted.marks, seq });
+      lastBest = { url, total };
+      post({ type: "best", best: sorted.best, seq });
       if (sorted.capped) post({ type: "notice", text: NOTICE_CAP, seq });
       return withSortOption(withResults(body, slice), true);
     } catch {
@@ -138,7 +153,7 @@ export function installInterceptor(win, deps) {
   function postCart() {
     if (!lastCart) return;
     const seq = ++lastSeq;
-    const analysis = analyzeCart(lastCart, settings.selected, settings.day, store());
+    const analysis = analyzeCart(lastCart, settings.selected, settings.day, store(), opts());
     post({ type: "cart", analysis, seq });
   }
 
@@ -184,14 +199,14 @@ export function installInterceptor(win, deps) {
     if (!Array.isArray(body?.response?.results)) return;
     index(body.response.results);
     await ready;
-    post({ type: "labels", labels: labelsFor(body.response.results, store(), settings.selected, settings.day) });
+    post({ type: "labels", labels: labelsFor(body.response.results, store(), settings.selected, settings.day, opts()) });
   }
 
   async function onLookup({ plu, key }) {
     const data = await lookupPlu(String(plu));
     await ready;
     if (!data) return;
-    const labels = labelsFor([{ data: { ...data, url: key } }], store(), settings.selected, settings.day);
+    const labels = labelsFor([{ data: { ...data, url: key } }], store(), settings.selected, settings.day, opts());
     if (labels[key]) post({ type: "labels", labels });
   }
 
@@ -203,11 +218,13 @@ export function installInterceptor(win, deps) {
         day: Number(msg.day) || 0,
         autoPromo: msg.autoPromo !== false,
         notifyPromo: msg.notifyPromo !== false,
+        comunidad: msg.comunidad !== false,
       };
       settingsReady();
       postCart();
+      if (lastBest) postBest(lastBest.url, lastBest.total, ++lastSeq);
       if (lastList) {
-        post({ type: "labels", labels: labelsFor(lastList.results, lastList.store, settings.selected, settings.day) });
+        post({ type: "labels", labels: labelsFor(lastList.results, lastList.store, settings.selected, settings.day, opts()) });
       }
     } else if (msg.type === "cartRequest") {
       // Se abrió el mini-carrito o /carrito: desde ahora cada carrito nuevo se analiza.

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "tests/badge.test.js"
+        ],
+        "createdAt": "2026-11-09T16:21:54.080Z",
+        "reason": "Claude: jsdom test fixture imitating Coto's card markup; the img never renders"
+      }
+    ]
+  }
+}

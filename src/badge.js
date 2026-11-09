@@ -1,47 +1,56 @@
-// Caja "Precio real para comparar" en las tarjetas nativas de Coto y en la página de
-// producto. Solo agrega nodos y atributos data-coto-unit-*; no borra nada de Coto.
+// Precio por unidad en Coto: tarjetas de las listas, página de producto y carrusel.
+// En las tarjetas, un bloque propio ordena el precio (oferta, precio, precio por unidad) y
+// las partes de Coto que repetían lo mismo se ocultan con atributos data-coto-unit-*.
+// Nunca se borra un nodo de Coto: sin etiqueta, la tarjeta vuelve a verse como siempre.
 import { dayName } from "./banks.js";
 
 const SOURCE = "coto-unit";
 const BOX = "coto-unit-box";
+const BLOCK = "coto-unit-price";
 const MARK = "coto-unit-mark";
-const BEST = "coto-unit-best";
 const NOTICE = "coto-unit-notice";
 const KEY_RE = /_\/R-[\w-]+/;
-const MIN_FOR_BEST = 3;
+
+const HIDE = "data-coto-unit-hide";
+const DIM = "data-coto-unit-dim";
+const CARD = "data-coto-unit-card";
 
 const UNIT_TEXT = { kg: "kg", L: "L", unidad: "unidad", m2: "m²", m: "m", rollo10m: "10 m", panos100: "100 paños" };
+const UNIT_LONG = { kg: "kilo", L: "litro", unidad: "unidad", m2: "m²", m: "metro", rollo10m: "10 metros", panos100: "100 paños" };
 const MARK_TEXT = { kg: "Por kilo", L: "Por litro", unidad: "Por unidad", m2: "Por m²", m: "Por metro", rollo10m: "Por 10 m", panos100: "Por 100 paños" };
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+const money2 = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const $ = (n) => "$" + money.format(n);
+const $2 = (n) => "$" + money2.format(n);
 
-export function formatValue(label) {
-  const unit = UNIT_TEXT[label?.group];
-  if (!unit || label.value == null) return null;
-  return `${$(label.value)} /${unit}`;
+// El único precio por unidad que se muestra: el mismo que ordena (con banco si aplica).
+export function unitValue(label) {
+  return label?.bankValue ?? label?.value ?? null;
 }
 
+export function formatUnit(label) {
+  const unit = UNIT_TEXT[label?.group];
+  const value = unitValue(label);
+  if (!unit || value == null) return null;
+  return `${$(value)} /${unit}`;
+}
+
+// Por qué ese precio: banco, promo por cantidad, Comunidad o 1 pago.
+export function formatWhy(label, day, today, short = false) {
+  if (label?.bankValue != null && label.bankName) {
+    if (short) return label.bankName;
+    return day === today ? `con ${label.bankName} hoy` : `con ${label.bankName} el ${dayName(day).toLowerCase()}`;
+  }
+  if (label?.take > 1) return `llevando ${label.take}`;
+  if (label?.via === "comunidad") return short ? "Comunidad" : "con Comunidad";
+  if (label?.via === "1pago") return "en 1 pago";
+  return null;
+}
+
+// Notas que cambian cómo se compara: escurrido, doble hoja, metros estimados.
 export function formatNote(label) {
-  const parts = [
-    label?.take > 1 ? `llevando ${label.take}` : null,
-    label?.drained ? "escurrido" : null,
-    label?.note ?? null,
-  ].filter(Boolean);
+  const parts = [label?.drained ? "escurrido" : null, label?.note ?? null].filter(Boolean);
   return parts.length ? parts.join(" · ") : null;
-}
-
-// day: día de compra elegido; today: día de hoy (0 = domingo).
-export function formatBank(label, day, today) {
-  const unit = UNIT_TEXT[label?.group];
-  if (!unit || label.bankValue == null || !label.bankName) return null;
-  const when = day === today ? "Hoy" : dayName(day);
-  return `${when} con ${label.bankName}: ${$(label.bankValue)}/${unit}`;
-}
-
-// Versión corta para el carrusel, donde las tarjetas son angostas: "ICBC: $275".
-export function formatBankShort(label) {
-  if (!UNIT_TEXT[label?.group] || label.bankValue == null || !label.bankName) return null;
-  return `${label.bankName}: ${$(label.bankValue)}`;
 }
 
 export function formatBlocked(reason) {
@@ -54,75 +63,111 @@ export function groupMark(group) {
   return MARK_TEXT[group] ? "▸ " + MARK_TEXT[group] : null;
 }
 
-function upsert(parent, cls, text, before = null) {
+function upsert(parent, cls, text, before = null, tag = "div") {
   let el = parent.querySelector(":scope > ." + cls);
   if (!text) return el?.remove();
   if (!el) {
-    el = parent.ownerDocument.createElement("div");
+    el = parent.ownerDocument.createElement(tag);
     el.className = cls;
-    if (before) parent.insertBefore(el, before);
+    if (before && before.parentNode === parent) parent.insertBefore(el, before);
     else parent.appendChild(el);
   }
   if (el.textContent !== text) el.textContent = text;
   return el;
 }
 
+// Deja los hijos en ese orden; solo mueve si hace falta (cada movida dispara el observador).
+function order(parent, classes) {
+  const kids = classes.map((c) => parent.querySelector(":scope > ." + c)).filter(Boolean);
+  const now = [...parent.children].filter((el) => kids.includes(el));
+  if (now.every((el, i) => el === kids[i])) return;
+  for (const el of kids) parent.appendChild(el);
+}
+
+// Contenedor hijo con esa clase (lo crea si falta). No toca su contenido.
+function ensure(parent, cls, tag = "div") {
+  let el = parent.querySelector(":scope > ." + cls);
+  if (!el) {
+    el = parent.ownerDocument.createElement(tag);
+    el.className = cls;
+    parent.appendChild(el);
+  }
+  return el;
+}
+
+function setAttr(el, name, on) {
+  if (on && !el.hasAttribute(name)) el.setAttribute(name, "");
+  else if (!on && el.hasAttribute(name)) el.removeAttribute(name);
+}
+
 export function installBadges(win, doc) {
   const today = () => new Date().getDay();
-  const state = { labels: {}, marks: {}, seq: 0, day: today(), path: null, sig: undefined, markBest: true };
+  const state = { labels: {}, marks: {}, best: {}, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true };
 
-  // Caja con el precio para comparar. anchor: después de qué nodo va.
-  // variant: "" (tarjeta), "pdp" (a lo ancho) o "mini" (carrusel: solo valor y banco).
-  function paintBox(container, anchor, label, variant = "") {
-    let box = container.querySelector(":scope > ." + BOX) ?? container.querySelector("." + BOX);
-    const value = label ? formatValue(label) : null;
-    if (!value) return box?.remove();
-    if (!box) {
-      box = doc.createElement("div");
-      box.className = variant ? `${BOX} ${BOX}--${variant}` : BOX;
-      if (anchor) anchor.after(box);
-      else container.appendChild(box);
-    }
-    const mini = variant === "mini";
-    upsert(box, "coto-unit-cap", mini ? null : "Precio real para comparar");
-    upsert(box, "coto-unit-value", value);
-    upsert(box, "coto-unit-note", mini ? null : formatNote(label));
-    upsert(box, "coto-unit-bank", mini ? formatBankShort(label) : formatBank(label, state.day, today()));
-    upsert(box, "coto-unit-bankno", mini ? null : formatBlocked(label.bankBlocked));
-    return box;
+  const unitTitle = (label) => `Precio por ${UNIT_LONG[label.group] ?? label.group} para comparar con otros productos`;
+
+  // Fila "precio por unidad + motivo". Sirve en tarjeta, producto y carrusel.
+  function paintUnit(parent, label, short = false) {
+    const row = ensure(parent, "coto-unit-unit");
+    const title = unitTitle(label);
+    if (row.title !== title) row.title = title;
+    upsert(row, "coto-unit-value", formatUnit(label), null, "span");
+    upsert(row, "coto-unit-why", formatWhy(label, state.day, today(), short), null, "span");
+    return row;
   }
 
-  function setAttr(el, name, on) {
-    if (on && !el.hasAttribute(name)) el.setAttribute(name, "");
-    else if (!on && el.hasAttribute(name)) el.removeAttribute(name);
+  // ---------- Tarjetas de las listas ----------
+
+  function paintCardBlock(centro, name, label, key) {
+    let block = centro.querySelector(":scope > ." + BLOCK);
+    if (!block) {
+      block = doc.createElement("div");
+      block.className = BLOCK;
+      if (name) name.after(block);
+      else centro.prepend(block);
+    }
+    upsert(block, "coto-unit-offer", label.offerText);
+    const priceRow = ensure(block, "coto-unit-pricerow");
+    upsert(priceRow, "coto-unit-final", label.price != null ? $2(label.price) : null, null, "span");
+    const regular = label.list != null && label.price != null && label.list > label.price + 0.5 ? $2(label.list) : null;
+    upsert(priceRow, "coto-unit-regular", regular, null, "s");
+    paintUnit(block, label);
+    upsert(block, "coto-unit-note", formatNote(label));
+    const best = state.markBest && key && state.best[key] ? "Más barato de la categoría" : null;
+    upsert(block, "coto-unit-best", best);
+    order(block, ["coto-unit-offer", "coto-unit-pricerow", "coto-unit-unit", "coto-unit-note", "coto-unit-best"]);
+    return block;
   }
 
-  // Las líneas secundarias de Coto pasan a chicas y grises; "Precio Regular" tachado.
-  // Solo se tacha si hay oferta (el cartel "PRECIO CON X%DTO"); si no, tachar sugiere
-  // un descuento que no existe.
-  function dimCoto(centro) {
-    const onSale = !!centro.querySelector(".offer-crum");
-    for (const s of centro.querySelectorAll("small:not(.offer-crum)")) {
-      const t = s.textContent;
-      if (/precio regular/i.test(t)) {
-        s.setAttribute("data-coto-unit-dim", "");
-        if (onSale) s.setAttribute("data-coto-unit-strike", "");
-      } else if (/sin impuestos|precio por \d/i.test(t)) {
-        s.setAttribute("data-coto-unit-dim", "");
-      }
+  // Qué partes de Coto repiten lo que ya muestra el bloque.
+  function cotoParts(centro) {
+    const hide = new Set();
+    const dim = new Set();
+    for (const el of centro.querySelectorAll(".descuentos-slot")) hide.add(el);
+    for (const el of centro.querySelectorAll("h4.card-title")) if (!el.closest(".descuentos-slot")) hide.add(el);
+    for (const el of centro.querySelectorAll("small")) {
+      const t = el.textContent;
+      if (/precio regular/i.test(t)) hide.add(el);
+      else if (/sin impuestos/i.test(t)) dim.add(el);
     }
+    for (const child of centro.children) {
+      if (child.classList.contains(BLOCK) || child.querySelector("button, input")) continue;
+      const t = child.textContent;
+      if (/precio por \d/i.test(t) || /con\s*comunidad\s*pagas/i.test(t)) hide.add(child);
+    }
+    return { hide, dim };
   }
 
-  // Si la tarjeta se quedó sin etiqueta (Angular la reusó), vuelve a verse como Coto.
-  function undimCoto(centro) {
-    for (const s of centro.querySelectorAll("[data-coto-unit-dim], [data-coto-unit-strike]")) {
-      s.removeAttribute("data-coto-unit-dim");
-      s.removeAttribute("data-coto-unit-strike");
+  function restoreCard(card, centro) {
+    centro.querySelector(":scope > ." + BLOCK)?.remove();
+    for (const el of card.querySelectorAll(`[${HIDE}], [${DIM}]`)) {
+      el.removeAttribute(HIDE);
+      el.removeAttribute(DIM);
     }
+    setAttr(card, CARD, false);
   }
 
   function renderCards() {
-    const byGroup = new Map();
     const seen = new Set();
     for (const link of doc.querySelectorAll('a[href*="_/R-"]')) {
       const card = link.closest(".card-container");
@@ -131,36 +176,48 @@ export function installBadges(win, doc) {
       const key = link.getAttribute("href").match(KEY_RE)?.[0];
       const label = key ? state.labels[key] : null;
       const centro = card.querySelector(".centro-precios") ?? card;
-      const anchor = centro.querySelector(".descuentos-slot") ?? centro.querySelector("h4.card-title");
-      const box = paintBox(centro, anchor, label);
-      if (box) {
-        dimCoto(centro);
-        if (!byGroup.has(label.group)) byGroup.set(label.group, []);
-        byGroup.get(label.group).push({ box, price: label.bankValue ?? label.value });
+      if (!label || !formatUnit(label) || label.price == null) {
+        restoreCard(card, centro);
       } else {
-        undimCoto(centro);
+        setAttr(card, CARD, true);
+        paintCardBlock(centro, centro.querySelector(":scope > .nombre-producto, :scope > h3"), label, key);
+        const { hide, dim } = cotoParts(centro);
+        for (const el of centro.querySelectorAll(`[${HIDE}]`)) if (!hide.has(el)) el.removeAttribute(HIDE);
+        for (const el of hide) setAttr(el, HIDE, true);
+        for (const el of dim) setAttr(el, DIM, true);
       }
       upsert(card, MARK, key && state.marks[key] ? groupMark(state.marks[key]) : null);
     }
-    // "Más barato por <u>": la de menor precio de su grupo, si hay al menos 3 visibles.
-    const winners = new Set();
-    for (const [group, list] of state.markBest ? byGroup : []) {
-      if (list.length < MIN_FOR_BEST) continue;
-      const min = list.reduce((a, b) => (b.price < a.price ? b : a));
-      winners.add(min.box);
-      upsert(min.box, BEST, `Más barato por ${UNIT_TEXT[group]}`, min.box.firstChild);
+  }
+
+  // ---------- Página de producto y carrusel ----------
+
+  // Caja con el precio para comparar. anchor: después de qué nodo va.
+  // variant: "pdp" (a lo ancho) o "mini" (carrusel: solo la fila de unidad).
+  function paintBox(container, anchor, label, variant) {
+    let box = container.querySelector(":scope > ." + BOX) ?? container.querySelector("." + BOX);
+    if (!label || !formatUnit(label)) return box?.remove();
+    if (!box) {
+      box = doc.createElement("div");
+      box.className = `${BOX} ${BOX}--${variant}`;
+      if (anchor) anchor.after(box);
+      else container.appendChild(box);
     }
-    for (const el of doc.querySelectorAll("." + BEST)) {
-      if (!winners.has(el.parentElement)) el.remove();
-    }
+    const mini = variant === "mini";
+    upsert(box, "coto-unit-cap", mini ? null : "Precio real para comparar");
+    paintUnit(box, label, mini);
+    upsert(box, "coto-unit-note", mini ? null : formatNote(label));
+    upsert(box, "coto-unit-bankno", mini ? null : formatBlocked(label.bankBlocked));
+    order(box, ["coto-unit-cap", "coto-unit-unit", "coto-unit-note", "coto-unit-bankno"]);
+    return box;
   }
 
   function pdpKey() {
     return String(win.location?.pathname ?? "").match(KEY_RE)?.[0] ?? null;
   }
 
-  // Página de producto: la caja va a lo ancho, después del bloque que tiene el precio
-  // (dentro de .mt-4), y las líneas secundarias de Coto se atenúan como en las tarjetas.
+  // Página de producto: la caja va a lo ancho debajo del precio (dentro de .mt-4). El
+  // "Precio por 1 …" de Coto (sobre el precio sin oferta) se oculta; lo demás se atenúa.
   function renderPdp() {
     const key = pdpKey();
     const price = doc.querySelector(".price");
@@ -169,7 +226,7 @@ export function installBadges(win, doc) {
     while (block.parentElement && !block.parentElement.matches(".mt-4") && block !== doc.body) block = block.parentElement;
     const wrap = block.parentElement?.matches(".mt-4") ? block.parentElement : null;
     const label = state.labels[key];
-    if (!wrap) return paintBox(price.parentElement, price, label);
+    if (!wrap) return paintBox(price.parentElement, price, label, "pdp");
     const box = paintBox(wrap, block, label, "pdp");
     const onSale = /oferta|%\s*dto/i.test(block.textContent);
     for (const line of wrap.children) {
@@ -178,7 +235,8 @@ export function installBadges(win, doc) {
       // Solo líneas cortas de texto: un bloque con botones o mucho texto no es "secundario".
       if (line.querySelector("button, input, a") || t.length > 120) continue;
       const regular = /precio regular/i.test(t);
-      setAttr(line, "data-coto-unit-dim", !!box && (regular || /sin impuestos|precio por \d/i.test(t)));
+      setAttr(line, HIDE, !!box && /precio por \d/i.test(t));
+      setAttr(line, DIM, !!box && (regular || /sin impuestos/i.test(t)));
       setAttr(line, "data-coto-unit-strike", !!box && regular && onSale);
     }
   }
@@ -191,7 +249,7 @@ export function installBadges(win, doc) {
       if (!section) continue;
       const box = paintBox(section.parentElement, section, label, "mini");
       const ref = card.querySelector(".mini-product-card__reference-price");
-      if (ref) setAttr(ref, "data-coto-unit-dim", !!box);
+      if (ref) setAttr(ref, HIDE, !!box);
     }
   }
 
@@ -228,9 +286,9 @@ export function installBadges(win, doc) {
     if (m.type === "settings") {
       state.day = Number(m.day) || 0;
       state.markBest = m.markBest !== false;
-      // Si cambió el día o las promos, las líneas de banco viejas mienten: se borran hasta
-      // que lleguen etiquetas nuevas.
-      const sig = (m.selected ?? []).map((p) => p.id).join(",") + "@" + state.day;
+      // Si cambió el día, las promos o Comunidad, los datos de banco viejos mienten: se
+      // borran hasta que lleguen etiquetas nuevas.
+      const sig = (m.selected ?? []).map((p) => p.id).join(",") + "@" + state.day + (m.comunidad === false ? "#sc" : "");
       if (state.sig !== undefined && sig !== state.sig) {
         for (const l of Object.values(state.labels)) {
           l.bankValue = null;
@@ -239,6 +297,13 @@ export function installBadges(win, doc) {
         }
       }
       state.sig = sig;
+      return render();
+    }
+    if (m.type === "best") {
+      // El más barato de la categoría: el último pedido manda.
+      if (typeof m.seq === "number" && m.seq < state.bestSeq) return;
+      if (typeof m.seq === "number") state.bestSeq = m.seq;
+      state.best = m.best ?? {};
       return render();
     }
     // Un pedido viejo que termina tarde no pisa marcas ni avisos del más nuevo.
