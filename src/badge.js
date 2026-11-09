@@ -1,19 +1,21 @@
 // Caja "Precio real para comparar" en las tarjetas nativas de Coto y en la página de
 // producto. Solo agrega nodos y atributos data-coto-unit-*; no borra nada de Coto.
 import { dayName } from "./banks.js";
+import { compareRows, paintCompare } from "./compare-ui.js";
+import { formatMoney as $ } from "./money.js";
 
 const SOURCE = "coto-unit";
 const BOX = "coto-unit-box";
 const MARK = "coto-unit-mark";
 const BEST = "coto-unit-best";
 const NOTICE = "coto-unit-notice";
+const CMP = "coto-unit-cmp";
+const EAN_ATTR = "data-coto-unit-ean";
 const KEY_RE = /_\/R-[\w-]+/;
 const MIN_FOR_BEST = 3;
 
 const UNIT_TEXT = { kg: "kg", L: "L", unidad: "unidad", m2: "m²", m: "m", rollo10m: "10 m", panos100: "100 paños" };
 const MARK_TEXT = { kg: "Por kilo", L: "Por litro", unidad: "Por unidad", m2: "Por m²", m: "Por metro", rollo10m: "Por 10 m", panos100: "Por 100 paños" };
-const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
-const $ = (n) => "$" + money.format(n);
 
 export function formatValue(label) {
   const unit = UNIT_TEXT[label?.group];
@@ -67,9 +69,55 @@ function upsert(parent, cls, text, before = null) {
   return el;
 }
 
-export function installBadges(win, doc) {
+// compare: cliente de compare-client.js; sin él no se compara con otros súper.
+export function installBadges(win, doc, { compare } = {}) {
   const today = () => new Date().getDay();
-  const state = { labels: {}, marks: {}, seq: 0, day: today(), path: null, sig: undefined, markBest: true };
+  const state = { labels: {}, marks: {}, seq: 0, day: today(), path: null, sig: undefined, markBest: true, compare: true };
+  const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
+  let watching = new WeakMap(); // caja -> EAN que espera verse para pedirse
+  let io = null;
+
+  function ask(ean) {
+    if (!state.compare || requested.has(ean)) return;
+    requested.add(ean);
+    // Si el usuario apagó la comparación mientras tanto, la respuesta no pinta.
+    compare.request(ean).then(() => state.compare && render());
+  }
+
+  // Pide el EAN la primera vez que la caja entra en pantalla (o enseguida si no se puede saber).
+  function want(box, ean) {
+    if (requested.has(ean)) return;
+    if (!win.IntersectionObserver) return ask(ean);
+    if (watching.get(box) === ean) return;
+    io ??= new win.IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting || !watching.has(e.target)) continue;
+        io.unobserve(e.target);
+        const seen = watching.get(e.target);
+        watching.delete(e.target);
+        ask(seen);
+      }
+    });
+    watching.set(box, ean);
+    io.observe(box);
+  }
+
+  // Filas "en otros súper" al final de la caja, si hay EAN y precio de Coto para comparar.
+  function paintCmp(box, label, variant) {
+    const ean = compare && state.compare && label.ean && label.cmp ? label.ean : null;
+    if (!ean) {
+      if (box.hasAttribute(EAN_ATTR)) box.removeAttribute(EAN_ATTR);
+      return paintCompare(box, null);
+    }
+    // Angular reusa tarjetas: si cambió el producto, el bloque viejo no puede quedar.
+    if (box.getAttribute(EAN_ATTR) !== ean) {
+      box.querySelector(":scope > ." + CMP)?.remove();
+      box.setAttribute(EAN_ATTR, ean);
+    }
+    const results = compare.peek(ean);
+    paintCompare(box, compareRows(label.cmp, results), variant);
+    if (!results) want(box, ean);
+  }
 
   // Caja con el precio para comparar. anchor: después de qué nodo va.
   // variant: "" (tarjeta), "pdp" (a lo ancho) o "mini" (carrusel: solo valor y banco).
@@ -89,6 +137,7 @@ export function installBadges(win, doc) {
     upsert(box, "coto-unit-note", mini ? null : formatNote(label));
     upsert(box, "coto-unit-bank", mini ? formatBankShort(label) : formatBank(label, state.day, today()));
     upsert(box, "coto-unit-bankno", mini ? null : formatBlocked(label.bankBlocked));
+    paintCmp(box, label, variant);
     return box;
   }
 
@@ -228,6 +277,12 @@ export function installBadges(win, doc) {
     if (m.type === "settings") {
       state.day = Number(m.day) || 0;
       state.markBest = m.markBest !== false;
+      state.compare = m.compareStores !== false;
+      if (!state.compare) {
+        io?.disconnect();
+        watching = new WeakMap();
+        for (const el of doc.querySelectorAll(`.${BOX} > .${CMP}`)) el.remove();
+      }
       // Si cambió el día o las promos, las líneas de banco viejas mienten: se borran hasta
       // que lleguen etiquetas nuevas.
       const sig = (m.selected ?? []).map((p) => p.id).join(",") + "@" + state.day;

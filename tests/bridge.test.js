@@ -74,6 +74,23 @@ describe("installBridge", () => {
   });
 });
 
+describe("v5: ajuste comparar con otros súper", () => {
+  it("compareStores viene de storage; sin la clave, encendido", async () => {
+    const win = fakeWin();
+    installBridge(win, fakeStorage({ compareStores: false }), () => 0);
+    await tick();
+    expect(win.posted.find((m) => m.type === "settings").compareStores).toBe(false);
+    const win2 = fakeWin();
+    const st = fakeStorage();
+    installBridge(win2, st, () => 0);
+    await tick();
+    expect(win2.posted.find((m) => m.type === "settings").compareStores).toBe(true);
+    await st.set({ compareStores: false });
+    await tick();
+    expect(win2.posted.filter((m) => m.type === "settings").at(-1).compareStores).toBe(false);
+  });
+});
+
 describe("popup", () => {
   const open = async (st, meta = { version: "0.4.0" }) => {
     document.body.innerHTML = "";

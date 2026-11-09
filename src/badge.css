@@ -191,3 +191,59 @@
   font-weight: 700;
   color: #1d6b2e;
 }
+
+/* Mismo producto (mismo EAN) en otros supermercados, al pie de la caja. */
+.coto-unit-cmp {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(12, 68, 124, 0.18);
+  font-size: 12px;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-cmp-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.coto-unit-cmp-price {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.coto-unit-cmp-qty {
+  margin-top: -1px;
+  font-size: 11px;
+  text-align: right;
+  color: #5F5E5A;
+}
+
+.coto-unit-cmp-row--lower,
+.coto-unit-cmp-best--lower {
+  color: #A32D2D;
+}
+
+.coto-unit-cmp-row--higher,
+.coto-unit-cmp-best--higher {
+  color: #3B6D11;
+}
+
+.coto-unit-cmp-row--equal,
+.coto-unit-cmp-row--none,
+.coto-unit-cmp-row--pending,
+.coto-unit-cmp-best--pending {
+  color: #5F5E5A;
+}
+
+.coto-unit-box--pdp .coto-unit-cmp {
+  font-size: 13px;
+}
+
+.coto-unit-box--mini .coto-unit-cmp {
+  margin-top: 2px;
+  padding-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+}

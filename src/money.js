@@ -19,3 +19,7 @@ export function parseMoney(text) {
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
+
+// Pesos sin decimales, como los muestra Coto: 1899 → "$1.899".
+const pesos = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+export const formatMoney = (n) => "$" + pesos.format(n);

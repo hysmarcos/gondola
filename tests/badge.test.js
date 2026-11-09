@@ -21,7 +21,7 @@ const plainCard = (key) => `
 const L = (value, extra = {}) => ({ group: "kg", value, drained: false, take: 1, note: null, bankValue: null, bankName: null, bankBlocked: null, ...extra });
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-function setup(html, path = "/productos/categorias/x") {
+function setup(html, path = "/productos/categorias/x", opts) {
   const win = new EventTarget();
   win.location = { pathname: path };
   win.posted = [];
@@ -29,7 +29,8 @@ function setup(html, path = "/productos/categorias/x") {
   win.MutationObserver = window.MutationObserver;
   const doc = document.implementation.createHTMLDocument("x");
   doc.body.innerHTML = html;
-  installBadges(win, doc);
+  if (opts?.IntersectionObserver) win.IntersectionObserver = opts.IntersectionObserver;
+  installBadges(win, doc, opts);
   const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
   return { win, doc, send };
 }
@@ -254,5 +255,130 @@ describe("revisión v4: PDP no atenúa bloques grandes", () => {
     await tick();
     expect(doc.querySelector(".mt-2").hasAttribute("data-coto-unit-dim")).toBe(true);
     expect(doc.querySelector(".big").hasAttribute("data-coto-unit-dim")).toBe(false);
+  });
+});
+
+// Cliente de comparación falso: guarda los pedidos y se resuelve a mano.
+function fakeCompare() {
+  const done = new Map();
+  const waiting = new Map();
+  return {
+    asked: [],
+    peek: (ean) => done.get(ean),
+    request(ean) {
+      this.asked.push(ean);
+      return new Promise((r) => waiting.set(ean, r));
+    },
+    async resolve(ean, res) {
+      done.set(ean, res);
+      waiting.get(ean)?.(res);
+      await tick();
+    },
+  };
+}
+
+const EAN_A = "7790070318213";
+const EAN_B = "7790070318220";
+const CMP = { unit: 2225, qty: 1 };
+const RES = { carrefour: { unit: 2049, qty: 1, promo: null }, dia: { unit: 1899, qty: 2, promo: "x" }, mas: { unit: 2229, qty: 1, promo: null } };
+const prices = (doc) => [...doc.querySelectorAll(".coto-unit-cmp-price")].map((p) => p.textContent);
+
+describe("v5: comparar con otros súper", () => {
+  it("filas '…' mientras espera y precios al llegar; un solo pedido", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup(offerCard(K(1)), undefined, { compare });
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
+    await tick();
+    const box = doc.querySelector(".coto-unit-box");
+    expect(box.getAttribute("data-coto-unit-ean")).toBe(EAN_A);
+    expect(box.lastElementChild.className).toBe("coto-unit-cmp");
+    expect(prices(doc)).toEqual(["…", "…", "…"]);
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
+    await tick();
+    expect(compare.asked).toEqual([EAN_A]);
+    await compare.resolve(EAN_A, RES);
+    expect(prices(doc)).toEqual(["▼ $2.049", "▼ $1.899", "= $2.229"]);
+    expect(doc.querySelector(".coto-unit-cmp-qty").textContent).toBe("llevando 2");
+    expect(compare.asked).toEqual([EAN_A]);
+  });
+
+  it("sin EAN no hay bloque ni pedido", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup(offerCard(K(1)), undefined, { compare });
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: null, cmp: null }) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-box")).not.toBeNull();
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+    expect(compare.asked).toEqual([]);
+  });
+
+  it("sin cliente de comparación no hay bloque", async () => {
+    const { doc, send } = setup(offerCard(K(1)));
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+  });
+
+  it("si la tarjeta cambia de producto, muestra el EAN nuevo y no el viejo", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup(offerCard(K(1)), undefined, { compare });
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
+    await tick();
+    await compare.resolve(EAN_A, RES);
+    expect(prices(doc)[1]).toBe("▼ $1.899");
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_B, cmp: CMP }) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-box").getAttribute("data-coto-unit-ean")).toBe(EAN_B);
+    expect(prices(doc)).toEqual(["…", "…", "…"]);
+    await compare.resolve(EAN_B, { carrefour: "missing", dia: { unit: 2600, qty: 1, promo: null }, mas: "missing" });
+    expect(prices(doc)).toEqual(["—", "▲ $2.600", "—"]);
+    expect(compare.asked).toEqual([EAN_A, EAN_B]);
+  });
+
+  it("apagado en ajustes: borra los bloques y lo que llega tarde no pinta", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup(offerCard(K(1)) + offerCard(K(2)), undefined, { compare });
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }), [K(2)]: L(10, { ean: EAN_B, cmp: CMP }) } });
+    await tick();
+    await compare.resolve(EAN_A, RES);
+    expect(doc.querySelectorAll(".coto-unit-cmp")).toHaveLength(2);
+    send({ type: "settings", selected: [], day: 1, compareStores: false });
+    await tick();
+    expect(doc.querySelectorAll(".coto-unit-cmp")).toHaveLength(0);
+    await compare.resolve(EAN_B, RES);
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
+    await tick();
+    expect(doc.querySelectorAll(".coto-unit-cmp")).toHaveLength(0);
+    expect(doc.querySelectorAll(".coto-unit-box")).toHaveLength(2);
+    expect(compare.asked).toEqual([EAN_A, EAN_B]);
+    send({ type: "settings", selected: [], day: 1, compareStores: true });
+    await tick();
+    expect(doc.querySelectorAll(".coto-unit-cmp")).toHaveLength(2);
+    expect(compare.asked).toEqual([EAN_A, EAN_B]);
+  });
+
+  it("con IntersectionObserver pide recién cuando la caja se ve, una sola vez", async () => {
+    const observers = [];
+    class FakeIO {
+      constructor(cb) { this.cb = cb; this.targets = new Set(); observers.push(this); }
+      observe(t) { this.targets.add(t); }
+      unobserve(t) { this.targets.delete(t); }
+      disconnect() { this.targets.clear(); }
+      show(t) { this.cb([{ target: t, isIntersecting: true }], this); }
+    }
+    const compare = fakeCompare();
+    const { doc, send } = setup(offerCard(K(1)), undefined, { compare, IntersectionObserver: FakeIO });
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
+    await tick();
+    const box = doc.querySelector(".coto-unit-box");
+    expect(prices(doc)).toEqual(["…", "…", "…"]);
+    expect(compare.asked).toEqual([]);
+    expect(observers[0].targets.has(box)).toBe(true);
+    observers[0].show(box);
+    observers[0].show(box);
+    send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
+    await tick();
+    expect(compare.asked).toEqual([EAN_A]);
+    expect(observers[0].targets.has(box)).toBe(false);
   });
 });
