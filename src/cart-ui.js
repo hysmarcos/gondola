@@ -1,0 +1,97 @@
+// En /carrito: avisos de promos incompletas y caja con lo que se paga de verdad.
+// Solo agrega nodos; no toca el carrito de Coto.
+import { dayName } from "./banks.js";
+
+const SOURCE = "coto-unit";
+const WARN = "coto-unit-cart-warn";
+const BOX = "coto-unit-cart-box";
+const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+const $ = (n) => "$" + money.format(n);
+
+export function normName(text) {
+  return String(text ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function boxLines(a, day, today) {
+  const out = [`Total con promos de Coto: ${$(a.total)}`];
+  if (a.today) {
+    const when = day === today ? "Hoy" : dayName(day);
+    out.push(`${when} con ${a.today.promo.bank}: ${$(a.today.total)} (reintegro ${$(a.today.refund)})`);
+  }
+  if (a.best && a.best.day !== day) {
+    out.push(`Mejor día: ${dayName(a.best.day).toLowerCase()} con ${a.best.promo.bank}, ${$(a.best.total)}`);
+  }
+  for (const bank of a.weeklyCapBanks ?? []) out.push(`El tope de ${bank} es semanal.`);
+  return out;
+}
+
+export function installCartUi(win, doc) {
+  const state = { analysis: null, seq: -1, day: new Date().getDay() };
+  const onCart = () => String(win.location?.pathname ?? "").startsWith("/carrito");
+
+  function renderWarnings(a) {
+    const byName = new Map(a.lines.map((l) => [normName(l.name), l]));
+    for (const card of doc.querySelectorAll("card-product")) {
+      const line = byName.get(normName(card.querySelector("a.title")?.textContent));
+      const target = card.querySelector(".c__item-detail") ?? card;
+      let warn = target.querySelector(":scope > ." + WARN);
+      if (!line || !line.missing) {
+        warn?.remove();
+        continue;
+      }
+      const text = `⚠ Agregá ${line.missing} más y se activa el ${line.promoText}: ahorrás ${$(line.saving)}`;
+      if (!warn) {
+        warn = doc.createElement("div");
+        warn.className = WARN;
+        target.appendChild(warn);
+      }
+      if (warn.textContent !== text) warn.textContent = text;
+    }
+  }
+
+  function renderBox(a) {
+    const total = doc.querySelector(".card-body-container");
+    let box = doc.querySelector("." + BOX);
+    if (!total) return box?.remove();
+    const lines = boxLines(a, state.day, new Date().getDay());
+    const text = lines.join("\n");
+    if (box && box.dataset.text === text) return;
+    if (!box) {
+      box = doc.createElement("div");
+      box.className = BOX;
+      total.after(box);
+    }
+    box.dataset.text = text;
+    box.replaceChildren(...lines.map((t) => Object.assign(doc.createElement("div"), { textContent: t })));
+  }
+
+  function render() {
+    if (!onCart() || !state.analysis) return;
+    renderWarnings(state.analysis);
+    renderBox(state.analysis);
+  }
+
+  win.addEventListener("message", (e) => {
+    const m = e.data;
+    if (m?.source !== SOURCE) return;
+    if (m.type === "settings") {
+      state.day = Number(m.day) || 0;
+    } else if (m.type === "cart" && m.analysis) {
+      if (typeof m.seq === "number") {
+        if (m.seq < state.seq) return;
+        state.seq = m.seq;
+      }
+      state.analysis = m.analysis;
+    } else {
+      return;
+    }
+    render();
+  });
+
+  new win.MutationObserver(render).observe(doc.documentElement, { childList: true, subtree: true });
+}
