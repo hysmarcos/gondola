@@ -15,8 +15,8 @@ const SAYS = { lower: "más barato", equal: "igual", higher: "más caro" };
 
 // cmp: { unit, qty } de Coto. results: StoreResults del cliente, o undefined si no llegó.
 export function compareRows(cmp, results, stores = STORES) {
-  return stores.map(({ id, name }) => {
-    const row = { id, name, state: "none", unit: null, qty: 1, title: null };
+  return stores.map(({ id, name, host }) => {
+    const row = { id, name, state: "none", unit: null, qty: 1, title: null, url: null, delta: null, cotoUnit: cmp.unit, cotoQty: cmp.qty ?? 1 };
     if (results === undefined) return { ...row, state: "pending" };
     const offer = results[id];
     if (offer === "missing") return { ...row, title: `No está en ${name}` };
@@ -25,13 +25,153 @@ export function compareRows(cmp, results, stores = STORES) {
     }
     const ratio = offer.unit / cmp.unit;
     if (!(ratio >= MIN_RATIO && ratio <= MAX_RATIO)) return { ...row, title: "Dato dudoso" };
-    return { ...row, state: classify(cmp.unit, offer.unit), unit: offer.unit, qty: offer.qty > 1 ? offer.qty : 1 };
+    return {
+      ...row,
+      state: classify(cmp.unit, offer.unit),
+      unit: offer.unit,
+      qty: offer.qty > 1 ? offer.qty : 1,
+      url: safeUrl(offer.url, host),
+      delta: Math.round(((offer.unit - cmp.unit) / cmp.unit) * 100),
+    };
+  });
+}
+
+// Solo links https al mismo súper: nada de otros sitios ni javascript:.
+function safeUrl(url, host) {
+  try {
+    const u = new URL(String(url));
+    return u.protocol === "https:" && u.hostname === host ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
+// Estado general para el ícono: hay un súper más barato (worse), Coto es el más barato
+// (better), todos igual (equal), sin datos (none) o consultando (pending).
+export function compareStatus(rows) {
+  if (!rows?.length) return "none";
+  if (rows.some((r) => r.state === "lower")) return "worse";
+  if (rows.some((r) => r.state === "higher")) return "better";
+  if (rows.some((r) => r.state === "equal")) return "equal";
+  if (rows.some((r) => r.state === "pending")) return "pending";
+  return "none";
+}
+
+const STATUS_TEXT = {
+  worse: "Hay un súper más barato",
+  better: "Coto tiene el mejor precio",
+  equal: "Mismo precio en otros súper",
+  none: "Sin datos de otros súper",
+  pending: "Consultando otros súper",
+};
+
+// Íconos dibujados (trazo 2, 24x24).
+const CIRCLE = "M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18z";
+const STATUS_ICON = {
+  worse: ["M12 8.5v4.5", "M12 16.5h.01", "M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"],
+  better: [CIRCLE, "M8 12.5l2.7 2.7L16 9.8"],
+  equal: [CIRCLE, "M8.5 10h7", "M8.5 14h7"],
+  none: [CIRCLE, "M8.5 12h7"],
+  pending: [CIRCLE, "M8 12h.01", "M12 12h.01", "M16 12h.01"],
+};
+
+function priceText(r) {
+  if (r.unit !== null) return formatMoney(r.unit);
+  if (r.state === "pending") return "…";
+  return (r.title ?? "").startsWith("No está") ? "No está" : "Sin datos";
+}
+
+function deltaText(r) {
+  if (r.unit === null) return null;
+  if (r.state === "equal" || r.delta === 0) return "igual";
+  return `${r.delta < 0 ? "−" : "+"}${Math.abs(r.delta)}%`;
+}
+
+function iconPlan(rows) {
+  const state = compareStatus(rows);
+  const first = rows[0];
+  return {
+    kind: "icon",
+    state,
+    label: `${STATUS_TEXT[state]}. Ver comparación`,
+    rows: [
+      { name: "Coto", url: null, state: "coto", price: formatMoney(first.cotoUnit), qty: first.cotoQty > 1 ? `x${first.cotoQty}` : null, delta: null },
+      ...rows.map((r) => ({ name: r.name, url: r.url, state: r.state, price: priceText(r), qty: r.qty > 1 ? `x${r.qty}` : null, delta: deltaText(r) })),
+    ],
+  };
+}
+
+function svgIcon(doc, paths) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = doc.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  for (const d of paths) {
+    const p = doc.createElementNS(NS, "path");
+    p.setAttribute("d", d);
+    svg.append(p);
+  }
+  return svg;
+}
+
+function el(doc, tag, cls, text) {
+  const e = doc.createElement(tag);
+  e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function buildIcon(doc, block, it) {
+  const btn = el(doc, "button", `${CMP}-btn`);
+  btn.type = "button";
+  btn.setAttribute("aria-label", it.label);
+  btn.setAttribute("aria-expanded", block.hasAttribute("data-open") ? "true" : "false");
+  btn.title = STATUS_TEXT[it.state];
+  btn.append(svgIcon(doc, STATUS_ICON[it.state]));
+  const pop = el(doc, "div", `${CMP}-pop`);
+  pop.setAttribute("role", "group");
+  pop.setAttribute("aria-label", "Mismo producto en otros súper");
+  pop.append(el(doc, "div", `${CMP}-head`, "Mismo producto en otros súper"));
+  for (const r of it.rows) {
+    const row = el(doc, "div", `${CMP}-row ${CMP}-row--${r.state}`);
+    let name;
+    if (r.url) {
+      name = el(doc, "a", `${CMP}-name`, r.name);
+      name.setAttribute("href", r.url);
+      name.setAttribute("target", "_blank");
+      name.setAttribute("rel", "noopener noreferrer");
+    } else {
+      name = el(doc, "span", `${CMP}-name`, r.name);
+    }
+    row.append(name, el(doc, "span", `${CMP}-price`, r.price));
+    if (r.qty) row.append(el(doc, "span", `${CMP}-qty`, r.qty));
+    if (r.delta) row.append(el(doc, "span", `${CMP}-delta`, r.delta));
+    pop.append(row);
+  }
+  return [btn, pop];
+}
+
+// Abre/cierra el detalle al tocar (en celulares no hay hover). Se engancha una vez por bloque.
+function wireToggle(block) {
+  if (block.__cotoWired) return;
+  block.__cotoWired = true;
+  block.addEventListener("click", (e) => {
+    const btn = e.target.closest?.(`.${CMP}-btn`);
+    if (!btn || !block.contains(btn)) return;
+    // La tarjeta de Coto navega al producto con un clic: el botón no debe dispararlo.
+    e.preventDefault();
+    e.stopPropagation();
+    const open = !block.hasAttribute("data-open");
+    if (open) block.setAttribute("data-open", "");
+    else block.removeAttribute("data-open");
+    btn.setAttribute("aria-expanded", String(open));
   });
 }
 
 // Lo que se va a dibujar, como datos simples: sirve de firma para no tocar el DOM
 // si nada cambió (la página repinta en cada mutación).
 function plan(rows, variant) {
+  if (variant === "icon") return [iconPlan(rows)];
   if (variant !== "mini") {
     return rows.map((r) => ({
       cls: `${CMP}-row ${CMP}-row--${r.state}`,
@@ -61,7 +201,8 @@ function plan(rows, variant) {
   return null;
 }
 
-function build(doc, items) {
+function build(doc, items, block) {
+  if (items[0]?.kind === "icon") return buildIcon(doc, block, items[0]);
   const nodes = [];
   for (const it of items) {
     const el = doc.createElement("div");
@@ -100,8 +241,13 @@ export function paintCompare(box, rows, variant = "") {
     block = box.ownerDocument.createElement("div");
     block.className = CMP;
   }
+  if (variant === "icon") {
+    if (!block.classList.contains(`${CMP}--icon`)) block.classList.add(`${CMP}--icon`);
+    if (block.dataset.state !== items[0].state) block.dataset.state = items[0].state;
+    wireToggle(block);
+  }
   if (block.getAttribute(SIG) !== sig) {
-    block.replaceChildren(...build(box.ownerDocument, items));
+    block.replaceChildren(...build(box.ownerDocument, items, block));
     block.setAttribute(SIG, sig);
   }
   if (box.lastChild !== block) box.appendChild(block);

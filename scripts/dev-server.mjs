@@ -25,6 +25,27 @@ createServer(async (req, res) => {
     await writeFile(join(root, "dist-dev", "catalog.json"), Buffer.concat(chunks));
     return res.writeHead(200, headers).end("ok");
   }
+  // Relevo para las vistas previas: los súper no dejan leer sus APIs desde una página
+  // local. Solo estos hosts, solo para la página de vista previa.
+  if (req.url.startsWith("/proxy?")) {
+    if (req.headers.origin && req.headers.origin !== "http://127.0.0.1:8765") return res.writeHead(403).end();
+    const target = new URL(new URL(req.url, "http://x").searchParams.get("url") ?? "");
+    const allowed = ["www.carrefour.com.ar", "diaonline.supermercadosdia.com.ar", "www.masonline.com.ar", "www.coto.com.ar"];
+    if (target.protocol !== "https:" || !allowed.includes(target.hostname)) return res.writeHead(403).end();
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    try {
+      const r = await fetch(target, {
+        method: req.method,
+        headers: req.method === "POST" ? { "content-type": "application/json" } : {},
+        body: req.method === "POST" ? Buffer.concat(chunks) : undefined,
+      });
+      const text = await r.text();
+      return res.writeHead(r.status, { ...headers, "Content-Type": "application/json" }).end(text);
+    } catch {
+      return res.writeHead(502, headers).end();
+    }
+  }
   const path = decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/^\/+/, "");
   if (path.includes("..") || !/^(dist|dist-dev|src|assets)\//.test(path)) return res.writeHead(404, headers).end();
   try {

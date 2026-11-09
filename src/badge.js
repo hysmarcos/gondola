@@ -190,7 +190,7 @@ export function installBadges(win, doc, deps = {}) {
     const title = unitTitle(label);
     if (row.title !== title) row.title = title;
     upsert(row, "coto-unit-value", formatUnit(label), null, "span");
-    const why = bankOnly && label.bankValue == null ? null : formatWhy(label, state.day, today(), short);
+    const why = bankOnly ? null : formatWhy(label, state.day, today(), short);
     const logo = label.bankValue != null && label.bankName ? logoUrl(label.bankLogo) : null;
     if (why && logo) paintBankChip(row, label, why, logo, short);
     else upsert(row, "coto-unit-why", why, null, "span");
@@ -234,22 +234,53 @@ export function installBadges(win, doc, deps = {}) {
       if (name) name.after(block);
       else centro.prepend(block);
     }
+    // Precio grande: el mejor que se paga hoy (promo de Coto o banco), con el original
+    // tachado al lado y el ícono de comparación con otros súper.
     const priceRow = ensure(block, "coto-unit-pricerow");
-    upsert(priceRow, "coto-unit-final", label.price != null ? $2(label.price) : null, null, "span");
-    const regular = label.list != null && label.price != null && label.list > label.price + 0.5 ? $2(label.list) : null;
-    upsert(priceRow, "coto-unit-sr", regular ? "Precio regular:" : null, null, "span");
+    const big = label.bankPrice ?? label.price;
+    upsert(priceRow, "coto-unit-final", big != null ? $2(big) : null, null, "span");
+    const regular = label.list != null && big != null && label.list > big + 0.5 ? $2(label.list) : null;
+    upsert(priceRow, "coto-unit-sr", regular ? "Precio original:" : null, null, "span");
     upsert(priceRow, "coto-unit-regular", regular, null, "s");
     order(priceRow, ["coto-unit-final", "coto-unit-sr", "coto-unit-regular"]);
-    // Detalle: en qué condición se paga ese precio (nadie paga $196 llevando uno solo) y
-    // notas de la medida. Sin detalle la fila queda reservada: las tarjetas no saltan.
-    const detail = [formatCond(label), formatNote(label)].filter(Boolean).join(" · ");
-    const row = upsert(block, "coto-unit-detail", detail || " ");
-    setAttr(row, "data-coto-unit-empty", !detail);
+    paintCmp(priceRow, label, "icon");
+    // Detalle: por qué ese precio (banco con su logo, cuánto llevar, Comunidad) y notas de
+    // la medida. Sin detalle la fila queda reservada: las tarjetas no saltan.
+    paintDetail(block, label);
+    // Precio por unidad: un solo número, de referencia, abajo.
     paintUnit(block, label, false, true);
     order(block, ["coto-unit-pricerow", "coto-unit-detail", "coto-unit-unit"]);
-    paintCmp(block, label, "");
     return block;
   }
+
+  function paintDetail(block, label) {
+    const bank = label.bankPrice != null && !!label.bankName;
+    const when = state.day === today() ? "hoy" : `el ${dayName(state.day).toLowerCase()}`;
+    const text = [bank ? `${label.bankPercent}% ${when}` : formatCond(label), formatNote(label)].filter(Boolean).join(" · ");
+    const logo = bank ? logoUrl(label.bankLogo) : null;
+    const row = ensure(block, "coto-unit-detail");
+    const sig = [text, logo, bank ? label.bankName : ""].join("|");
+    if (row.dataset.sig !== sig) {
+      row.dataset.sig = sig;
+      const parts = [];
+      if (bank && logo) {
+        // Con logo, el nombre del banco va en el texto alternativo.
+        const img = doc.createElement("img");
+        img.className = "coto-unit-logo";
+        img.setAttribute("src", logo);
+        img.setAttribute("alt", label.bankName);
+        parts.push(doc.createTextNode("con "), img, doc.createTextNode(" " + text));
+      } else if (bank) {
+        parts.push(doc.createTextNode(`con ${label.bankName} ${text}`));
+      } else {
+        parts.push(doc.createTextNode(text || " "));
+      }
+      row.replaceChildren(...parts);
+    }
+    setAttr(row, "data-coto-unit-empty", !text);
+    setAttr(row, "data-coto-unit-bank", bank);
+  }
+
 
   // Etiquetas sobre la imagen, arriba a la izquierda: más barato, la oferta (una sola vez)
   // y el inicio de grupo al ordenar por unidad. Reemplazan las cucardas de Coto.
@@ -349,7 +380,7 @@ export function installBadges(win, doc, deps = {}) {
     upsert(box, "coto-unit-note", mini ? null : formatNote(label));
     upsert(box, "coto-unit-bankno", mini ? null : formatBlocked(label.bankBlocked));
     order(box, ["coto-unit-cap", "coto-unit-unit", "coto-unit-note", "coto-unit-bankno"]);
-    paintCmp(box, label, variant);
+    paintCmp(box, label, mini ? "mini" : "icon");
     return box;
   }
 

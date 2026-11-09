@@ -125,10 +125,13 @@ describe("tarjeta unificada", () => {
   it("con banco: el precio por unidad ya es con banco y lo dice", async () => {
     const { doc, send } = setup(plainCard(K(1)));
     send({ type: "settings", selected: [{ id: "457" }], day: new Date().getDay() });
-    send({ type: "labels", labels: { [K(1)]: L(933.33, { group: "L", bankValue: 653.33, bankName: "ICBC", price: 2800, list: 2800, offerText: null }) } });
+    send({ type: "labels", labels: { [K(1)]: L(933.33, { group: "L", bankValue: 653.33, bankName: "ICBC", bankPrice: 1960, bankPercent: 30, price: 2800, list: 2800, offerText: null }) } });
     await tick();
+    expect(doc.querySelector(".coto-unit-final").textContent).toBe("$1.960,00");
+    expect(doc.querySelector(".coto-unit-regular").textContent).toBe("$2.800,00");
+    expect(doc.querySelector(".coto-unit-detail").textContent).toBe("con ICBC 30% hoy");
     expect(doc.querySelector(".coto-unit-value").textContent).toBe("$653 /L");
-    expect(doc.querySelector(".coto-unit-why").textContent).toBe("con ICBC hoy");
+    expect(doc.querySelector(".coto-unit-unit .coto-unit-why")).toBeNull();
     send({ type: "settings", selected: [{ id: "457" }], day: (new Date().getDay() + 1) % 7 });
     await tick();
     expect(doc.querySelector(".coto-unit-value").textContent).toBe("$933 /L");
@@ -281,21 +284,20 @@ describe("revisión v5: tarjeta", () => {
     send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
     send({ type: "labels", labels: {
       [K(1)]: L(711.1, { group: "L", price: 1599.99, list: 1999.99, via: "comunidad" }),
-      [K(2)]: L(700, { group: "L", via: "1pago", bankValue: 490, bankName: "ICBC" }),
+      [K(2)]: L(700, { group: "L", via: "1pago" }),
     } });
     await tick();
     const [a, b] = doc.querySelectorAll(".coto-unit-price");
     expect(a.querySelector(".coto-unit-detail").textContent).toBe("con Comunidad");
     expect(a.querySelector(".coto-unit-why")).toBeNull();
     expect(b.querySelector(".coto-unit-detail").textContent).toBe("en 1 pago");
-    expect(b.querySelector(".coto-unit-why").textContent).toBe("con ICBC hoy");
   });
 
   it("el precio tachado tiene etiqueta para lectores de pantalla", async () => {
     const { doc, send } = setup(offerCard(K(1)));
     send({ type: "labels", labels: { [K(1)]: L(733.33) } });
     await tick();
-    expect(doc.querySelector(".coto-unit-pricerow .coto-unit-sr").textContent).toBe("Precio regular:");
+    expect(doc.querySelector(".coto-unit-pricerow .coto-unit-sr").textContent).toBe("Precio original:");
   });
 
   it("un nodo reusado sin 'sin impuestos' pierde el atenuado", async () => {
@@ -431,16 +433,17 @@ describe("v5: comparar con otros súper", () => {
     const { doc, send } = setup(offerCard(K(1)), undefined, { compare });
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
     await tick();
-    const box = doc.querySelector(".coto-unit-price");
+    const box = doc.querySelector(".coto-unit-pricerow");
     expect(box.getAttribute("data-coto-unit-ean")).toBe(EAN_A);
-    expect(box.lastElementChild.className).toBe("coto-unit-cmp");
-    expect(prices(doc)).toEqual(["…", "…", "…"]);
+    expect(box.lastElementChild.classList.contains("coto-unit-cmp")).toBe(true);
+    expect(prices(doc)).toEqual(["$2.225", "…", "…", "…"]);
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
     await tick();
     expect(compare.asked).toEqual([EAN_A]);
     await compare.resolve(EAN_A, RES);
-    expect(prices(doc)).toEqual(["▼ $2.049", "▼ $1.899", "= $2.229"]);
-    expect(doc.querySelector(".coto-unit-cmp-qty").textContent).toBe("llevando 2");
+    expect(prices(doc)).toEqual(["$2.225", "$2.049", "$1.899", "$2.229"]);
+    expect(doc.querySelector(".coto-unit-cmp").dataset.state).toBe("worse");
+    expect(doc.querySelector(".coto-unit-cmp-qty").textContent).toBe("x2");
     expect(compare.asked).toEqual([EAN_A]);
   });
 
@@ -467,13 +470,14 @@ describe("v5: comparar con otros súper", () => {
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
     await tick();
     await compare.resolve(EAN_A, RES);
-    expect(prices(doc)[1]).toBe("▼ $1.899");
+    expect(prices(doc)[2]).toBe("$1.899");
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_B, cmp: CMP }) } });
     await tick();
-    expect(doc.querySelector(".coto-unit-price").getAttribute("data-coto-unit-ean")).toBe(EAN_B);
-    expect(prices(doc)).toEqual(["…", "…", "…"]);
+    expect(doc.querySelector(".coto-unit-pricerow").getAttribute("data-coto-unit-ean")).toBe(EAN_B);
+    expect(prices(doc)).toEqual(["$2.225", "…", "…", "…"]);
     await compare.resolve(EAN_B, { carrefour: "missing", dia: { unit: 2600, qty: 1, promo: null }, mas: "missing" });
-    expect(prices(doc)).toEqual(["—", "▲ $2.600", "—"]);
+    expect(prices(doc)).toEqual(["$2.225", "No está", "$2.600", "No está"]);
+    expect(doc.querySelector(".coto-unit-cmp").dataset.state).toBe("better");
     expect(compare.asked).toEqual([EAN_A, EAN_B]);
   });
 
@@ -512,8 +516,8 @@ describe("v5: comparar con otros súper", () => {
     const { doc, send } = setup(offerCard(K(1)), undefined, { compare, IntersectionObserver: FakeIO });
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
     await tick();
-    const box = doc.querySelector(".coto-unit-price");
-    expect(prices(doc)).toEqual(["…", "…", "…"]);
+    const box = doc.querySelector(".coto-unit-pricerow");
+    expect(prices(doc)).toEqual(["$2.225", "…", "…", "…"]);
     expect(compare.asked).toEqual([]);
     expect(observers[0].targets.has(box)).toBe(true);
     observers[0].show(box);
@@ -553,7 +557,7 @@ describe("v5: comparar con otros súper", () => {
     const passes = countPasses(doc);
     await compare.resolveAll([EAN_A, EAN_B, EAN_C], RES);
     expect(passes.n).toBe(1);
-    expect(prices(doc)).toEqual(Array(3).fill(["▼ $2.049", "▼ $1.899", "= $2.229"]).flat());
+    expect(prices(doc)).toEqual(Array(3).fill(["$2.225", "$2.049", "$1.899", "$2.229"]).flat());
   });
 
   it("un lote que llega con la comparación apagada no repinta", async () => {
@@ -567,19 +571,21 @@ describe("v5: comparar con otros súper", () => {
     expect(passes.n).toBe(0);
     expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
   });
-  it("en la tarjeta, el bloque va último dentro del precio unificado", async () => {
+  it("en la tarjeta, el ícono va al lado del precio grande, no debajo del precio por unidad", async () => {
     const compare = fakeCompare();
     const { doc, send } = setup(offerCard(K(1)), undefined, { compare });
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
     await tick();
     const block = doc.querySelector(".coto-unit-price");
-    expect([...block.children].map((c) => c.className)).toEqual(["coto-unit-pricerow", "coto-unit-detail", "coto-unit-unit", "coto-unit-cmp"]);
+    expect([...block.children].map((c) => c.className)).toEqual(["coto-unit-pricerow", "coto-unit-detail", "coto-unit-unit"]);
     await compare.resolve(EAN_A, RES);
-    expect(block.lastElementChild.className).toBe("coto-unit-cmp");
+    const row = block.querySelector(".coto-unit-pricerow");
+    expect(row.lastElementChild.classList.contains("coto-unit-cmp--icon")).toBe(true);
+    expect(row.querySelector(".coto-unit-cmp-btn")).not.toBeNull();
     expect(doc.querySelector(".coto-unit-box")).toBeNull();
   });
 
-  it("página de producto: filas completas al final de la caja a lo ancho", async () => {
+  it("página de producto: el mismo ícono con el detalle, al final de la caja", async () => {
     const key = "_/R-00621756-00621756-200";
     const compare = fakeCompare();
     const html = `<div class="mt-4"><div><var class="price">$100</var></div><div class="mt-2 small">Precio regular: $150</div></div>`;
@@ -588,8 +594,8 @@ describe("v5: comparar con otros súper", () => {
     await tick();
     await compare.resolve(EAN_A, RES);
     const box = doc.querySelector(".coto-unit-box--pdp");
-    expect(box.lastElementChild.className).toBe("coto-unit-cmp");
-    expect(prices(doc)).toEqual(["▼ $2.049", "▼ $1.899", "= $2.229"]);
+    expect(box.lastElementChild.classList.contains("coto-unit-cmp--icon")).toBe(true);
+    expect(prices(doc)).toEqual(["$2.225", "$2.049", "$1.899", "$2.229"]);
   });
 
   it("carrusel: una sola línea con el mejor precio de otro súper", async () => {
@@ -623,22 +629,21 @@ describe("v7: logos de bancos", () => {
   it("la tarjeta muestra el logo del banco en el motivo", async () => {
     const { doc, send } = setupLogo(plainCard(K(1)));
     send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
-    send({ type: "labels", labels: { [K(1)]: L(933, { group: "L", bankValue: 653, bankName: "ICBC", bankLogo: "logo_icbc_1.png", price: 2800, list: 2800, offerText: null }) } });
+    send({ type: "labels", labels: { [K(1)]: L(933, { group: "L", bankValue: 653, bankName: "ICBC", bankLogo: "logo_icbc_1.png", bankPrice: 1960, bankPercent: 30, price: 2800, list: 2800, offerText: null }) } });
     await tick();
-    const why = doc.querySelector(".coto-unit-why");
-    expect(why.querySelector("img.coto-unit-logo").getAttribute("src")).toBe("https://x/logo_icbc_1.png");
-    expect(why.querySelector("img").getAttribute("alt")).toBe("ICBC");
-    expect(why.getAttribute("aria-label")).toBe("con ICBC hoy");
-    expect(why.textContent.trim()).toBe("hoy");
+    const detail = doc.querySelector(".coto-unit-detail");
+    expect(detail.querySelector("img.coto-unit-logo").getAttribute("src")).toBe("https://x/logo_icbc_1.png");
+    expect(detail.querySelector("img").getAttribute("alt")).toBe("ICBC");
+    expect(detail.textContent).toBe("con  30% hoy");
   });
 
   it("sin logo sigue el texto", async () => {
     const { doc, send } = setupLogo(plainCard(K(1)));
     send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
-    send({ type: "labels", labels: { [K(1)]: L(933, { group: "L", bankValue: 653, bankName: "ICBC", bankLogo: null, price: 2800, list: 2800, offerText: null }) } });
+    send({ type: "labels", labels: { [K(1)]: L(933, { group: "L", bankValue: 653, bankName: "ICBC", bankLogo: null, bankPrice: 1960, bankPercent: 30, price: 2800, list: 2800, offerText: null }) } });
     await tick();
-    expect(doc.querySelector(".coto-unit-why img")).toBeNull();
-    expect(doc.querySelector(".coto-unit-why").textContent).toBe("con ICBC hoy");
+    expect(doc.querySelector(".coto-unit-detail img")).toBeNull();
+    expect(doc.querySelector(".coto-unit-detail").textContent).toBe("con ICBC 30% hoy");
   });
 
   it("en el carrusel, solo el logo", async () => {
