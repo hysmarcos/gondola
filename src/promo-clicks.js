@@ -3,7 +3,7 @@
 // vez en el mismo instante: el contador pasa directo (2 → 4) y sale un solo pedido.
 import { parseNxM, adjustQty, promoNotice } from "./promo.js";
 
-// deps: { dataFor(prodId) → data | null, enabled() → bool, notify(prodId, text) }
+// deps: { dataFor(prodId) → data | null, enabled() → bool, notify(prodId, text), expect(prodId, qty) }
 export function installPromoClicks(win, doc, deps) {
   let before = null; // { input, value } tomado antes de que Angular sume
   let busy = false;
@@ -40,6 +40,7 @@ export function installPromoClicks(win, doc, deps) {
     } finally {
       busy = false;
     }
+    deps.expect?.(prodId, want);
     const text = promoNotice(data, want, want - now);
     if (text) deps.notify?.(prodId, text);
   };

@@ -69,3 +69,15 @@ describe("installPromoClicks", () => {
     t.off();
   });
 });
+
+describe("revisión v4: promo-clicks avisa la cantidad final", () => {
+  it("llama a expect con el valor que dejó en el contador", () => {
+    document.body.innerHTML = "";
+    const expected = [];
+    const off = installPromoClicks(window, document, { dataFor: () => TWO, enabled: () => true, expect: (id, q) => expected.push([id, q]) });
+    const s = stepper("prod1", "2");
+    s.plus.click();
+    expect(expected).toEqual([["prod1", 4]]);
+    off();
+  });
+});

@@ -175,6 +175,8 @@ export function installBadges(win, doc) {
     for (const line of wrap.children) {
       if (line === block || line === box) continue;
       const t = line.textContent;
+      // Solo líneas cortas de texto: un bloque con botones o mucho texto no es "secundario".
+      if (line.querySelector("button, input, a") || t.length > 120) continue;
       const regular = /precio regular/i.test(t);
       setAttr(line, "data-coto-unit-dim", !!box && (regular || /sin impuestos|precio por \d/i.test(t)));
       setAttr(line, "data-coto-unit-strike", !!box && regular && onSale);

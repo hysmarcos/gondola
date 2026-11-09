@@ -31,6 +31,7 @@ function makeFakeXHR(server) {
     open(method, u) { this._method = method; this._url = u; this.readyState = 1; }
     addEventListener(t, fn) { (this._l[t] ||= []).push(fn); }
     removeEventListener() {}
+    abort() { this._aborted = true; }
     _fire(t) {
       const ev = { type: t, target: this };
       for (const fn of this._l[t] || []) fn.call(this, ev);
@@ -71,11 +72,12 @@ function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0
     return apiBody(all.slice((page - 1) * size, page * size), total);
   });
   const { FakeXHR, seen, sent } = makeFakeXHR(server);
-  const env = { time: 0, fetched: [], searched: [], posts: [], listeners: [], pins: [] };
+  const env = { time: 0, fetched: [], searched: [], posts: [], listeners: [], pins: [], unpins: [] };
   const deps = {
     now: () => env.time,
     post: (m) => env.posts.push(m),
     pin: (...a) => env.pins.push(a),
+    unpin: (id) => env.unpins.push(id),
     listen: (fn) => env.listeners.push(fn),
     promosUrl: PROMOS_URL,
     settingsWaitMs,
@@ -497,5 +499,90 @@ describe("v4: carrito vivo y promos NxM", () => {
     const labels = s.env.posts.filter((m) => m.type === "labels").at(-1).labels;
     expect(labels.prod00000777).toBeDefined();
     expect(labels["_/R-00000777-00000777-200"]).toBeDefined();
+  });
+});
+
+describe("revisión v4: clics rápidos y fallas", () => {
+  const CART_URL = "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0&pushSite=CotoDigital";
+  const ADD_URL = "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/addOrRemoveItemToOrderV2?pushSite=CotoDigital";
+  const REC_URL = "https://api.coto.com.ar/api/v1/ms-digital-sitio-bff-web/api/v1/products/recommendations/x?item_id=prod1&us=200";
+  const ADEREZO = { data: { id: "prod00000777", url: "_/R-00000777-00000777-200", sku_display_name: "Aderezo X 200 Ml", product_format: "Mililitros", product_format_quantity: 100, price: [{ store: "200", listPrice: 100, formatPrice: 50 }], discounts: [{ discountText: "2x1", takingText: "Llevando 2", discountPrice: "$50" }] } };
+  let reply = { codigoError: "0" };
+  const server = (u) => {
+    if (/getCarrito/.test(u)) return CARRITO_BODY;
+    if (/addOrRemove/.test(u)) return reply;
+    if (/recommendations/.test(u)) return apiBody([ADEREZO], 1);
+    return apiBody([], 0);
+  };
+  const open = (win, payload) => {
+    const x = new win.XMLHttpRequest();
+    x.open("POST", ADD_URL);
+    const done = new Promise((r) => x.addEventListener("load", () => r(x)));
+    x.send(JSON.stringify(payload));
+    return { x, done };
+  };
+  const qty = (s) => s.sent.filter((r) => /addOrRemove/.test(r.url)).map((r) => JSON.parse(r.payload).quantity);
+  const settle = async () => { for (let i = 0; i < 6; i++) await flush(); };
+
+  it("un '−' después del clic de promo no se reescribe para arriba", async () => {
+    reply = { codigoError: "0" };
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await request(s.win, REC_URL);
+    s.api.expect("prod00000777", 4); // promo-clicks llevó el contador a 4
+    await open(s.win, { prodId: "prod00000777", quantity: 3 }).done; // el usuario tocó "−"
+    expect(qty(s)).toEqual([3]);
+  });
+
+  it("cada pedido nuevo suelta la fijación del contador", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await open(s.win, { prodId: "prod00577935", quantity: 1 }).done;
+    expect(s.env.unpins).toContain("prod00577935");
+  });
+
+  it("si Coto rechaza la cantidad ajustada, el próximo intento va sin ajuste", async () => {
+    reply = { codigoError: "1", mensajeError: "No se puede confirmar la operacion" };
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await request(s.win, REC_URL);
+    await open(s.win, { prodId: "prod00000777", quantity: 1 }).done;
+    await settle();
+    reply = { codigoError: "0" };
+    await open(s.win, { prodId: "prod00000777", quantity: 1 }).done;
+    expect(qty(s)).toEqual([2, 1]);
+  });
+
+  it("un pedido cancelado mientras se busca el producto no se manda", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    let release;
+    s.env.onSearch = () => new Promise((r) => { release = r; });
+    const { x } = open(s.win, { prodId: "prod00299912", quantity: 2 });
+    x.abort();
+    release();
+    await settle();
+    expect(qty(s)).toEqual([]);
+  });
+
+  it("un '−' mientras se busca el producto sale después del '+'", async () => {
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    let release;
+    s.env.onSearch = () => new Promise((r) => { release = r; });
+    s.api.expect("prod00299912", 2); // el contador está en 2
+    open(s.win, { prodId: "prod00299912", quantity: 3 }); // "+": hay que buscar el producto
+    open(s.win, { prodId: "prod00299912", quantity: 2 }); // "−" enseguida
+    await flush();
+    expect(qty(s)).toEqual([]);
+    release();
+    await settle();
+    expect(qty(s)).toEqual([3, 2]);
+  });
+
+  it("un carrito viejo no borra la cantidad que mandamos y todavía no confirmó", async () => {
+    reply = { codigoError: "0" };
+    const s = setup({ settings: { selected: [], day: 1 }, serverBody: server });
+    await request(s.win, REC_URL);
+    await open(s.win, { prodId: "prod00000777", quantity: 1 }).done; // mandamos 2
+    await request(s.win, CART_URL); // carrito sin el aderezo
+    await settle();
+    await open(s.win, { prodId: "prod00000777", quantity: 1 }).done; // "−" de 2 a 1
+    expect(qty(s)).toEqual([2, 1]);
   });
 });

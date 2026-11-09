@@ -4,6 +4,7 @@
 // `from` por `to` en el momento en que Angular lo escribe. Coto le pone id="input-<prodId>".
 
 const KEEP_MS = 4000;
+const watchers = new Map(); // prodId → MutationObserver activo
 
 export function pinInput(win, doc, prodId, from, to, { now = Date.now, ms = KEEP_MS } = {}) {
   const proto = win.HTMLInputElement?.prototype;
@@ -21,16 +22,38 @@ export function pinInput(win, doc, prodId, from, to, { now = Date.now, ms = KEEP
         set(v) {
           const p = this.__cotoPin;
           const swap = p && now() <= p.until && String(v).trim() === p.from;
+          // Cualquier otro valor (llegó el carrito, el usuario tocó "−") suelta la fijación.
+          if (p && !swap) this.__cotoPin = null;
           native.set.call(this, swap ? p.to : v);
         },
       });
     }
-    if (native.get.call(input).trim() === String(from)) native.set.call(input, String(to));
+    // Mientras el usuario escribe no tocamos lo que ve.
+    if (doc.activeElement !== input && native.get.call(input).trim() === String(from)) native.set.call(input, String(to));
   };
 
+  watchers.get(prodId)?.disconnect();
   doc.querySelectorAll(selector).forEach(pin);
-  // El contador del primer "Agregar" se crea después del clic.
-  const observer = new win.MutationObserver(() => doc.querySelectorAll(selector).forEach(pin));
+  // El contador del primer "Agregar" se crea después del clic: solo fijamos los nuevos.
+  const seen = new WeakSet(doc.querySelectorAll(selector));
+  const observer = new win.MutationObserver(() => {
+    for (const input of doc.querySelectorAll(selector)) {
+      if (seen.has(input)) continue;
+      seen.add(input);
+      pin(input);
+    }
+  });
   observer.observe(doc.documentElement, { childList: true, subtree: true });
-  win.setTimeout(() => observer.disconnect(), ms);
+  watchers.set(prodId, observer);
+  win.setTimeout(() => {
+    observer.disconnect();
+    if (watchers.get(prodId) === observer) watchers.delete(prodId);
+  }, ms);
+}
+
+// Un pedido nuevo de ese producto: el usuario siguió tocando, ya no fijamos nada.
+export function unpinInput(doc, prodId) {
+  watchers.get(prodId)?.disconnect();
+  watchers.delete(prodId);
+  for (const input of doc.querySelectorAll(`input[id="input-${prodId}"]`)) input.__cotoPin = null;
 }

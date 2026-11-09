@@ -125,7 +125,8 @@ function measure(data, store) {
   // da los metros (1 m² = 10 m de rollo), así se compara con los demás por 10 m.
   if (paper?.kind === "toilet" && unit.group === "m2") {
     const m2 = base.listPrice / (base.formatPrice * unit.factor);
-    if (m2 >= 0.5) {
+    // 0,5 a 300 m² (5 m a 3 km de papel): fuera de eso el dato de Coto no es creíble.
+    if (m2 >= 0.5 && m2 <= 300) {
       const note = [paper.note, "≈ ancho 10 cm"].filter(Boolean).join(" · ");
       return { group: "rollo10m", value: price / m2, drained: false, note };
     }

@@ -242,3 +242,17 @@ describe("v4: ajuste 'marcar el más barato'", () => {
     expect(doc.querySelector(".coto-unit-best")).not.toBeNull();
   });
 });
+
+describe("revisión v4: PDP no atenúa bloques grandes", () => {
+  it("un hermano con botones o mucho texto no se toca", async () => {
+    const key = "_/R-00621756-00621756-200";
+    const html = `<div class="mt-4"><div><var class="price">$100</var></div>
+      <div class="mt-2 small">Precio regular: $150</div>
+      <div class="big">Precio por 1 Kilo y mucho más <button>Agregar</button></div></div>`;
+    const { doc, send } = setup(html, `/productos/x/${key}`);
+    send({ type: "labels", labels: { [key]: L(10) } });
+    await tick();
+    expect(doc.querySelector(".mt-2").hasAttribute("data-coto-unit-dim")).toBe(true);
+    expect(doc.querySelector(".big").hasAttribute("data-coto-unit-dim")).toBe(false);
+  });
+});

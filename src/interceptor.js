@@ -37,7 +37,9 @@ export function installInterceptor(win, deps) {
   // respuesta del carrito se analiza (las búsquedas por PLU tienen caché).
   let cartWanted = false;
   const byProd = new Map(); // prodId → data, de todo producto visto
-  const sentQty = new Map(); // prodId → última cantidad que mandamos (hasta el próximo carrito)
+  const sentQty = new Map(); // prodId → última cantidad que mandamos (hasta que el carrito la confirme)
+  const rejected = new Set(); // productos donde Coto rechazó una cantidad ajustada
+  const pending = new Map(); // prodId → promesa del pedido que espera datos
   let lastList = null; // última lista vista: { results, store } para volver a etiquetar si cambia el banco
   const onCartPage = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
@@ -158,7 +160,9 @@ export function installInterceptor(win, deps) {
   // force: lo pidió la extensión (página /carrito o mini-carrito abierto).
   async function onCart(body, force = false) {
     lastCartBody = body;
-    sentQty.clear();
+    // Solo olvidamos lo que el carrito ya confirma: un carrito pedido antes del último
+    // agregado no debe pisar la cantidad que mandamos.
+    for (const [id, q] of sentQty) if (cartQty(id) === q) sentQty.delete(id);
     if (!force && !onCartPage() && !cartWanted) return;
     const items = Object.values(body?.output?.productoItems ?? {});
     const lines = await pool(items, 4, async (it) => {
@@ -238,7 +242,9 @@ export function installInterceptor(win, deps) {
     const { prodId } = payload;
     const want = Number(payload.quantity);
     const prev = sentQty.get(prodId) ?? cartQty(prodId);
-    const next = settings.autoPromo ? adjustQty(prev, want, parseNxM(data)) : want;
+    // Si Coto ya rechazó una cantidad ajustada de este producto, no insistimos.
+    const nxm = rejected.has(prodId) ? null : parseNxM(data);
+    const next = settings.autoPromo ? adjustQty(prev, want, nxm) : want;
     sentQty.set(prodId, next);
     if (next !== want) {
       try { deps.pin?.(prodId, want, next); } catch { /* el carrito igual queda bien */ }
@@ -251,26 +257,63 @@ export function installInterceptor(win, deps) {
     return next === want ? null : JSON.stringify({ ...payload, quantity: next });
   }
 
+  // Si Coto rechaza el pedido, la cantidad que mandamos no vale; y si la habíamos ajustado,
+  // el próximo intento va como lo pidió el usuario.
+  function watchAdd(xhr, prodId, adjusted) {
+    origAdd.call(xhr, "load", () => {
+      let ok = xhr.status >= 200 && xhr.status < 300;
+      try { ok = ok && String(readJson(xhr)?.codigoError ?? "0") === "0"; } catch { /* respuesta rara: la damos por buena */ }
+      if (ok) return;
+      sentQty.delete(prodId);
+      if (adjusted()) rejected.add(prodId);
+    });
+  }
+
+  // Decide y manda un pedido. Devuelve una promesa si tuvo que esperar datos del producto.
+  function runAdd(xhr, body, payload) {
+    const { prodId } = payload;
+    let adjusted = false;
+    watchAdd(xhr, prodId, () => adjusted);
+    const quantity = Number(payload.quantity);
+    const prev = sentQty.get(prodId) ?? cartQty(prodId);
+    // Bajar o borrar: no hace falta saber la promo.
+    if (quantity <= prev || (!settings.autoPromo && !settings.notifyPromo)) {
+      sentQty.set(prodId, quantity);
+      return origSend.call(xhr, body);
+    }
+    const data = productData(prodId);
+    const finish = (out) => {
+      adjusted = !!out;
+      return origSend.call(xhr, out ?? body);
+    };
+    if (!(data instanceof Promise)) return finish(data ? adjustAdd(payload, data) : null);
+    // Angular puede cancelar el pedido mientras buscamos el producto: entonces no sale.
+    let aborted = false;
+    const abort = xhr.abort;
+    xhr.abort = function (...args) { aborted = true; return abort.apply(this, args); };
+    return data
+      .then((d) => (d ? adjustAdd(payload, d) : null))
+      .catch(() => null)
+      .then((out) => { if (!aborted) finish(out); });
+  }
+
   function sendAdd(xhr, body) {
     cartWanted = true;
     let payload;
     try { payload = JSON.parse(body); } catch { payload = null; }
-    const quantity = Number(payload?.quantity);
-    if (!payload?.prodId || !Number.isFinite(quantity)) return origSend.call(xhr, body);
-    const prev = sentQty.get(payload.prodId) ?? cartQty(payload.prodId);
-    // Bajar o borrar: no hace falta saber la promo.
-    if (quantity <= prev || (!settings.autoPromo && !settings.notifyPromo)) {
-      sentQty.set(payload.prodId, quantity);
-      return origSend.call(xhr, body);
+    if (!payload?.prodId || !Number.isFinite(Number(payload.quantity))) return origSend.call(xhr, body);
+    const { prodId } = payload;
+    try { deps.unpin?.(prodId); } catch { /* sin fijación */ }
+    // Los pedidos de un mismo producto salen en orden: si uno espera datos, los demás también.
+    const waiting = pending.get(prodId);
+    const result = waiting ? waiting.then(() => runAdd(xhr, body, payload)) : runAdd(xhr, body, payload);
+    if (result instanceof Promise) {
+      const tail = result.catch(() => {});
+      pending.set(prodId, tail);
+      tail.then(() => { if (pending.get(prodId) === tail) pending.delete(prodId); });
+      return undefined;
     }
-    const data = productData(payload.prodId);
-    if (!(data instanceof Promise)) {
-      return origSend.call(xhr, (data && adjustAdd(payload, data)) ?? body);
-    }
-    data
-      .then((d) => (d ? adjustAdd(payload, d) : null), () => null)
-      .then((out) => origSend.call(xhr, out ?? body));
-    return undefined;
+    return result;
   }
 
   proto.send = function (body) {
@@ -317,9 +360,9 @@ export function installInterceptor(win, deps) {
       watch(this, onRecommendations);
     } else if (isCartUrl(url)) {
       watch(this, onCart);
-    } else if (ADD_RE.test(String(url)) && String(method).toUpperCase() === "POST") {
-      this.__cotoAdd = true;
     }
+    // Se reasigna en cada open: un XHR reusado para otra cosa no queda marcado.
+    this.__cotoAdd = ADD_RE.test(String(url)) && String(method).toUpperCase() === "POST";
     return origOpen.call(this, method, realUrl, ...rest);
   };
 
@@ -380,6 +423,8 @@ export function installInterceptor(win, deps) {
   // Para promo-clicks.js (mismo mundo): datos del producto y ajustes, sin red.
   return {
     dataFor: (prodId) => byProd.get(prodId) ?? null,
+    // promo-clicks llevó el contador a q: un "−" desde ahí es una baja, no una suba.
+    expect: (prodId, q) => sentQty.set(prodId, q),
     autoPromo: () => settings.autoPromo,
     notify: (prodId, text) => { if (settings.notifyPromo) post({ type: "promoNotice", prodId, text }); },
   };

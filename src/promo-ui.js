@@ -17,6 +17,8 @@ export function installPromoUi(win, doc, deps = {}) {
       el.setAttribute("role", "status");
       el.setAttribute("aria-live", "polite");
       doc.body.appendChild(el);
+      // Un lector de pantalla anuncia cambios de una zona que ya existía: el texto va después.
+      return later(() => toast(text), 50);
     }
     if (el.textContent !== text) el.textContent = text;
     el.setAttribute("data-show", "");

@@ -20,7 +20,7 @@ describe("promoNotice", () => {
   it("muestra un aviso que se va solo", async () => {
     const { doc, send } = setup("");
     send({ type: "promoNotice", text: "Promo 2x1: sumamos 1 gratis" });
-    await tick();
+    await new Promise((r) => setTimeout(r, 60));
     const toast = doc.querySelector(".coto-unit-toast");
     expect(toast.textContent).toBe("Promo 2x1: sumamos 1 gratis");
     expect(toast.getAttribute("role")).toBe("status");

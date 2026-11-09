@@ -80,3 +80,10 @@ describe("v4: papel higiénico sin metros en el nombre", () => {
     expect(unitPrice(cocina, "200").group).toBe("m2");
   });
 });
+
+describe("revisión v4: tope de m² en papel", () => {
+  it("un m² absurdo de Coto no da etiqueta por 10 m", () => {
+    const raro = data("Papel Higiénico Raro Paquete 4 Unidades", "Cuadrado", 1, 5000, 1);
+    expect(unitPrice(raro, "200").group).not.toBe("rollo10m");
+  });
+});
