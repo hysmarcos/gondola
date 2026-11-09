@@ -10,7 +10,7 @@ const ALL = parsePromos(PROMOS_RESULT);
 const pick = (...ids) => ALL.filter((p) => ids.includes(p.id));
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-function setup(path = "/carrito", total = "$48.355,92") {
+function setup(path = "/carrito", total = "$48.355,92", opts = {}) {
   const win = new EventTarget();
   win.location = { pathname: path };
   win.MutationObserver = window.MutationObserver;
@@ -20,7 +20,7 @@ function setup(path = "/carrito", total = "$48.355,92") {
     ${line("JABÓN DE TOCADOR DOVE KARITE  Y VAINILLA 90 G")}
     ${line("Shampoo TRESEMME Keratina Antifrizz 500 Ml")}
     <div class="card-body text-center card-body-container">Total: ${total} <button>Continuar compra</button></div>`;
-  installCartUi(win, doc);
+  installCartUi(win, doc, opts);
   const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
   return { win, doc, send };
 }
@@ -146,5 +146,112 @@ describe("mini-carrito", () => {
     send({ type: "cart", analysis: analyzeCart(CART_LINES, [], 1, "200"), seq: 1 });
     await tick();
     expect(doc.querySelector(".coto-unit-mini-line, .coto-unit-mini-total")).toBeNull();
+  });
+});
+
+// Cliente de comparación falso: guarda los pedidos y se resuelve a mano.
+function fakeCompare() {
+  const done = new Map();
+  const waiting = new Map();
+  return {
+    asked: [],
+    peek: (ean) => done.get(ean),
+    request(ean) {
+      this.asked.push(ean);
+      return new Promise((r) => waiting.set(ean, r));
+    },
+    async resolve(ean, res) {
+      done.set(ean, res);
+      waiting.get(ean)?.(res);
+      await tick();
+    },
+  };
+}
+
+const EAN_DOVE = "7791293031235";
+const EAN_TRES = "7791293031242";
+const RES = { carrefour: { unit: 2049, qty: 1, promo: null }, dia: { unit: 1899, qty: 2, promo: "x" }, mas: { unit: 2229, qty: 1, promo: null } };
+const CMP = { unit: 2225, qty: 1 };
+
+// Análisis del carrito completo con EAN/cmp en Dove (y opcionalmente en Tresemme).
+function withEan(both = false) {
+  const a = analyzeCart(CART_LINES, [], today, "200");
+  a.lines = a.lines.map((l) =>
+    l.id === "prod00299912" ? { ...l, ean: EAN_DOVE, cmp: CMP }
+      : both && l.id === "prod00608118" ? { ...l, ean: EAN_TRES, cmp: CMP } : l);
+  return a;
+}
+const bests = (doc) => [...doc.querySelectorAll(".coto-unit-cmp-best")].map((e) => e.textContent);
+
+describe("v5: comparar con otros súper en el carrito", () => {
+  it("línea con EAN: pide una vez y muestra el mejor súper dentro de .c__item-detail", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup("/carrito", undefined, { compare });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    send({ type: "cart", analysis: withEan(), seq: 2 });
+    await tick();
+    expect(bests(doc)).toEqual(["…"]);
+    await compare.resolve(EAN_DOVE, RES);
+    expect(bests(doc)).toEqual(["Día $1.899 ▼"]);
+    const best = doc.querySelector(".coto-unit-cmp-best");
+    expect(best.closest(".c__item-detail").parentElement.textContent).toContain("DOVE");
+    expect(doc.querySelectorAll(".coto-unit-cmp")).toHaveLength(1);
+    expect(compare.asked).toEqual([EAN_DOVE]);
+  });
+
+  it("línea sin EAN: sin bloque ni pedido", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup("/carrito", undefined, { compare });
+    send({ type: "cart", analysis: analyzeCart(CART_LINES, [], today, "200"), seq: 1 });
+    await tick();
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+    expect(compare.asked).toEqual([]);
+  });
+
+  it("sin cliente de comparación no hay bloque", async () => {
+    const { doc, send } = setup();
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await tick();
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+  });
+
+  it("compareStores: false no pide ni pinta", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup("/carrito", undefined, { compare });
+    send({ type: "settings", selected: [], day: 1, compareStores: false });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await tick();
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+    expect(compare.asked).toEqual([]);
+  });
+
+  it("al apagar compareStores se borran los bloques y una respuesta tardía no pinta", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup("/carrito", undefined, { compare });
+    send({ type: "cart", analysis: withEan(true), seq: 1 });
+    await tick();
+    await compare.resolve(EAN_DOVE, RES);
+    expect(bests(doc)).toEqual(["Día $1.899 ▼", "…"]);
+    send({ type: "settings", selected: [], day: 1, compareStores: false });
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+    await compare.resolve(EAN_TRES, RES);
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+    // Al volver a encender se pinta con lo ya sabido, sin pedir de nuevo.
+    send({ type: "settings", selected: [], day: 1, compareStores: true });
+    expect(bests(doc)).toEqual(["Día $1.899 ▼", "Día $1.899 ▼"]);
+    expect(compare.asked).toEqual([EAN_DOVE, EAN_TRES]);
+  });
+
+  it("si la tarjeta cambia de producto, no queda el bloque del anterior", async () => {
+    const compare = fakeCompare();
+    const { doc, send } = setup("/carrito", undefined, { compare });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await tick();
+    await compare.resolve(EAN_DOVE, RES);
+    expect(bests(doc)).toEqual(["Día $1.899 ▼"]);
+    const next = withEan();
+    next.lines = next.lines.map((l) => (l.id === "prod00299912" ? { ...l, ean: null, cmp: null } : l));
+    send({ type: "cart", analysis: next, seq: 2 });
+    expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
   });
 });

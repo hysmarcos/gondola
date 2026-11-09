@@ -1,11 +1,15 @@
 // En /carrito: avisos de promos incompletas y caja con lo que se paga de verdad.
 // Solo agrega nodos; no toca el carrito de Coto.
 import { dayName } from "./banks.js";
+import { compareRows, paintCompare } from "./compare-ui.js";
 import { parseMoney } from "./money.js";
 
 const SOURCE = "coto-unit";
 const WARN = "coto-unit-cart-warn";
 const BOX = "coto-unit-cart-box";
+const CMP = "coto-unit-cmp";
+const EAN_ATTR = "data-coto-unit-ean";
+const CMP_SEL = `card-product .${CMP}`;
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const $ = (n) => "$" + money.format(n);
 
@@ -31,8 +35,34 @@ function boxLines(a, day, today) {
   return out;
 }
 
-export function installCartUi(win, doc) {
-  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false };
+// compare: cliente de compare-client.js; sin él no se compara con otros súper.
+export function installCartUi(win, doc, { compare } = {}) {
+  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true };
+  const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
+
+  function ask(ean) {
+    if (!state.compare || requested.has(ean)) return;
+    requested.add(ean);
+    // Si el usuario apagó la comparación mientras tanto, la respuesta no pinta.
+    compare.request(ean).then(() => state.compare && render());
+  }
+
+  // Una línea del carrito por tarjeta: mejor precio de otro súper, si hay EAN y precio de Coto.
+  function paintLine(target, line) {
+    const ean = compare && state.compare && line?.ean && line.cmp ? line.ean : null;
+    if (!ean) {
+      if (target.hasAttribute(EAN_ATTR)) target.removeAttribute(EAN_ATTR);
+      return paintCompare(target, null);
+    }
+    // Angular reusa tarjetas: si cambió el producto, el bloque viejo no puede quedar.
+    if (target.getAttribute(EAN_ATTR) !== ean) {
+      target.querySelector(":scope > ." + CMP)?.remove();
+      target.setAttribute(EAN_ATTR, ean);
+    }
+    const results = compare.peek(ean);
+    paintCompare(target, compareRows(line.cmp, results), "mini");
+    if (!results) ask(ean);
+  }
   const onCart = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
   function renderWarnings(a) {
@@ -40,6 +70,7 @@ export function installCartUi(win, doc) {
     for (const card of doc.querySelectorAll("card-product")) {
       const line = byName.get(normName(card.querySelector("a.title")?.textContent));
       const target = card.querySelector(".c__item-detail") ?? card;
+      paintLine(target, line);
       let warn = target.querySelector(":scope > ." + WARN);
       if (!line || !line.missing) {
         warn?.remove();
@@ -80,7 +111,7 @@ export function installCartUi(win, doc) {
   }
 
   function clear() {
-    doc.querySelectorAll(`.${WARN}, .${BOX}`).forEach((e) => e.remove());
+    doc.querySelectorAll(`.${WARN}, .${BOX}, ${CMP_SEL}`).forEach((e) => e.remove());
   }
 
   function checkPath() {
@@ -154,6 +185,8 @@ export function installCartUi(win, doc) {
     if (m?.source !== SOURCE) return;
     if (m.type === "settings") {
       state.day = Number(m.day) || 0;
+      state.compare = m.compareStores !== false;
+      if (!state.compare) doc.querySelectorAll(CMP_SEL).forEach((e) => e.remove());
     } else if (m.type === "cart" && m.analysis) {
       if (typeof m.seq === "number") {
         if (m.seq < state.seq) return;

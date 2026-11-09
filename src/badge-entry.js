@@ -7,6 +7,6 @@ import { installPromoUi } from "./promo-ui.js";
 
 const compare = createCompareClient({ send: (eans) => chrome.runtime.sendMessage({ type: "compare", eans }) });
 installBadges(window, document, { compare });
-installCartUi(window, document);
+installCartUi(window, document, { compare });
 installPromoUi(window, document);
 installBridge(window, chrome.storage.local);
