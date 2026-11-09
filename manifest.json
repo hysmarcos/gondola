@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Coto precio por unidad",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Ordena Coto Digital por precio final por kg, litro o unidad, con tu banco y el total real del carrito, y lo compara con Carrefour, Día y Más.",
   "permissions": [
     "storage"

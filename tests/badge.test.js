@@ -75,7 +75,7 @@ describe("tarjeta unificada", () => {
     await tick();
     const block = doc.querySelector(".coto-unit-price");
     expect(block.previousElementSibling.className).toBe("nombre-producto");
-    expect([...block.children].map((c) => c.className)).toEqual(["coto-unit-pricerow", "coto-unit-detail", "coto-unit-unit"]);
+    expect([...block.children].map((c) => c.className)).toEqual(["coto-unit-pricerow", "coto-unit-detail", "coto-unit-cmprow", "coto-unit-unit"]);
     // La oferta va una sola vez, como etiqueta sobre la imagen; las cucardas de Coto se ocultan.
     const tags = doc.querySelector(".top-imagen-promos .coto-unit-tags");
     expect(tags.querySelector(".coto-unit-offer").textContent).toBe("40% dto");
@@ -433,7 +433,7 @@ describe("v5: comparar con otros súper", () => {
     const { doc, send } = setup(offerCard(K(1)), undefined, { compare });
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
     await tick();
-    const box = doc.querySelector(".coto-unit-pricerow");
+    const box = doc.querySelector(".coto-unit-cmprow");
     expect(box.getAttribute("data-coto-unit-ean")).toBe(EAN_A);
     expect(box.lastElementChild.classList.contains("coto-unit-cmp")).toBe(true);
     expect(prices(doc)).toEqual(["$2.225", "…", "…", "…"]);
@@ -473,7 +473,7 @@ describe("v5: comparar con otros súper", () => {
     expect(prices(doc)[2]).toBe("$1.899");
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_B, cmp: CMP }) } });
     await tick();
-    expect(doc.querySelector(".coto-unit-pricerow").getAttribute("data-coto-unit-ean")).toBe(EAN_B);
+    expect(doc.querySelector(".coto-unit-cmprow").getAttribute("data-coto-unit-ean")).toBe(EAN_B);
     expect(prices(doc)).toEqual(["$2.225", "…", "…", "…"]);
     await compare.resolve(EAN_B, { carrefour: "missing", dia: { unit: 2600, qty: 1, promo: null }, mas: "missing" });
     expect(prices(doc)).toEqual(["$2.225", "No está", "$2.600", "No está"]);
@@ -516,7 +516,7 @@ describe("v5: comparar con otros súper", () => {
     const { doc, send } = setup(offerCard(K(1)), undefined, { compare, IntersectionObserver: FakeIO });
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
     await tick();
-    const box = doc.querySelector(".coto-unit-pricerow");
+    const box = doc.querySelector(".coto-unit-cmprow");
     expect(prices(doc)).toEqual(["$2.225", "…", "…", "…"]);
     expect(compare.asked).toEqual([]);
     expect(observers[0].targets.has(box)).toBe(true);
@@ -571,15 +571,15 @@ describe("v5: comparar con otros súper", () => {
     expect(passes.n).toBe(0);
     expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
   });
-  it("en la tarjeta, el ícono va al lado del precio grande, no debajo del precio por unidad", async () => {
+  it("en la tarjeta, la pastilla va en su fila debajo del precio, antes del precio por unidad", async () => {
     const compare = fakeCompare();
     const { doc, send } = setup(offerCard(K(1)), undefined, { compare });
     send({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
     await tick();
     const block = doc.querySelector(".coto-unit-price");
-    expect([...block.children].map((c) => c.className)).toEqual(["coto-unit-pricerow", "coto-unit-detail", "coto-unit-unit"]);
+    expect([...block.children].map((c) => c.className)).toEqual(["coto-unit-pricerow", "coto-unit-detail", "coto-unit-cmprow", "coto-unit-unit"]);
     await compare.resolve(EAN_A, RES);
-    const row = block.querySelector(".coto-unit-pricerow");
+    const row = block.querySelector(".coto-unit-cmprow");
     expect(row.lastElementChild.classList.contains("coto-unit-cmp--icon")).toBe(true);
     expect(row.querySelector(".coto-unit-cmp-btn")).not.toBeNull();
     expect(doc.querySelector(".coto-unit-box")).toBeNull();

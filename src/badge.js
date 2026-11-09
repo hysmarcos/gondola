@@ -243,13 +243,14 @@ export function installBadges(win, doc, deps = {}) {
     upsert(priceRow, "coto-unit-sr", regular ? "Precio original:" : null, null, "span");
     upsert(priceRow, "coto-unit-regular", regular, null, "s");
     order(priceRow, ["coto-unit-final", "coto-unit-sr", "coto-unit-regular"]);
-    paintCmp(priceRow, label, "icon");
+    // Comparación con otros súper: una pastilla en su propia fila, debajo del precio.
+    paintCmp(ensure(block, "coto-unit-cmprow"), label, "icon");
     // Detalle: por qué ese precio (banco con su logo, cuánto llevar, Comunidad) y notas de
     // la medida. Sin detalle la fila queda reservada: las tarjetas no saltan.
     paintDetail(block, label);
     // Precio por unidad: un solo número, de referencia, abajo.
     paintUnit(block, label, false, true);
-    order(block, ["coto-unit-pricerow", "coto-unit-detail", "coto-unit-unit"]);
+    order(block, ["coto-unit-pricerow", "coto-unit-detail", "coto-unit-cmprow", "coto-unit-unit"]);
     return block;
   }
 

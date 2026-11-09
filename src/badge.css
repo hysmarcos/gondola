@@ -605,17 +605,26 @@
   text-align: left;
 }
 
+/* Pastilla: ícono chico + palabra corta. */
 .coto-unit-cmp-btn {
   position: relative;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  max-width: 100%;
+  padding: 0 10px 0 8px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 999px;
+  font: 600 12px/1 Poppins, sans-serif;
+  white-space: nowrap;
   cursor: pointer;
   transition: transform 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.coto-unit-cmp-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Área táctil de 40 px sin agrandar el círculo. */
@@ -635,8 +644,9 @@
 }
 
 .coto-unit-cmp-btn svg {
-  width: 18px;
-  height: 18px;
+  flex: none;
+  width: 14px;
+  height: 14px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -644,8 +654,8 @@
   stroke-linejoin: round;
 }
 
-/* Colores suaves: el ícono informa, no alarma. */
-.coto-unit-cmp--icon[data-state="worse"] .coto-unit-cmp-btn { background: #fbefe9; color: #a5512d; }
+/* Colores suaves: la pastilla informa, no alarma. */
+.coto-unit-cmp--icon[data-state="worse"] .coto-unit-cmp-btn { background: #fff4dc; color: #7a4d00; }
 .coto-unit-cmp--icon[data-state="better"] .coto-unit-cmp-btn { background: #eaf4ec; color: #2f7a43; }
 .coto-unit-cmp--icon[data-state="equal"] .coto-unit-cmp-btn { background: #eceef0; color: #51585e; }
 .coto-unit-cmp--icon[data-state="none"] .coto-unit-cmp-btn,
@@ -655,7 +665,7 @@
 .coto-unit-cmp-pop {
   position: absolute;
   top: calc(100% + 8px);
-  right: -10px;
+  left: 50%;
   z-index: 30;
   display: grid;
   grid-template-columns: 1fr auto auto auto;
@@ -672,7 +682,7 @@
   font-variant-numeric: tabular-nums;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-4px);
+  transform: translate(-50%, -4px);
   transition-property: opacity, transform, visibility;
   transition-duration: 150ms;
   transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
@@ -698,7 +708,7 @@
 .coto-unit-cmp--icon[data-open] .coto-unit-cmp-pop {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translate(-50%, 0);
 }
 
 .coto-unit-cmp-head {
@@ -791,4 +801,15 @@
   .coto-unit-cmp-btn {
     transition-duration: 0ms;
   }
+}
+
+/* Fila de la pastilla en la tarjeta: alto fijo, haya o no comparación. */
+.coto-unit-price {
+  grid-template-rows: 30px 18px 26px 24px;
+}
+
+.coto-unit-cmprow {
+  display: flex;
+  justify-content: center;
+  min-height: 24px;
 }

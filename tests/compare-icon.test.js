@@ -27,6 +27,24 @@ describe("compareRows: links y diferencia", () => {
   });
 });
 
+describe("pastilla: palabra corta por estado", () => {
+  const text = (results) => {
+    document.body.innerHTML = `<div id="b"></div>`;
+    const box = document.getElementById("b");
+    paintCompare(box, compareRows(cmp, results), "icon");
+    return box.querySelector(".coto-unit-cmp-text").textContent;
+  };
+  it("mejor, igual, sin comparar y comparando", () => {
+    expect(text({ carrefour: offer(2200), dia: "missing", mas: "missing" })).toBe("Mejor precio");
+    expect(text({ carrefour: offer(2005), dia: "missing", mas: "missing" })).toBe("Igual");
+    expect(text({ carrefour: "missing", dia: "missing", mas: "error" })).toBe("Sin comparar");
+    expect(text(undefined)).toBe("Comparando…");
+  });
+  it("con varios más baratos, nombra el más barato de todos", () => {
+    expect(text({ carrefour: offer(1900), dia: offer(1700), mas: offer(1800) })).toBe("Más barato en Día");
+  });
+});
+
 describe("paintCompare: ícono con detalle al pasar el mouse", () => {
   function paint(results) {
     document.body.innerHTML = `<div id="box"></div>`;
@@ -40,7 +58,8 @@ describe("paintCompare: ícono con detalle al pasar el mouse", () => {
     const block = box.querySelector(".coto-unit-cmp");
     expect(block.dataset.state).toBe("worse");
     const btn = block.querySelector("button.coto-unit-cmp-btn");
-    expect(btn.getAttribute("aria-label")).toBe("Hay un súper más barato. Ver comparación");
+    expect(btn.getAttribute("aria-label")).toBe("Más barato en Carrefour. Ver comparación");
+    expect(btn.querySelector(".coto-unit-cmp-text").textContent).toBe("Más barato en Carrefour");
     expect(btn.getAttribute("aria-expanded")).toBe("false");
     expect(btn.querySelector("svg")).not.toBeNull();
     const pop = block.querySelector(".coto-unit-cmp-pop");

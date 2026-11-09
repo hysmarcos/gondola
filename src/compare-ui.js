@@ -65,15 +65,23 @@ const STATUS_TEXT = {
   pending: "Consultando otros súper",
 };
 
-// Íconos: solo flechitas, sin alarmas. Abajo: en otro súper está más barato (el precio
-// baja); arriba: los demás están más caros (Coto conviene); "=" igual; "–" sin datos.
+// Pastilla: una palabra corta que se entiende sin pensar, con un ícono de apoyo.
 const STATUS_ICON = {
-  worse: ["M12 6v12", "M7.5 13.5 12 18l4.5-4.5"],
-  better: ["M12 18V6", "M7.5 10.5 12 6l4.5 4.5"],
-  equal: ["M7.5 10h9", "M7.5 14h9"],
-  none: ["M8 12h8"],
-  pending: ["M8 12h.01", "M12 12h.01", "M16 12h.01"],
+  better: ["M5 12.5l4.2 4.2L19 7"],
+  worse: ["M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z", "M7.5 7.5h.01"],
+  equal: ["M6 10h12", "M6 14h12"],
+  none: [],
+  pending: ["M6 12h.01", "M12 12h.01", "M18 12h.01"],
 };
+
+// Texto de la pastilla. En "worse" nombra el súper más barato.
+function pillText(state, rows) {
+  if (state === "worse") {
+    const best = rows.filter((r) => r.state === "lower").reduce((a, b) => (b.unit < a.unit ? b : a));
+    return `Más barato en ${best.name}`;
+  }
+  return { better: "Mejor precio", equal: "Igual", none: "Sin comparar", pending: "Comparando…" }[state];
+}
 
 function priceText(r) {
   if (r.unit !== null) return formatMoney(r.unit);
@@ -90,10 +98,12 @@ function deltaText(r) {
 function iconPlan(rows) {
   const state = compareStatus(rows);
   const first = rows[0];
+  const text = pillText(state, rows);
   return {
     kind: "icon",
     state,
-    label: `${STATUS_TEXT[state]}. Ver comparación`,
+    text,
+    label: `${state === "worse" ? text : STATUS_TEXT[state]}. Ver comparación`,
     rows: [
       { name: "Coto", url: null, state: "coto", price: formatMoney(first.cotoUnit), qty: first.cotoQty > 1 ? `x${first.cotoQty}` : null, delta: null },
       ...rows.map((r) => ({ name: r.name, url: r.url, state: r.state, price: priceText(r), qty: r.qty > 1 ? `x${r.qty}` : null, delta: deltaText(r) })),
@@ -126,8 +136,8 @@ function buildIcon(doc, block, it) {
   btn.type = "button";
   btn.setAttribute("aria-label", it.label);
   btn.setAttribute("aria-expanded", block.hasAttribute("data-open") ? "true" : "false");
-  btn.title = STATUS_TEXT[it.state];
-  btn.append(svgIcon(doc, STATUS_ICON[it.state]));
+  if (STATUS_ICON[it.state].length) btn.append(svgIcon(doc, STATUS_ICON[it.state]));
+  btn.append(el(doc, "span", `${CMP}-text`, it.text));
   const pop = el(doc, "div", `${CMP}-pop`);
   pop.setAttribute("role", "group");
   pop.setAttribute("aria-label", "Mismo producto en otros súper");
