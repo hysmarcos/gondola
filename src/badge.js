@@ -109,7 +109,9 @@ function setAttr(el, name, on) {
   else if (!on && el.hasAttribute(name)) el.removeAttribute(name);
 }
 
-export function installBadges(win, doc) {
+// deps.logoUrl(icono) → URL del logo del banco (o null para mostrar solo el nombre).
+export function installBadges(win, doc, deps = {}) {
+  const logoUrl = deps.logoUrl ?? (() => null);
   const today = () => new Date().getDay();
   const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true };
 
@@ -123,9 +125,36 @@ export function installBadges(win, doc) {
     if (row.title !== title) row.title = title;
     upsert(row, "coto-unit-value", formatUnit(label), null, "span");
     const why = bankOnly && label.bankValue == null ? null : formatWhy(label, state.day, today(), short);
-    upsert(row, "coto-unit-why", why, null, "span");
+    const logo = label.bankValue != null && label.bankName ? logoUrl(label.bankLogo) : null;
+    if (why && logo) paintBankChip(row, label, why, logo, short);
+    else upsert(row, "coto-unit-why", why, null, "span");
     order(row, ["coto-unit-value", "coto-unit-why"]);
     return row;
+  }
+
+  // Motivo con banco: el logo en lugar del nombre ("[ICBC] hoy"); el texto completo queda
+  // para lectores de pantalla y al pasar el mouse.
+  function paintBankChip(row, label, why, logo, short) {
+    let chip = row.querySelector(":scope > .coto-unit-why");
+    if (chip && !chip.querySelector(":scope > img")) {
+      chip.remove();
+      chip = null;
+    }
+    if (!chip) {
+      chip = doc.createElement("span");
+      chip.className = "coto-unit-why";
+      const img = doc.createElement("img");
+      img.className = "coto-unit-logo";
+      chip.appendChild(img);
+      row.appendChild(chip);
+    }
+    const img = chip.querySelector(":scope > img");
+    if (img.getAttribute("src") !== logo) img.setAttribute("src", logo);
+    if (img.getAttribute("alt") !== label.bankName) img.setAttribute("alt", label.bankName);
+    if (chip.getAttribute("aria-label") !== why) chip.setAttribute("aria-label", why);
+    if (chip.title !== why) chip.title = why;
+    const when = short ? null : why.replace(`con ${label.bankName} `, "");
+    upsert(chip, "coto-unit-when", when, null, "span");
   }
 
   // ---------- Tarjetas de las listas ----------

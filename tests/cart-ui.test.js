@@ -10,7 +10,7 @@ const ALL = parsePromos(PROMOS_RESULT);
 const pick = (...ids) => ALL.filter((p) => ids.includes(p.id));
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-function setup(path = "/carrito", total = "$48.355,92") {
+function setup(path = "/carrito", total = "$48.355,92", deps) {
   const win = new EventTarget();
   win.location = { pathname: path };
   win.MutationObserver = window.MutationObserver;
@@ -20,7 +20,7 @@ function setup(path = "/carrito", total = "$48.355,92") {
     ${line("JABÓN DE TOCADOR DOVE KARITE  Y VAINILLA 90 G")}
     ${line("Shampoo TRESEMME Keratina Antifrizz 500 Ml")}
     <div class="card-body text-center card-body-container">Total: ${total} <button>Continuar compra</button></div>`;
-  installCartUi(win, doc);
+  installCartUi(win, doc, deps);
   const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
   return { win, doc, send };
 }
@@ -146,5 +146,19 @@ describe("mini-carrito", () => {
     send({ type: "cart", analysis: analyzeCart(CART_LINES, [], 1, "200"), seq: 1 });
     await tick();
     expect(doc.querySelector(".coto-unit-mini-line, .coto-unit-mini-total")).toBeNull();
+  });
+});
+
+describe("v7: logos en el carrito", () => {
+  it("las líneas con banco llevan su logo", async () => {
+    const { doc, send } = setup("/carrito", "$48.355,92", { logoUrl: (n) => (n ? "https://x/" + n : null) });
+    send({ type: "settings", selected: [], day: 1 });
+    send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("456", "449"), 1, "200"), seq: 2 });
+    await tick();
+    const imgs = [...doc.querySelectorAll(".coto-unit-cart-box img.coto-unit-logo")];
+    expect(imgs.length).toBeGreaterThan(0);
+    expect(imgs[0].getAttribute("src")).toMatch(/^https:\/\/x\/logo_/);
+    expect(imgs[0].getAttribute("alt")).toBeTruthy();
+    expect(doc.querySelector(".coto-unit-cart-box").textContent).toContain("Total con promos de Coto");
   });
 });

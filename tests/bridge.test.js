@@ -154,6 +154,15 @@ describe("popup", () => {
     expect(st.data.autoPromo).toBe(false);
   });
 
+  it("cada banco lleva su logo", async () => {
+    document.body.innerHTML = "";
+    const promos = PROMOS.map((p) => ({ ...p, logo: p.logo ?? "logo_icbc_1.png" }));
+    await renderPopup(document, fakeStorage({ promos }), { version: "1", logoUrl: (n) => "https://x/" + n });
+    const img = document.querySelector("details.bank summary img.bank-logo");
+    expect(img.getAttribute("src")).toMatch(/^https:\/\/x\//);
+    expect(img.getAttribute("alt")).toBe("");
+  });
+
   it("ayuda dice que no es de Coto y la versión", async () => {
     await open(fakeStorage({ promos: PROMOS }));
     const help = document.querySelector('[data-view="ayuda"]').textContent;

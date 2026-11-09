@@ -223,6 +223,7 @@ export function unitPrice(data, store, promos = [], day = 0, opts = {}) {
     take: takeQty(data, store, opts),
     bankValue: applies ? round2(value * (1 - promo.percent / 100)) : null,
     bankName: applies ? promo.bank : null,
+    bankLogo: applies ? promo.logo ?? null : null,
     bankBlocked: blocked,
     // Para la tarjeta unificada: precio a pagar, precio regular y de dónde sale.
     price: best?.price ?? null,

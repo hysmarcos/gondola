@@ -378,3 +378,51 @@ describe("revisión v5: PDP", () => {
     expect(hidden(doc.querySelector(".both"))).toBe(false);
   });
 });
+
+describe("v7: logos de bancos", () => {
+  const logoUrl = (n) => (n ? "https://x/" + n : null);
+  function setupLogo(html, path) {
+    const win = new EventTarget();
+    win.location = { pathname: path ?? "/productos/categorias/x" };
+    win.posted = [];
+    win.postMessage = (m) => win.posted.push(m);
+    win.MutationObserver = window.MutationObserver;
+    const doc = document.implementation.createHTMLDocument("x");
+    doc.body.innerHTML = html;
+    installBadges(win, doc, { logoUrl });
+    const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
+    return { doc, send };
+  }
+
+  it("la tarjeta muestra el logo del banco en el motivo", async () => {
+    const { doc, send } = setupLogo(plainCard(K(1)));
+    send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
+    send({ type: "labels", labels: { [K(1)]: L(933, { group: "L", bankValue: 653, bankName: "ICBC", bankLogo: "logo_icbc_1.png", price: 2800, list: 2800, offerText: null }) } });
+    await tick();
+    const why = doc.querySelector(".coto-unit-why");
+    expect(why.querySelector("img.coto-unit-logo").getAttribute("src")).toBe("https://x/logo_icbc_1.png");
+    expect(why.querySelector("img").getAttribute("alt")).toBe("ICBC");
+    expect(why.getAttribute("aria-label")).toBe("con ICBC hoy");
+    expect(why.textContent.trim()).toBe("hoy");
+  });
+
+  it("sin logo sigue el texto", async () => {
+    const { doc, send } = setupLogo(plainCard(K(1)));
+    send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
+    send({ type: "labels", labels: { [K(1)]: L(933, { group: "L", bankValue: 653, bankName: "ICBC", bankLogo: null, price: 2800, list: 2800, offerText: null }) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-why img")).toBeNull();
+    expect(doc.querySelector(".coto-unit-why").textContent).toBe("con ICBC hoy");
+  });
+
+  it("en el carrusel, solo el logo", async () => {
+    const html = `<div class="mini-product-card" data-cnstrc-item-id="prod1"><div class="mini-product-card__price-section"></div></div>`;
+    const { doc, send } = setupLogo(html);
+    send({ type: "labels", labels: { prod1: L(189, { group: "rollo10m", bankValue: 133, bankName: "ICBC", bankLogo: "logo_icbc_1.png" }) } });
+    await tick();
+    const why = doc.querySelector(".coto-unit-box--mini .coto-unit-why");
+    expect(why.querySelector("img")).not.toBeNull();
+    expect(why.textContent.trim()).toBe("");
+    expect(why.getAttribute("aria-label")).toBe("ICBC");
+  });
+});
