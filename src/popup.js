@@ -15,6 +15,7 @@ const SETTINGS = [
   { key: "autoPromo", title: "Completar promos 2x1, 3x2", text: "En un 2x1, al agregar 1 suma el gratis. En un 3x2, al llegar a 2 suma el tercero." },
   { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
   { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato por kg\" en el producto que conviene de cada lista." },
+  { key: "compareStores", title: "Comparar con otros súper", text: "Muestra el precio en Carrefour, Día y Más. ▼ ahí es más barato, = igual, ▲ más caro." },
 ];
 
 const HELP = [
@@ -22,6 +23,7 @@ const HELP = [
   ["Hoy con tu banco", "El mismo precio con la promo de tu tarjeta, si Coto la aplica a ese producto."],
   ["Banco no aplica", "El producto ya está en oferta o Coto lo excluye de las promos bancarias."],
   ["Ordenar por precio por kg/L", "Nueva opción en \"Ordenar por\" de cada categoría y búsqueda."],
+  ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
 ];
 
 function describe(p) {
@@ -159,7 +161,7 @@ function helpView(doc, meta) {
     el(doc, "dl", { className: "help" }, HELP.flatMap(([t, d]) => [el(doc, "dt", { textContent: t }), el(doc, "dd", { textContent: d })])),
     el(doc, "p", { className: "legal" }, [
       el(doc, "strong", { textContent: "No afiliado a Coto." }),
-      " Usa solo los datos de coto.com.ar y no envía nada a otros sitios.",
+      " Usa los datos de coto.com.ar. Para comparar, solo envía códigos de barras a Carrefour, Día y Más.",
     ]),
     el(doc, "p", { className: "version", textContent: `Versión ${meta.version ?? ""}`.trim() }),
   ];
@@ -169,7 +171,7 @@ const VIEWS = { tarjetas: cardsView, ajustes: settingsView, ayuda: (doc, s, st, 
 
 // storage: misma interfaz que en bridge.js. meta: { version }.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "popupTab"]);
+  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "compareStores", "popupTab"]);
   let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
 
   const header = el(doc, "header", { className: "top" }, [

@@ -13,7 +13,7 @@ Shoppers who buy at coto.com.ar and want to spend less. They compare products in
 A Chrome extension (Manifest V3) that adds what Coto's site lacks for a careful shopper: sorting by price per kg/L/unit, a "real price to compare" on every product, bank promos that follow Coto's real rules, and a cart that shows what you will really pay. Success: the shopper picks the cheapest option without doing math, and Coto's own features (add, quantities, checkout) keep working.
 
 ## Positioning
-It works inside Coto's own pages and uses Coto's own data (the price with any offer, multi-buy promos, bank promos from Coto's API, exclusions from Coto's legal terms). It does not send data anywhere else.
+It works inside Coto's own pages and uses Coto's own data (the price with any offer, multi-buy promos, bank promos from Coto's API, exclusions from Coto's legal terms). To compare, it only sends barcodes (EAN) to the public APIs of Carrefour, Día and Más; no own servers, no personal data.
 
 ## Operating Context
 - Runs on coto.com.ar: category lists, search, offers, product page, carousels, mini-cart, /carrito.
@@ -23,7 +23,7 @@ It works inside Coto's own pages and uses Coto's own data (the price with any of
 ## Capabilities and Constraints
 - Never removes or breaks Coto's native UI or behavior; it only adds nodes and data-coto-unit-* attributes.
 - Can change the quantity of an add-to-cart request only to complete NxM promos (2x1, 3x2, 6x4…), and the user can turn this off.
-- No host permissions, no external servers.
+- Host permissions only for Carrefour, Día and Más; no own servers.
 
 ## Brand Commitments
 - Visually close to Coto (Coto red, Poppins) so it feels at home on the site.

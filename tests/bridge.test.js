@@ -170,6 +170,19 @@ describe("popup", () => {
     expect(st.data.autoPromo).toBe(false);
   });
 
+  it("comparar con otros súper arranca encendido y se guarda", async () => {
+    const st = fakeStorage({ promos: PROMOS });
+    await open(st);
+    const box = document.querySelector('input[name="compareStores"]');
+    expect(box.checked).toBe(true);
+    expect(box.closest("label").textContent).toContain("Comparar con otros súper");
+    box.checked = false;
+    await change(box);
+    expect(st.data.compareStores).toBe(false);
+    await open(st);
+    expect(document.querySelector('input[name="compareStores"]').checked).toBe(false);
+  });
+
   it("ayuda dice que no es de Coto y la versión", async () => {
     await open(fakeStorage({ promos: PROMOS }));
     const help = document.querySelector('[data-view="ayuda"]').textContent;
