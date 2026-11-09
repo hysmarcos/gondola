@@ -102,7 +102,8 @@
   visibility: hidden;
 }
 
-/* La fila del precio por unidad: el número para comparar y, con banco, cuál. */
+/* Precio por unidad con el estilo de texto de Coto: sin recuadro, gris oscuro, un
+   escalón por debajo del precio grande. */
 .coto-unit-unit {
   display: inline-flex;
   flex-wrap: nowrap;
@@ -110,15 +111,12 @@
   justify-content: center;
   gap: 8px;
   max-width: 100%;
-  padding: 6px 12px;
-  border-radius: 10px;
-  background: #eef4fb;
 }
 
 .coto-unit-value {
-  font-size: 17px;
-  font-weight: 700;
-  color: #0c447c;
+  font-size: 15px;
+  font-weight: 600;
+  color: #51585e;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -169,7 +167,7 @@
 
 .coto-unit-note {
   font-size: 11px;
-  color: #3b5f86;
+  color: #6b7177;
 }
 
 /* "Sin impuestos": una sola línea, chica, al pie del bloque. */
@@ -223,9 +221,6 @@
 
 .coto-unit-box {
   margin: 6px auto 4px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: #eef4fb;
   text-align: left;
   line-height: 1.3;
 }
@@ -240,19 +235,18 @@
 
 .coto-unit-cap {
   font-size: 12px;
-  color: #3b5f86;
+  color: #6b7177;
 }
 
 .coto-unit-box--pdp {
   display: inline-block;
   min-width: 220px;
   max-width: 100%;
-  margin: 10px 0 12px;
-  padding: 10px 14px;
+  margin: 8px 0 12px;
 }
 
 .coto-unit-box--pdp .coto-unit-value {
-  font-size: 24px;
+  font-size: 18px;
   line-height: 1.2;
 }
 
@@ -273,8 +267,6 @@
 
 .coto-unit-box--mini {
   margin: 2px 0 4px;
-  padding: 4px 8px;
-  border-radius: 8px;
   text-align: center;
 }
 
