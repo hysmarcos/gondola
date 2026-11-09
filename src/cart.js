@@ -1,17 +1,18 @@
 // Cuánto se paga de verdad por un carrito de Coto: promos de Coto + reintegro del banco.
-import { finalPrice, takeQty, isOnSale } from "./unit-price.js";
+import { finalPrice, takeQty, bankBlock } from "./unit-price.js";
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
 function analyzeLine({ id, name, qty, list, data }, store) {
   const price = data ? finalPrice(data, store) : null;
   if (!price || !(qty > 0)) {
-    return { id, name, total: qty * list, onSale: false, missing: 0, saving: 0, promoText: null };
+    return { id, name, total: qty * list, listTotal: qty * list, bankEligible: !(data && bankBlock(data)), missing: 0, saving: 0, promoText: null };
   }
   const take = takeQty(data, store);
-  const onSale = isOnSale(data);
+  const bankEligible = !bankBlock(data);
+  const listTotal = qty * list;
   if (take <= 1) {
-    return { id, name, total: qty * price, onSale, missing: 0, saving: 0, promoText: null };
+    return { id, name, total: qty * price, listTotal, bankEligible, missing: 0, saving: 0, promoText: null };
   }
   const full = Math.floor(qty / take) * take;
   const rest = qty - full;
@@ -20,7 +21,8 @@ function analyzeLine({ id, name, qty, list, data }, store) {
     id,
     name,
     total: full * price + rest * list,
-    onSale,
+    listTotal,
+    bankEligible,
     missing: rest ? take - rest : 0,
     saving: round2(take * (list - price)),
     promoText: promo?.discountText ?? null,
@@ -28,7 +30,8 @@ function analyzeLine({ id, name, qty, list, data }, store) {
 }
 
 function refundFor(promo, lines) {
-  const eligible = lines.reduce((s, l) => s + (promo.onlyNoOffer && l.onSale ? 0 : l.total), 0);
+  // Las promos bancarias no acumulan con ofertas y excluyen ciertos productos.
+  const eligible = lines.reduce((s, l) => s + (l.bankEligible ? l.total : 0), 0);
   return round2(Math.min((eligible * promo.percent) / 100, promo.cap ?? Infinity));
 }
 
@@ -60,7 +63,9 @@ export function analyzeCart(lines, promos, day, store) {
 
   const used = [today?.promo, best?.promo].filter((p) => p?.capWeekly);
   return {
-    lines: analyzed.map(({ id, name, missing, saving, promoText }) => ({ id, name, missing, saving, promoText })),
+    lines: analyzed.map(({ id, name, total, listTotal, missing, saving, promoText }) => ({
+      id, name, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText,
+    })),
     total,
     listTotal,
     today,

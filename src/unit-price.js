@@ -1,6 +1,7 @@
 import { parseMoney } from "./money.js";
 import { bestPromo } from "./banks.js";
 import { paperMetric } from "./paper.js";
+import { exclusionReason } from "./exclusions.js";
 
 const SIN_DATO = { group: "sin_dato", factor: 1, drained: false };
 
@@ -73,7 +74,14 @@ export function takeQty(data, store) {
 const round2 = (n) => Math.round(n * 100) / 100;
 
 // promos: las promos bancarias elegidas; day: 0 = domingo.
-const EMPTY = { group: "sin_dato", value: null, drained: false, take: 1, note: null, bankValue: null, bankName: null };
+const EMPTY = { group: "sin_dato", value: null, drained: false, take: 1, note: null, bankValue: null, bankName: null, bankBlocked: null };
+
+// Por qué el banco no aplica: las promos bancarias no acumulan con ofertas, y hay
+// productos excluidos de todas. null si aplica.
+export function bankBlock(data) {
+  if (isOnSale(data)) return "oferta";
+  return exclusionReason(data);
+}
 
 // Grupo y precio por unidad (sin banco).
 function measure(data, store) {
@@ -99,14 +107,17 @@ export function unitPrice(data, store, promos = [], day = 0) {
   const m = measure(data, store);
   if (!m) return { ...EMPTY };
   const value = round2(m.value);
-  const promo = bestPromo(promos, day, isOnSale(data));
+  const promo = bestPromo(promos, day, false);
+  const blocked = promo ? bankBlock(data) : null;
+  const applies = promo && !blocked;
   return {
     group: m.group,
     value,
     drained: m.drained,
     note: m.note,
     take: takeQty(data, store),
-    bankValue: promo ? round2(value * (1 - promo.percent / 100)) : null,
-    bankName: promo ? promo.bank : null,
+    bankValue: applies ? round2(value * (1 - promo.percent / 100)) : null,
+    bankName: applies ? promo.bank : null,
+    bankBlocked: blocked,
   };
 }

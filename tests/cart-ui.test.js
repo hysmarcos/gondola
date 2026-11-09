@@ -50,8 +50,8 @@ describe("installCartUi", () => {
     const when = today === 1 ? "Hoy" : "Lunes";
     expect(lines).toEqual([
       "Total con promos de Coto: $37.454",
-      `${when} con ICBC: $29.963 (reintegro $7.491)`,
-      "Mejor día: martes con Credicoop, $26.218",
+      `${when} con ICBC: $33.751 (reintegro $3.703)`,
+      "Mejor día: martes con Credicoop, $31.899",
     ]);
   });
 

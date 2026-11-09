@@ -36,10 +36,10 @@ describe("analyzeCart", () => {
   it("reintegro del banco con tope", () => {
     const a = analyzeCart(CART_LINES, pick("457"), MON, "200");
     expect(a.today.promo.id).toBe("457");
-    expect(a.today.refund).toBeCloseTo(11236.14, 2);
-    expect(a.today.total).toBeCloseTo(37453.81 - 11236.14, 2);
+    expect(a.today.refund).toBeCloseTo(5554.79, 2);
+    expect(a.today.total).toBeCloseTo(37453.81 - 5554.79, 2);
     const capped = analyzeCart(CART_LINES, pick("456"), MON, "200");
-    expect(capped.today.refund).toBe(7490.76);
+    expect(capped.today.refund).toBe(3703.19);
     const naranja = analyzeCart(CART_LINES, pick("473"), TUE, "200");
     expect(naranja.today.refund).toBe(3000);
     expect(naranja.weeklyCapBanks).toEqual(["Naranja X"]);

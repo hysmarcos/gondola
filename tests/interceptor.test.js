@@ -282,7 +282,7 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
     await flush(); await flush();
     const msg = s.env.posts.find((m) => m.type === "cart");
     expect(msg.analysis.total).toBeCloseTo(37453.81, 2);
-    expect(msg.analysis.today.refund).toBeCloseTo(11236.14, 2);
+    expect(msg.analysis.today.refund).toBeCloseTo(5554.79, 2);
     expect(s.env.searched).toHaveLength(6);
   });
 

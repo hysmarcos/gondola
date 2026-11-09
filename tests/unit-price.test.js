@@ -57,7 +57,7 @@ describe("precios", () => {
   });
 
   it("calcula el precio por unidad", () => {
-    expect(unitPrice(p, "200")).toEqual({ group: "kg", value: 5000, drained: false, note: null, take: 1, bankValue: null, bankName: null });
+    expect(unitPrice(p, "200")).toEqual({ group: "kg", value: 5000, drained: false, note: null, take: 1, bankValue: null, bankName: null, bankBlocked: null });
     const zero = { ...p, price: [{ store: "200", listPrice: 0, formatPrice: 0 }] };
     expect(unitPrice(zero, "200").group).toBe("sin_dato");
   });
@@ -87,7 +87,7 @@ describe("precios", () => {
     const sinOferta = { ...leche, discounts: [], discounts_payment_methods: [] };
     expect(unitPrice(sinOferta, "200", [icbc], 1)).toMatchObject({ value: 2499, bankValue: 1749.3, bankName: "ICBC" });
     expect(unitPrice(sinOferta, "200", [icbc], 2).bankValue).toBeNull();
-    expect(unitPrice(leche, "200", [icbc], 1)).toMatchObject({ take: 3, bankValue: 1166.26 });
+    expect(unitPrice(leche, "200", [icbc], 1)).toMatchObject({ take: 3, bankValue: null, bankBlocked: "oferta" });
   });
 
   it("datos reales: 12 cuotas no cuentan como precio final", () => {
