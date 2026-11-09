@@ -54,3 +54,11 @@ describe("v5: más barato de la categoría", () => {
     expect(sortByUnitPrice(rows, "200", [icbc], 1).best).toEqual({ a: "L" });
   });
 });
+
+describe("revisión v5: texto de ofertas", () => {
+  it("'+' solo para Comunidad; ofertas alternativas con '·'", async () => {
+    const { offerText } = await import("../src/unit-price.js");
+    const d = { discounts: [{ discountText: "20%Dto" }, { discountText: "2x1" }, { discountText: "+5%" }] };
+    expect(offerText(d)).toBe("20% dto · 2x1 + 5% Comunidad");
+  });
+});

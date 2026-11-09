@@ -18,6 +18,7 @@
 }
 
 .card-container[data-coto-unit-card] .bottom-botones {
+  align-self: stretch;
   margin-top: auto;
   padding-top: 8px;
 }
@@ -67,6 +68,22 @@
   font-weight: 500;
   color: #212529;
   letter-spacing: -0.01em;
+}
+
+.coto-unit-cond {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b01f17;
+}
+
+/* Solo para lectores de pantalla. */
+.coto-unit-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .coto-unit-regular {
@@ -191,7 +208,7 @@
 [data-coto-unit-dim] * {
   font-size: 11px !important;
   font-weight: 400 !important;
-  color: #8a8a8a !important;
+  color: #6b7177 !important;
 }
 
 [data-coto-unit-strike] {

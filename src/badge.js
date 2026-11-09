@@ -47,6 +47,14 @@ export function formatWhy(label, day, today, short = false) {
   return null;
 }
 
+// Condición del precio grande de la tarjeta: cuánto llevar, Comunidad o 1 pago.
+export function formatCond(label) {
+  if (label?.take > 1) return `c/u llevando ${label.take}`;
+  if (label?.via === "comunidad") return "con Comunidad";
+  if (label?.via === "1pago") return "en 1 pago";
+  return null;
+}
+
 // Notas que cambian cómo se compara: escurrido, doble hoja, metros estimados.
 export function formatNote(label) {
   const parts = [label?.drained ? "escurrido" : null, label?.note ?? null].filter(Boolean);
@@ -102,17 +110,20 @@ function setAttr(el, name, on) {
 
 export function installBadges(win, doc) {
   const today = () => new Date().getDay();
-  const state = { labels: {}, marks: {}, best: {}, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true };
+  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true };
 
   const unitTitle = (label) => `Precio por ${UNIT_LONG[label.group] ?? label.group} para comparar con otros productos`;
 
   // Fila "precio por unidad + motivo". Sirve en tarjeta, producto y carrusel.
-  function paintUnit(parent, label, short = false) {
+  // bankOnly: en la tarjeta el resto del motivo ya está al lado del precio grande.
+  function paintUnit(parent, label, short = false, bankOnly = false) {
     const row = ensure(parent, "coto-unit-unit");
     const title = unitTitle(label);
     if (row.title !== title) row.title = title;
     upsert(row, "coto-unit-value", formatUnit(label), null, "span");
-    upsert(row, "coto-unit-why", formatWhy(label, state.day, today(), short), null, "span");
+    const why = bankOnly && label.bankValue == null ? null : formatWhy(label, state.day, today(), short);
+    upsert(row, "coto-unit-why", why, null, "span");
+    order(row, ["coto-unit-value", "coto-unit-why"]);
     return row;
   }
 
@@ -131,11 +142,17 @@ export function installBadges(win, doc) {
     setAttr(offer, "data-coto-unit-empty", !label.offerText);
     const priceRow = ensure(block, "coto-unit-pricerow");
     upsert(priceRow, "coto-unit-final", label.price != null ? $2(label.price) : null, null, "span");
+    // El precio grande dice en qué condición se paga: nadie paga $196 llevando uno solo.
+    upsert(priceRow, "coto-unit-cond", formatCond(label), null, "span");
     const regular = label.list != null && label.price != null && label.list > label.price + 0.5 ? $2(label.list) : null;
+    upsert(priceRow, "coto-unit-sr", regular ? "Precio regular:" : null, null, "span");
     upsert(priceRow, "coto-unit-regular", regular, null, "s");
-    paintUnit(block, label);
+    order(priceRow, ["coto-unit-final", "coto-unit-cond", "coto-unit-sr", "coto-unit-regular"]);
+    paintUnit(block, label, false, true);
     upsert(block, "coto-unit-note", formatNote(label));
-    const best = state.markBest && key && state.best[key] ? "Más barato de la categoría" : null;
+    const best = state.markBest && key && state.best[key]
+      ? (state.bestScope === "lista" ? "Más barato de esta lista" : "Más barato de la categoría")
+      : null;
     upsert(block, "coto-unit-best", best);
     order(block, ["coto-unit-offer", "coto-unit-pricerow", "coto-unit-unit", "coto-unit-note", "coto-unit-best"]);
     return block;
@@ -153,8 +170,10 @@ export function installBadges(win, doc) {
       else if (/sin impuestos/i.test(t)) dim.add(el);
     }
     for (const child of centro.children) {
-      if (child.classList.contains(BLOCK) || child.querySelector("button, input")) continue;
+      // Nunca un bloque con botones, links o el nombre del producto.
+      if (child.classList.contains(BLOCK) || child.querySelector("button, input, a, h3, .nombre-producto")) continue;
       const t = child.textContent;
+      if (t.length > 80 || /sin impuestos/i.test(t)) continue;
       if (/precio por \d/i.test(t) || /con\s*comunidad\s*pagas/i.test(t)) hide.add(child);
     }
     return { hide, dim };
@@ -185,6 +204,7 @@ export function installBadges(win, doc) {
         paintCardBlock(centro, centro.querySelector(":scope > .nombre-producto, :scope > h3"), label, key);
         const { hide, dim } = cotoParts(centro);
         for (const el of centro.querySelectorAll(`[${HIDE}]`)) if (!hide.has(el)) el.removeAttribute(HIDE);
+        for (const el of centro.querySelectorAll(`[${DIM}]`)) if (!dim.has(el)) el.removeAttribute(DIM);
         for (const el of hide) setAttr(el, HIDE, true);
         for (const el of dim) setAttr(el, DIM, true);
       }
@@ -237,7 +257,7 @@ export function installBadges(win, doc) {
       // Solo líneas cortas de texto: un bloque con botones o mucho texto no es "secundario".
       if (line.querySelector("button, input, a") || t.length > 120) continue;
       const regular = /precio regular/i.test(t);
-      setAttr(line, HIDE, !!box && /precio por \d/i.test(t));
+      setAttr(line, HIDE, !!box && /precio por \d/i.test(t) && !regular);
       setAttr(line, DIM, !!box && (regular || /sin impuestos/i.test(t)));
       setAttr(line, "data-coto-unit-strike", !!box && regular && onSale);
     }
@@ -264,6 +284,8 @@ export function installBadges(win, doc) {
   function checkPath() {
     const path = win.location?.pathname ?? "";
     if (path === state.path) return;
+    // Otra página: el "más barato" de la anterior no vale hasta que llegue el nuevo.
+    if (state.path !== null) state.best = {};
     state.path = path;
     const key = pdpKey();
     const plu = key?.match(/R-(\d+)/)?.[1];
@@ -290,7 +312,15 @@ export function installBadges(win, doc) {
       state.markBest = m.markBest !== false;
       // Si cambió el día, las promos o Comunidad, los datos de banco viejos mienten: se
       // borran hasta que lleguen etiquetas nuevas.
-      const sig = (m.selected ?? []).map((p) => p.id).join(",") + "@" + state.day + (m.comunidad === false ? "#sc" : "");
+      const comunidad = m.comunidad !== false;
+      const sig = (m.selected ?? []).map((p) => p.id).join(",") + "@" + state.day + (comunidad ? "" : "#sc");
+      if (state.comunidad !== undefined && comunidad !== state.comunidad) {
+        // Los precios con o sin Comunidad cambian todo: se descartan y la PDP pide de nuevo.
+        state.labels = {};
+        state.path = null;
+        checkPath();
+      }
+      state.comunidad = comunidad;
       if (state.sig !== undefined && sig !== state.sig) {
         for (const l of Object.values(state.labels)) {
           l.bankValue = null;
@@ -306,6 +336,7 @@ export function installBadges(win, doc) {
       if (typeof m.seq === "number" && m.seq < state.bestSeq) return;
       if (typeof m.seq === "number") state.bestSeq = m.seq;
       state.best = m.best ?? {};
+      state.bestScope = m.scope ?? "categoria";
       return render();
     }
     // Un pedido viejo que termina tarde no pisa marcas ni avisos del más nuevo.

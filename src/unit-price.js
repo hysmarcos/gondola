@@ -92,19 +92,22 @@ export function finalPrice(data, store, opts = {}) {
   return bestPrice(data, store, opts)?.price ?? null;
 }
 
-// Las ofertas de Coto en un solo texto corto: "15% dto + 5% Comunidad".
+// Las ofertas de Coto en un solo texto corto: "20% dto · 2x1 + 5% Comunidad".
+// Las ofertas son alternativas (·); Comunidad se suma encima (+).
 export function offerText(data, opts = {}) {
   const parts = [];
+  let comunidad = null;
   for (const d of data?.discounts ?? []) {
     const t = String(d.discountText ?? "").trim();
     let m;
     if ((m = t.match(/^(\d+)\s*%\s*dto$/i))) parts.push(`${m[1]}% dto`);
-    else if ((m = t.match(/^\+\s*(\d+)\s*%/))) { if (opts.comunidad !== false) parts.push(`${m[1]}% Comunidad`); }
+    else if ((m = t.match(/^\+\s*(\d+)\s*%/))) { if (opts.comunidad !== false) comunidad = `${m[1]}% Comunidad`; }
     else if ((m = t.match(/^1\s*pago\s*(\d+)\s*%/i))) parts.push(`${m[1]}% en 1 pago`);
     else if ((m = t.match(/^(\d+)\s*%\s*2da$/i))) parts.push(`${m[1]}% la 2da`);
     else if (t) parts.push(t);
   }
-  return parts.length ? parts.join(" + ") : null;
+  const text = [parts.join(" · "), comunidad].filter(Boolean).join(" + ");
+  return text || null;
 }
 
 export function isOnSale(data) {

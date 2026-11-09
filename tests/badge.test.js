@@ -104,7 +104,7 @@ describe("tarjeta unificada", () => {
     expect([...doc.querySelectorAll(".descuentos-slot")].every(hidden)).toBe(true);
     expect(hidden(doc.querySelector(".comunidad-banner"))).toBe(true);
     expect(doc.querySelector(".coto-unit-offer").textContent).toBe("15% dto + 5% Comunidad");
-    expect(doc.querySelector(".coto-unit-why").textContent).toBe("con Comunidad");
+    expect(doc.querySelector(".coto-unit-cond").textContent).toBe("con Comunidad");
   });
 
   it("sin oferta: no hay precio tachado ni oferta", async () => {
@@ -259,5 +259,92 @@ describe("carrusel de recomendaciones", () => {
     expect(doc.querySelector(".coto-unit-box--mini .coto-unit-value").textContent).toBe("$133 /10 m");
     expect(doc.querySelector(".coto-unit-box--mini .coto-unit-why").textContent).toBe("ICBC");
     expect(hidden(doc.querySelector(".mini-product-card__reference-price"))).toBe(true);
+  });
+});
+
+describe("revisión v5: tarjeta", () => {
+  it("2x1: el precio grande dice 'c/u llevando 2' y la fila de unidad no lo repite", async () => {
+    const { doc, send } = setup(offerCard(K(1)));
+    send({ type: "labels", labels: { [K(1)]: L(28000, { take: 2, price: 196, list: 392, offerText: "2x1" }) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-pricerow .coto-unit-cond").textContent).toBe("c/u llevando 2");
+    expect(doc.querySelector(".coto-unit-unit .coto-unit-why")).toBeNull();
+  });
+
+  it("Comunidad y 1 pago se dicen al lado del precio grande; el banco, en la fila de unidad", async () => {
+    const { doc, send } = setup(comunidadCard(K(1)) + offerCard(K(2)));
+    send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
+    send({ type: "labels", labels: {
+      [K(1)]: L(711.1, { group: "L", price: 1599.99, list: 1999.99, via: "comunidad" }),
+      [K(2)]: L(700, { group: "L", via: "1pago", bankValue: 490, bankName: "ICBC" }),
+    } });
+    await tick();
+    const [a, b] = doc.querySelectorAll(".coto-unit-price");
+    expect(a.querySelector(".coto-unit-cond").textContent).toBe("con Comunidad");
+    expect(a.querySelector(".coto-unit-why")).toBeNull();
+    expect(b.querySelector(".coto-unit-cond").textContent).toBe("en 1 pago");
+    expect(b.querySelector(".coto-unit-why").textContent).toBe("con ICBC hoy");
+  });
+
+  it("el precio tachado tiene etiqueta para lectores de pantalla", async () => {
+    const { doc, send } = setup(offerCard(K(1)));
+    send({ type: "labels", labels: { [K(1)]: L(733.33) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-pricerow .coto-unit-sr").textContent).toBe("Precio regular:");
+  });
+
+  it("un nodo reusado sin 'sin impuestos' pierde el atenuado", async () => {
+    const { doc, send } = setup(offerCard(K(1)));
+    send({ type: "labels", labels: { [K(1)]: L(733.33) } });
+    await tick();
+    const tax = [...doc.querySelectorAll("small")].find((s) => /sin impuestos/.test(s.textContent));
+    tax.textContent = "Otro texto";
+    await tick();
+    expect(tax.hasAttribute("data-coto-unit-dim")).toBe(false);
+  });
+
+  it("no oculta un bloque que tiene el nombre o un link", async () => {
+    const html = offerCard(K(1)).replace('<div class="w-100"></div>', '<div class="extra"><a href="#">Ver</a> Precio por 1 Litro: $1</div>');
+    const { doc, send } = setup(html);
+    send({ type: "labels", labels: { [K(1)]: L(733.33) } });
+    await tick();
+    expect(hidden(doc.querySelector(".extra"))).toBe(false);
+  });
+
+  it("en búsquedas y ofertas dice 'de esta lista'; al cambiar de página se borra", async () => {
+    const { win, doc, send } = setup(offerCard(K(1)));
+    send({ type: "labels", labels: { [K(1)]: L(733.33) } });
+    send({ type: "best", best: { [K(1)]: "kg" }, scope: "lista", seq: 1 });
+    await tick();
+    expect(doc.querySelector(".coto-unit-best").textContent).toBe("Más barato de esta lista");
+    win.location = { pathname: "/productos/categorias/otra" };
+    doc.body.append(doc.createElement("span"));
+    await tick();
+    expect(doc.querySelector(".coto-unit-best")).toBeNull();
+  });
+
+  it("al cambiar Comunidad se borran las etiquetas viejas y la PDP pide de nuevo", async () => {
+    const key = "_/R-00621756-00621756-200";
+    const { win, doc, send } = setup(`<div class="mt-4"><div><var class="price">$1</var></div></div>`, `/productos/x/${key}`);
+    send({ type: "settings", selected: [], day: 1 });
+    send({ type: "labels", labels: { [key]: L(10, { via: "comunidad" }) } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-box")).not.toBeNull();
+    const lookups = win.posted.filter((m) => m.type === "lookup").length;
+    send({ type: "settings", selected: [], day: 1, comunidad: false });
+    await tick();
+    expect(doc.querySelector(".coto-unit-box")).toBeNull();
+    expect(win.posted.filter((m) => m.type === "lookup").length).toBe(lookups + 1);
+  });
+});
+
+describe("revisión v5: PDP", () => {
+  it("una línea con 'Precio regular' y 'Precio por 1' no se oculta entera", async () => {
+    const key = "_/R-00621756-00621756-200";
+    const html = `<div class="mt-4"><div><var class="price">$100</var></div><div class="both">Precio regular: $150 · Precio por 1 Kilo: $300</div></div>`;
+    const { doc, send } = setup(html, `/productos/x/${key}`);
+    send({ type: "labels", labels: { [key]: L(10) } });
+    await tick();
+    expect(hidden(doc.querySelector(".both"))).toBe(false);
   });
 });
