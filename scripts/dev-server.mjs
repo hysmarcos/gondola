@@ -47,7 +47,7 @@ createServer(async (req, res) => {
     }
   }
   const path = decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/^\/+/, "");
-  if (path.includes("..") || !/^(dist|dist-dev|src|assets)\//.test(path)) return res.writeHead(404, headers).end();
+  if (path.includes("..") || !/^(dist|dist-dev|src|assets|site)\//.test(path)) return res.writeHead(404, headers).end();
   try {
     const body = await readFile(join(root, path));
     const type = path.endsWith(".css") ? "text/css" : path.endsWith(".html") ? "text/html; charset=utf-8" : path.endsWith(".json") ? "application/json" : path.endsWith(".woff2") ? "font/woff2" : path.endsWith(".svg") ? "image/svg+xml" : path.endsWith(".png") ? "image/png" : "text/javascript";

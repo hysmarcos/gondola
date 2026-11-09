@@ -14,6 +14,9 @@ const render = (svg, size) => new Resvg(svg, { fitTo: { mode: "width", value: si
 const padded = full.replace('viewBox="0 0 96 96" width="96" height="96"', 'viewBox="-16 -16 128 128" width="128" height="128"');
 
 const out = { 16: render(small, 16), 32: render(full, 32), 48: render(full, 48), 128: render(padded, 128) };
+// El sitio de GitHub Pages (site/) usa una copia del SVG.
+await writeFile("site/icon.svg", full);
+
 for (const [size, png] of Object.entries(out)) {
   await writeFile(`${dir}/icon-${size}.png`, png);
   console.log(`${dir}/icon-${size}.png`);
