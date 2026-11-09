@@ -57,7 +57,7 @@ describe("precios", () => {
   });
 
   it("calcula el precio por unidad", () => {
-    expect(unitPrice(p, "200")).toEqual({ group: "kg", value: 5000, drained: false, note: null, take: 1, bankValue: null, bankName: null, bankBlocked: null });
+    expect(unitPrice(p, "200")).toMatchObject({ group: "kg", value: 5000, drained: false, note: null, take: 1, bankValue: null, bankName: null, bankBlocked: null });
     const zero = { ...p, price: [{ store: "200", listPrice: 0, formatPrice: 0 }] };
     expect(unitPrice(zero, "200").group).toBe("sin_dato");
   });

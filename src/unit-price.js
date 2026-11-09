@@ -56,16 +56,55 @@ export function pickStorePrice(data, store) {
   return { listPrice: entry.listPrice, formatPrice: entry.formatPrice };
 }
 
-// El precio más bajo pagando una sola vez: lista, oferta o medio de pago en 1 cuota.
-export function finalPrice(data, store) {
+// "+5%": descuento extra para socios de Comunidad Coto.
+const COMUNIDAD = /^\s*\+\s*\d+\s*%/;
+const ONE_PAY = /pago/i;
+
+function viaOf(text) {
+  if (COMUNIDAD.test(text)) return "comunidad";
+  if (ONE_PAY.test(text)) return "1pago";
+  return "oferta";
+}
+
+// opts: { comunidad: false } deja afuera los precios de Comunidad Coto.
+// → { price, via: "lista" | "oferta" | "comunidad" | "1pago" } o null.
+function bestPrice(data, store, opts = {}) {
   const base = pickStorePrice(data, store);
-  const candidates = [parseMoney(base?.listPrice)];
-  for (const d of data?.discounts ?? []) candidates.push(parseMoney(d.discountPrice));
-  for (const m of data?.discounts_payment_methods ?? []) {
-    if (String(m.cantidadCuotas).trim() === "1") candidates.push(parseMoney(m.precioCuota));
+  const candidates = [{ price: parseMoney(base?.listPrice), via: "lista" }];
+  for (const d of data?.discounts ?? []) {
+    const via = viaOf(String(d.discountText ?? ""));
+    if (via === "comunidad" && opts.comunidad === false) continue;
+    candidates.push({ price: parseMoney(d.discountPrice), via });
   }
-  const valid = candidates.filter((n) => n !== null && n > 0);
-  return valid.length ? Math.min(...valid) : null;
+  for (const m of data?.discounts_payment_methods ?? []) {
+    if (String(m.cantidadCuotas).trim() === "1") candidates.push({ price: parseMoney(m.precioCuota), via: "1pago" });
+  }
+  let best = null;
+  for (const c of candidates) {
+    if (c.price === null || !(c.price > 0)) continue;
+    if (!best || c.price < best.price - 0.001) best = c;
+  }
+  return best;
+}
+
+// El precio más bajo pagando una sola vez: lista, oferta, Comunidad o 1 pago.
+export function finalPrice(data, store, opts = {}) {
+  return bestPrice(data, store, opts)?.price ?? null;
+}
+
+// Las ofertas de Coto en un solo texto corto: "15% dto + 5% Comunidad".
+export function offerText(data, opts = {}) {
+  const parts = [];
+  for (const d of data?.discounts ?? []) {
+    const t = String(d.discountText ?? "").trim();
+    let m;
+    if ((m = t.match(/^(\d+)\s*%\s*dto$/i))) parts.push(`${m[1]}% dto`);
+    else if ((m = t.match(/^\+\s*(\d+)\s*%/))) { if (opts.comunidad !== false) parts.push(`${m[1]}% Comunidad`); }
+    else if ((m = t.match(/^1\s*pago\s*(\d+)\s*%/i))) parts.push(`${m[1]}% en 1 pago`);
+    else if ((m = t.match(/^(\d+)\s*%\s*2da$/i))) parts.push(`${m[1]}% la 2da`);
+    else if (t) parts.push(t);
+  }
+  return parts.length ? parts.join(" + ") : null;
 }
 
 export function isOnSale(data) {
@@ -73,8 +112,8 @@ export function isOnSale(data) {
 }
 
 // Unidades que hay que llevar para pagar el precio final ("Llevando 3" → 3).
-export function takeQty(data, store) {
-  const price = finalPrice(data, store);
+export function takeQty(data, store, opts = {}) {
+  const price = finalPrice(data, store, opts);
   for (const d of data?.discounts ?? []) {
     const n = String(d.takingText ?? "").match(/Llevando\s+(\d+)/i);
     const p = parseMoney(d.discountPrice);
@@ -102,8 +141,8 @@ function isPackMultiple(amount, single) {
 }
 
 // Grupo y precio por unidad (sin banco).
-function measure(data, store) {
-  const price = finalPrice(data, store);
+function measure(data, store, opts = {}) {
+  const price = finalPrice(data, store, opts);
   const base = pickStorePrice(data, store);
   if (!price || !base?.listPrice) return null;
   if (isWeighable(data)) return { group: "kg", value: price, drained: false, note: null };
@@ -165,10 +204,11 @@ function measure(data, store) {
   };
 }
 
-export function unitPrice(data, store, promos = [], day = 0) {
-  const m = measure(data, store);
+export function unitPrice(data, store, promos = [], day = 0, opts = {}) {
+  const m = measure(data, store, opts);
   if (!m) return { ...EMPTY };
   const value = round2(m.value);
+  const best = bestPrice(data, store, opts);
   const promo = bestPromo(promos, day, false);
   const blocked = promo ? bankBlock(data) : null;
   const applies = promo && !blocked;
@@ -177,9 +217,14 @@ export function unitPrice(data, store, promos = [], day = 0) {
     value,
     drained: m.drained,
     note: m.note,
-    take: takeQty(data, store),
+    take: takeQty(data, store, opts),
     bankValue: applies ? round2(value * (1 - promo.percent / 100)) : null,
     bankName: applies ? promo.bank : null,
     bankBlocked: blocked,
+    // Para la tarjeta unificada: precio a pagar, precio regular y de dónde sale.
+    price: best?.price ?? null,
+    list: parseMoney(pickStorePrice(data, store)?.listPrice),
+    via: best?.via ?? null,
+    offerText: offerText(data, opts),
   };
 }

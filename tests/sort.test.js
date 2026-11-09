@@ -26,7 +26,7 @@ describe("sortByUnitPrice", () => {
     const { labels, marks } = sortByUnitPrice(input, "200");
     expect(marks).toEqual({ L1: "L", kg1: "kg", u1: "unidad" });
     expect(labels.X).toBeUndefined();
-    expect(labels.L2).toEqual({ group: "L", value: 200, drained: false, note: null, take: 1, bankValue: null, bankName: null, bankBlocked: null });
+    expect(labels.L2).toMatchObject({ group: "L", value: 200, drained: false, note: null, take: 1, bankValue: null, bankName: null, bankBlocked: null });
   });
 
   it("ordena por el precio con banco cuando hay promo", () => {

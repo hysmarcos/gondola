@@ -3,12 +3,12 @@ import { finalPrice, takeQty, bankBlock } from "./unit-price.js";
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
-function analyzeLine({ id, name, qty, list, data }, store) {
-  const price = data ? finalPrice(data, store) : null;
+function analyzeLine({ id, name, qty, list, data }, store, opts = {}) {
+  const price = data ? finalPrice(data, store, opts) : null;
   if (!price || !(qty > 0)) {
     return { id, name, total: qty * list, listTotal: qty * list, bankEligible: !(data && bankBlock(data)), missing: 0, saving: 0, promoText: null };
   }
-  const take = takeQty(data, store);
+  const take = takeQty(data, store, opts);
   const bankEligible = !bankBlock(data);
   const listTotal = qty * list;
   if (take <= 1) {
@@ -46,8 +46,8 @@ function bestForDay(promos, day, lines) {
 }
 
 // lines: [{ id, name, qty, list, data }]; promos: las elegidas; day: 0 = domingo.
-export function analyzeCart(lines, promos, day, store) {
-  const analyzed = lines.map((l) => analyzeLine(l, store));
+export function analyzeCart(lines, promos, day, store, opts = {}) {
+  const analyzed = lines.map((l) => analyzeLine(l, store, opts));
   const total = round2(analyzed.reduce((s, l) => s + l.total, 0));
   const listTotal = round2(lines.reduce((s, l) => s + l.qty * l.list, 0));
 
