@@ -68,6 +68,18 @@ describe("tarjeta", () => {
     expect(doc.querySelector(".bottom-botones button").textContent).toBe("Agregar");
   });
 
+  it("sin oferta no tacha 'Precio Regular' (no hay descuento)", async () => {
+    const html = `<div class="card-container"><a href="/productos/x/${K(4)}">foto</a><div class="centro-precios">
+      <div class="descuentos-slot"><h4 class="card-title">$2.639,00</h4></div>
+      <small class="card-text">Precio regular: $2.639,00</small></div></div>`;
+    const { doc, send } = setup(html);
+    send({ type: "labels", labels: { [K(4)]: L(6598) } });
+    await tick();
+    const reg = doc.querySelector("small");
+    expect(reg.hasAttribute("data-coto-unit-dim")).toBe(true);
+    expect(reg.hasAttribute("data-coto-unit-strike")).toBe(false);
+  });
+
   it("sin oferta: caja después del h4 y línea de banco", async () => {
     const { doc, send } = setup(plainCard(K(2)));
     send({ type: "settings", selected: [], day: new Date().getDay() });

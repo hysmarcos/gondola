@@ -85,12 +85,15 @@ export function installBadges(win, doc) {
   }
 
   // Las líneas secundarias de Coto pasan a chicas y grises; "Precio Regular" tachado.
+  // Solo se tacha si hay oferta (el cartel "PRECIO CON X%DTO"); si no, tachar sugiere
+  // un descuento que no existe.
   function dimCoto(centro) {
-    for (const s of centro.querySelectorAll("small")) {
+    const onSale = !!centro.querySelector(".offer-crum");
+    for (const s of centro.querySelectorAll("small:not(.offer-crum)")) {
       const t = s.textContent;
       if (/precio regular/i.test(t)) {
         s.setAttribute("data-coto-unit-dim", "");
-        s.setAttribute("data-coto-unit-strike", "");
+        if (onSale) s.setAttribute("data-coto-unit-strike", "");
       } else if (/sin impuestos|precio por \d/i.test(t)) {
         s.setAttribute("data-coto-unit-dim", "");
       }
