@@ -25,6 +25,12 @@ const MIN_NUTRIENTS = 3;
 export const offProductUrl = (ean) => `${OFF}/product/${ean}`;
 export const offApiUrl = (ean) => `${OFF}/api/v2/product/${ean}?fields=product_name,nutriments,serving_size`;
 
+// Bebidas: su tabla va cada 100 ml aunque Coto las venda por unidad.
+const DRINKS = "catv00001256";
+export function isDrink(groups) {
+  return (groups ?? []).some((g) => g?.group_id === DRINKS);
+}
+
 export function isFood(groups) {
   return (groups ?? []).some((g) => FOOD_ROOTS.has(g?.group_id));
 }

@@ -99,7 +99,9 @@ export function createNutritionUi(doc, { request, onUpdate }) {
     const r = results.get(ean);
     if (r === "error") return container.querySelector(`.${ROOT}`)?.remove();
     if (container.querySelector(`.${ROOT}`)) return;
-    const node = renderNutrition(doc, r, { ean, liquid: label.group === "L" });
+    // Bebida: cada 100 ml, salvo que Coto la venda por peso (polvos para preparar).
+    const liquid = label.group === "L" || (label.drink === true && label.group !== "kg");
+    const node = renderNutrition(doc, r, { ean, liquid });
     if (anchor && anchor.parentElement === container) anchor.after(node);
     else container.append(node);
   }

@@ -194,3 +194,19 @@ describe("createNutritionUi con request que falla", () => {
     expect(c.querySelector(".coto-unit-nutri")).toBeNull();
   });
 });
+
+describe("bebidas vendidas por unidad", () => {
+  it("drink por unidad dice cada 100 ml; drink en polvo (kg) dice cada 100 g", async () => {
+    document.body.innerHTML = `<div id="c"></div>`;
+    const c = document.getElementById("c");
+    const N2 = { per100: { kcal: 42, carbs: 10, sugars: 10 }, perServing: null, servingSize: null, url: "u" };
+    const ui = createNutritionUi(document, { request: async () => N2, onUpdate: () => {} });
+    ui.paint(c, null, { ean: "1", nutri: true, drink: true, group: "unidad" }, true);
+    await new Promise((r) => setTimeout(r, 0));
+    ui.paint(c, null, { ean: "1", nutri: true, drink: true, group: "unidad" }, true);
+    expect(c.querySelector("summary").textContent).toContain("cada 100 ml");
+    c.innerHTML = "";
+    ui.paint(c, null, { ean: "1", nutri: true, drink: true, group: "kg" }, true);
+    expect(c.querySelector("summary").textContent).toContain("cada 100 g");
+  });
+});

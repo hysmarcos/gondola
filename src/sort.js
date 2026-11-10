@@ -1,6 +1,6 @@
 import { unitPrice } from "./unit-price.js";
 import { compareFields } from "./compare.js";
-import { nutriEligible } from "./nutrition.js";
+import { nutriEligible, isDrink } from "./nutrition.js";
 
 const MIN_FOR_BEST = 3;
 const TIE_ORDER = ["kg", "L", "unidad", "rollo10m", "panos100", "m2", "m"];
@@ -34,7 +34,7 @@ export function sortByUnitPrice(results, store, promos = [], day = 0, opts = {})
     const list = groups.get(g);
     list.forEach(({ r, u }, i) => {
       sorted.push(r);
-      const label = { ...u, ...compareFields(r.data, store, opts), nutri: nutriEligible(r.data) };
+      const label = { ...u, ...compareFields(r.data, store, opts), nutri: nutriEligible(r.data), drink: isDrink(r.data.groups) };
       labels[r.data.url] = label;
       // Igual que labelsFor: los carruseles buscan por id de producto.
       if (r.data.id) labels[r.data.id] = label;
@@ -54,10 +54,21 @@ export function labelsFor(results, store, promos = [], day = 0, opts = {}) {
     if (!url) continue;
     const u = unitPrice(r.data, store, promos, day, opts);
     if (u.group === "sin_dato") continue;
-    const label = { ...u, ...compareFields(r.data, store, opts), nutri: nutriEligible(r.data) };
+    const label = { ...u, ...compareFields(r.data, store, opts), nutri: nutriEligible(r.data), drink: isDrink(r.data.groups) };
     labels[url] = label;
     // Los carruseles de recomendaciones no tienen link: se buscan por id de producto.
     if (r.data.id) labels[r.data.id] = label;
+  }
+  return labels;
+}
+
+// Etiqueta de la página de producto. Si no hay precio por unidad pero es comida, igual hay
+// etiqueta (sin precio) para mostrar la información nutricional.
+export function lookupLabels(data, key, store, promos = [], day = 0, opts = {}) {
+  const d = { ...data, url: key };
+  const labels = labelsFor([{ data: d }], store, promos, day, opts);
+  if (!labels[key] && nutriEligible(d)) {
+    labels[key] = { group: "sin_dato", value: null, ...compareFields(d, store, opts), nutri: true, drink: isDrink(d.groups) };
   }
   return labels;
 }
