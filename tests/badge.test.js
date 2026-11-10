@@ -225,6 +225,40 @@ describe("página de producto", () => {
     expect(doc.querySelector(".mb-2").hasAttribute("data-coto-unit-dim")).toBe(true);
   });
 
+  it("información nutricional: pinta debajo de la caja y respeta el ajuste", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const { doc, send } = setup(pdp, `/productos/papel/${key}`, { nutrition });
+    const label = L(109.33, { group: "rollo10m", ean: "7790895000997", nutri: true });
+    send({ type: "labels", labels: { [key]: label } });
+    await tick();
+    const box = doc.querySelector(".coto-unit-box--pdp");
+    const last = calls.at(-1);
+    expect(last[0]).toBe(doc.querySelector(".mt-4"));
+    expect(last[1]).toBe(box);
+    expect(last[2]).toMatchObject({ ean: "7790895000997", nutri: true });
+    expect(last[3]).toBe(true);
+    send({ type: "settings", selected: [], day: 1, nutrition: false });
+    await tick();
+    expect(calls.at(-1)[3]).toBe(false);
+  });
+
+  it("refresh vuelve a pintar la información nutricional", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const win = new EventTarget();
+    win.location = { pathname: `/productos/papel/${key}` };
+    win.postMessage = () => {};
+    win.MutationObserver = window.MutationObserver;
+    const doc = document.implementation.createHTMLDocument("x");
+    doc.body.innerHTML = pdp;
+    const badges = installBadges(win, doc, { nutrition });
+    const before = calls.length;
+    badges.refresh();
+    await tick();
+    expect(calls.length).toBeGreaterThan(before);
+  });
+
   it("sin oferta no tacha el precio regular", async () => {
     const plain = pdp.replace('<div class="badge">Oferta</div><div>30%Dto</div>', "");
     const { doc, send } = setup(plain, `/productos/papel/${key}`);

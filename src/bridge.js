@@ -1,6 +1,6 @@
 // Puente entre chrome.storage (mundo aislado) y el intermediario de la página.
 const SOURCE = "coto-unit";
-const KEYS = ["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores"];
+const KEYS = ["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition"];
 
 export function resolveDay(day) {
   return typeof day === "number" && day >= 0 && day <= 6 ? day : new Date().getDay();
@@ -17,7 +17,7 @@ export function installBridge(win, storage, now = Date.now) {
         source: SOURCE, type: "settings", selected, day: resolveDay(s.day),
         // Ajustes del popup: encendidos salvo que el usuario los apague.
         autoPromo: s.autoPromo !== false, notifyPromo: s.notifyPromo !== false, markBest: s.markBest !== false, comunidad: s.comunidad !== false,
-        compareStores: s.compareStores !== false,
+        compareStores: s.compareStores !== false, nutrition: s.nutrition !== false,
       }, "*");
     } catch { /* sin configuración: la página sigue sin banco */ }
   }

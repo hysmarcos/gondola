@@ -117,8 +117,9 @@ function setAttr(el, name, on) {
 export function installBadges(win, doc, deps = {}) {
   const logoUrl = deps.logoUrl ?? (() => null);
   const compare = deps.compare ?? null;
+  const nutrition = deps.nutrition ?? null;
   const today = () => new Date().getDay();
-  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true, compare: true };
+  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true, compare: true, nutrition: true };
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
   let watching = new WeakMap(); // caja -> EAN que espera verse para pedirse
   let io = null;
@@ -399,8 +400,14 @@ export function installBadges(win, doc, deps = {}) {
     while (block.parentElement && !block.parentElement.matches(".mt-4") && block !== doc.body) block = block.parentElement;
     const wrap = block.parentElement?.matches(".mt-4") ? block.parentElement : null;
     const label = state.labels[key];
-    if (!wrap) return paintBox(price.parentElement, price, label, "pdp");
+    if (!wrap) {
+      const box = paintBox(price.parentElement, price, label, "pdp");
+      nutrition?.paint(price.parentElement, box ?? price, label, state.nutrition);
+      return;
+    }
     const box = paintBox(wrap, block, label, "pdp");
+    // Información nutricional: debajo de la caja (o del precio si no hay caja).
+    nutrition?.paint(wrap, box ?? block, label, state.nutrition);
     const onSale = /oferta|%\s*dto/i.test(block.textContent);
     for (const line of wrap.children) {
       if (line === block || line === box) continue;
@@ -462,6 +469,7 @@ export function installBadges(win, doc, deps = {}) {
       state.day = Number(m.day) || 0;
       state.markBest = m.markBest !== false;
       state.compare = m.compareStores !== false;
+      state.nutrition = m.nutrition !== false;
       if (!state.compare) {
         io?.disconnect();
         watching = new WeakMap();
@@ -516,4 +524,20 @@ export function installBadges(win, doc, deps = {}) {
     checkPath();
     render();
   }).observe(doc.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["href"] });
+
+  // refresh(): repintado en el próximo cuadro, para datos que llegan de afuera
+  // (información nutricional).
+  let refreshing = false;
+  function refresh() {
+    if (refreshing) return;
+    refreshing = true;
+    const run = () => {
+      refreshing = false;
+      render();
+    };
+    if (typeof win.requestAnimationFrame === "function") win.requestAnimationFrame(run);
+    else queueMicrotask(run);
+  }
+
+  return { refresh };
 }

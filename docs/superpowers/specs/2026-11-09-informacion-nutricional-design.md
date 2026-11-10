@@ -107,8 +107,10 @@ aunque tengan EAN: su código no es el de un envase con tabla.
 
 **`src/nutrition-ui.js`**: dibuja la sección en la PDP.
 
-- `installNutritionUi(win, doc, { request })`. `request(ean)` devuelve una promesa con el
-  resultado del servicio.
+- `createNutritionUi(doc, { request, onUpdate })` devuelve `{ paint(container, anchor, label, enabled) }`.
+  `request(ean)` devuelve una promesa con el resultado del servicio. `onUpdate()` pide un
+  repintado cuando llega un resultado. `badge.js` llama a `paint` desde `renderPdp`,
+  porque ahí viven las etiquetas del producto.
 - Pide una sola vez por EAN mientras dure la página.
 - Va dentro del mismo contenedor que la caja "Precio real para comparar"
   (`.coto-unit-box--pdp`), justo después de ella.
@@ -123,8 +125,9 @@ aunque tengan EAN: su código no es el de un envase con tabla.
 - **`src/background.js`**: crea el servicio con
   `createPriceCache(chrome.storage.local, Date.now, { key: "nutriCache", ttlMs: 604_800_000, max: 2000 })`
   (7 días) y atiende `{ type: "nutrition", ean }`.
-- **`src/badge-entry.js`**: instala `nutrition-ui` con
-  `request: (ean) => chrome.runtime.sendMessage({ type: "nutrition", ean })`.
+- **`src/badge-entry.js`**: crea `nutrition-ui` con
+  `request: (ean) => chrome.runtime.sendMessage({ type: "nutrition", ean }).catch(() => "error")`
+  y se lo pasa a `installBadges`, que devuelve `{ refresh }` para el `onUpdate`.
 - **`src/bridge.js`**: suma la clave `nutrition` a `KEYS` y manda `nutrition: s.nutrition !== false`
   en el mensaje `settings`.
 - **`src/popup.js`**: suma el ajuste

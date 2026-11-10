@@ -19,6 +19,7 @@ const SETTINGS = [
   { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
   { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato de la categoría\" en el producto que más conviene por kg, litro o unidad." },
   { key: "compareStores", title: "Comparar con otros súper", text: "Un botón dice si Coto tiene el mejor precio o en qué súper está más barato." },
+  { key: "nutrition", title: "Información nutricional", text: "En la página de un producto, la tabla nutricional de Open Food Facts, si existe." },
 ];
 
 const HELP = [
@@ -209,7 +210,7 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 
 // storage: misma interfaz que en bridge.js. meta: { version }.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "popupTab"]);
+  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "popupTab"]);
   let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
 
   const header = el(doc, "header", { className: "top" }, [

@@ -176,3 +176,21 @@ describe("createNutritionUi", () => {
     expect(container.lastElementChild).toBe(block());
   });
 });
+
+describe("createNutritionUi con request que falla", () => {
+  it("si request rechaza o tira, no rompe y no dibuja", async () => {
+    document.body.innerHTML = `<div id="c"></div>`;
+    const c = document.getElementById("c");
+    let updates = 0;
+    const rejecting = createNutritionUi(document, { request: () => Promise.reject(new Error("Extension context invalidated")), onUpdate: () => updates++ });
+    const throwing = createNutritionUi(document, { request: () => { throw new Error("x"); }, onUpdate: () => updates++ });
+    const label = { ean: "1", nutri: true, group: "kg" };
+    expect(() => rejecting.paint(c, null, label, true)).not.toThrow();
+    expect(() => throwing.paint(c, null, label, true)).not.toThrow();
+    await new Promise((r) => setTimeout(r, 0));
+    rejecting.paint(c, null, label, true);
+    throwing.paint(c, null, label, true);
+    expect(updates).toBe(2);
+    expect(c.querySelector(".coto-unit-nutri")).toBeNull();
+  });
+});
