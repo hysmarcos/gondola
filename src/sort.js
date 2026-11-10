@@ -1,5 +1,6 @@
 import { unitPrice } from "./unit-price.js";
 import { compareFields } from "./compare.js";
+import { nutriEligible } from "./nutrition.js";
 
 const MIN_FOR_BEST = 3;
 const TIE_ORDER = ["kg", "L", "unidad", "rollo10m", "panos100", "m2", "m"];
@@ -33,7 +34,7 @@ export function sortByUnitPrice(results, store, promos = [], day = 0, opts = {})
     const list = groups.get(g);
     list.forEach(({ r, u }, i) => {
       sorted.push(r);
-      const label = { ...u, ...compareFields(r.data, store, opts) };
+      const label = { ...u, ...compareFields(r.data, store, opts), nutri: nutriEligible(r.data) };
       labels[r.data.url] = label;
       // Igual que labelsFor: los carruseles buscan por id de producto.
       if (r.data.id) labels[r.data.id] = label;
@@ -53,7 +54,7 @@ export function labelsFor(results, store, promos = [], day = 0, opts = {}) {
     if (!url) continue;
     const u = unitPrice(r.data, store, promos, day, opts);
     if (u.group === "sin_dato") continue;
-    const label = { ...u, ...compareFields(r.data, store, opts) };
+    const label = { ...u, ...compareFields(r.data, store, opts), nutri: nutriEligible(r.data) };
     labels[url] = label;
     // Los carruseles de recomendaciones no tienen link: se buscan por id de producto.
     if (r.data.id) labels[r.data.id] = label;

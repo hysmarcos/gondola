@@ -102,3 +102,24 @@ describe("sortByUnitPrice con EAN", () => {
     expect(labels).toEqual(labelsFor([r, item("E2", "Kilo", 200)], "200"));
   });
 });
+
+describe("etiquetas con nutri", () => {
+  const food = (url, groupId, extra = {}) => {
+    const r = item(url, "Kilo", 150);
+    Object.assign(r.data, { product_main_ean: "7790742348302", groups: [{ group_id: groupId }], ...extra });
+    return r;
+  };
+
+  it("comida sí; limpieza y pesables no (labelsFor)", () => {
+    const labels = labelsFor([food("A", "catv00001254"), food("B", "catv00001258"), food("C", "catv00001255", { product_weighable: 1 })], "200");
+    expect(labels.A.nutri).toBe(true);
+    expect(labels.B.nutri).toBe(false);
+    expect(labels.C.nutri).toBe(false);
+  });
+
+  it("sortByUnitPrice también marca nutri", () => {
+    const { labels } = sortByUnitPrice([food("A", "catv00001254"), food("B", "catv00001258")], "200");
+    expect(labels.A.nutri).toBe(true);
+    expect(labels.B.nutri).toBe(false);
+  });
+});
