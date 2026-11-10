@@ -265,6 +265,60 @@
   color: #6b6b6b;
 }
 
+/* Información nutricional (Open Food Facts), debajo de la caja de precio. */
+.coto-unit-nutri {
+  display: block;
+  max-width: 420px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #212529;
+}
+
+.coto-unit-nutri > summary {
+  cursor: pointer;
+  color: #0c447c;
+  font-weight: 600;
+}
+
+.coto-unit-nutri-table {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-nutri-table th,
+.coto-unit-nutri-table td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #e3e6e8;
+  text-align: right;
+}
+
+.coto-unit-nutri-table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7177;
+}
+
+.coto-unit-nutri-table td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.coto-unit-nutri-source,
+.coto-unit-nutri-missing {
+  margin: 4px 0 12px;
+  font-size: 12px;
+  color: #6b7177;
+}
+
+.coto-unit-nutri-source a,
+.coto-unit-nutri-missing a {
+  color: #0c447c;
+  text-decoration: underline;
+}
+
 .coto-unit-box--mini {
   margin: 2px 0 4px;
   text-align: center;
