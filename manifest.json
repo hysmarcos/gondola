@@ -16,7 +16,8 @@
   "host_permissions": [
     "https://www.carrefour.com.ar/*",
     "https://diaonline.supermercadosdia.com.ar/*",
-    "https://www.masonline.com.ar/*"
+    "https://www.masonline.com.ar/*",
+    "https://world.openfoodfacts.org/*"
   ],
   "background": {
     "service_worker": "dist/background.js"
