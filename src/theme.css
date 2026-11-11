@@ -23,6 +23,7 @@
   --g-amber-ink: #6b4a00;
   --g-green: #0a7a3d;
   --g-green-soft: #e6f4ec;
+  --g-green-ink: #27500a;
   --g-ink3: #8a9096;
   --g-line-2: #c3c8d2;
   --g-blue: #0c447c;
@@ -59,7 +60,8 @@
   --g-amber-ink: #ffd873;
   --g-green: #4cc38a;
   --g-green-soft: #12301f;
-  --g-ink3: #7d8594;
+  --g-green-ink: #4cc38a;
+  --g-ink3: #8a93a3;
   --g-line-2: #3a4250;
   --g-blue: #8fb0f0;
   --g-blue-soft: #1a2540;
@@ -114,6 +116,7 @@ html.gondola-theme-wave::view-transition-new(root) {
     --g-amber-ink: #6b4a00;
     --g-green: #0a7a3d;
     --g-green-soft: #e6f4ec;
+    --g-green-ink: #27500a;
     --g-ink3: #8a9096;
     --g-line-2: #c3c8d2;
     --g-blue: #0c447c;

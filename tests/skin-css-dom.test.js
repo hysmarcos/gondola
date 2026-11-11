@@ -54,11 +54,12 @@ function selectors(css) {
 // Estados que la captura no tiene: se sacan, con su :not(…) si lo hay.
 const STATE = "(?:hover|active|focus|focus-visible|focus-within|checked|disabled|visited)";
 
-// El selector sin el prefijo [data-gondola-skin…], sin pseudo-elementos y sin estados.
+// El selector sin el prefijo [data-gondola-skin…] (y el [data-gondola-theme…] que va pegado, los
+// dos sobre <html>), sin pseudo-elementos y sin estados.
 // "" si el selector era solo el prefijo (los tokens de color, sobre <html>).
 function bare(sel) {
   return sel
-    .replace(/^\[data-gondola-skin[^\]]*\]\s*/, "")
+    .replace(/^\[data-gondola-skin[^\]]*\](?:\[data-gondola-theme[^\]]*\])?\s*/, "")
     .replace(/::[\w-]+/g, "")
     .replace(new RegExp(`:not\\(:${STATE}\\)`, "g"), "")
     .replace(new RegExp(`:${STATE}(?![\\w-])`, "g"), "")
@@ -72,6 +73,7 @@ describe("bare", () => {
     expect(bare('[data-gondola-skin="pdp"] .x:focus:not(:focus-visible)')).toBe(".x");
     expect(bare("[data-gondola-skin]")).toBe("");
     expect(bare('[data-gondola-skin="list"] .a:has(> .b)')).toBe(".a:has(> .b)");
+    expect(bare('[data-gondola-skin="list"][data-gondola-theme="dark"] #f > a::before')).toBe("#f > a");
   });
 });
 

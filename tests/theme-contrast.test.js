@@ -59,6 +59,14 @@ const PARES = [ // [texto, fondo, mínimo]
   ["#ffffff", "danger-fill", 4.5], ["#ffffff", "green-fill", 4.5],
   ["on-amber", "amber", 4.5], ["navy", "navy-hover", 4.5],
   ["orange", "surface", 4.5], ["rust", "surface", 4.5],
+  ["green-ink", "green-soft", 4.5], ["green-ink", "blue-soft", 4.5], ["green-ink", "surface", 4.5],
+];
+
+// Solo en oscuro: en claro --g-ink3 y --g-line-2 conservan sus valores de antes del tema
+// (#8a9096 y #c3c8d2), que no llegan a estos mínimos; el modo claro no cambia.
+const PARES_OSCURO = [
+  ["ink3", "surface", 4.5], ["ink3", "surface-2", 4.5], // texto normal (13 px)
+  ["ink3", "surface", 3], // borde de la casilla de filtro sin marcar (skin-list.css)
 ];
 
 describe("tokens de src/theme.css", () => {
@@ -89,9 +97,9 @@ describe("tokens de src/theme.css", () => {
     expect(bloque('[data-gondola-theme="dark"]')).toMatch(/color-scheme:\s*dark/);
   });
 
-  for (const [tema, t] of [["claro", claro], ["oscuro", oscuro]]) {
+  for (const [tema, t, pares] of [["claro", claro, PARES], ["oscuro", oscuro, [...PARES, ...PARES_OSCURO]]]) {
     describe(`contraste en ${tema}`, () => {
-      for (const [texto, fondo, min] of PARES) {
+      for (const [texto, fondo, min] of pares) {
         it(`${texto} sobre ${fondo} ≥ ${min}`, () => {
           const fg = texto.startsWith("#") ? texto : t[texto];
           const bg = t[fondo];

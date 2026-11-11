@@ -493,7 +493,7 @@
 
 .coto-unit-nutri-badge--ok {
   background: var(--g-green-soft);
-  color: var(--g-green);
+  color: var(--g-green-ink);
 }
 
 .coto-unit-nutri-badge--warn {
@@ -529,7 +529,7 @@
 
 .coto-unit-nutri-foryou-danger { color: var(--g-danger); font-weight: 600; }
 .coto-unit-nutri-foryou-warn { color: var(--g-amber-ink); font-weight: 600; }
-.coto-unit-nutri-foryou-ok { color: var(--g-green); }
+.coto-unit-nutri-foryou-ok { color: var(--g-green-ink); }
 .coto-unit-nutri-foryou-unknown,
 .coto-unit-nutri-foryou-no { color: var(--g-ink2); }
 .coto-unit-nutri-foryou-info { color: var(--g-ink); font-variant-numeric: tabular-nums; }
@@ -544,7 +544,7 @@
   font-size: 13px;
 }
 
-.coto-unit-nutri-tacc--ok strong { color: var(--g-green); }
+.coto-unit-nutri-tacc--ok strong { color: var(--g-green-ink); }
 .coto-unit-nutri-tacc--warn strong { color: var(--g-amber-ink); }
 
 .coto-unit-nutri-allergens p {
@@ -943,7 +943,7 @@
 
 /* Verde solo para "Coto el más barato": en la tarjeta el verde quiere decir "más barato". */
 .coto-unit-cmp-best--higher {
-  color: var(--g-green);
+  color: var(--g-green-ink);
 }
 
 .coto-unit-cmp-row--higher,
