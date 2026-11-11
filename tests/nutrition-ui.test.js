@@ -727,14 +727,41 @@ describe("piel de la PDP: interruptor 100 / porción y números grandes", () => 
       expect(sec().textContent).toContain("Sin información nutricional. Podés cargarla en Open Food Facts");
     });
 
-    it("sin la piel: sin piezas nuevas y el mismo HTML que sin la opción skin", async () => {
-      await draw({ "7790742358608": LECHE }, label(), {});
-      const before = sec().outerHTML;
-      reset();
+    // HTML de la sección con el código de antes de la piel (commit 3d67e57), con LECHE y
+    // label(). Sin fecha ni fotos: no cambia entre corridas.
+    const BEFORE_SKIN = `<section class="coto-unit-nutri-section" data-ean="7790742358608" data-tacc="ok|Coto lo marca Sin TACC"><h4 class="coto-unit-nutri-title">Información nutricional</h4><p class="coto-unit-nutri-pack">Envase de 1 L · 5 porciones de 200 ml · 420 kcal en total</p><p class="coto-unit-nutri-value">Rinde: $6.488 cada 100 g de proteína</p><table class="coto-unit-nutri-table"><thead><tr><th></th><th>cada 100 ml</th><th>Por porción (200 ml)</th><th>%VD</th></tr></thead><tbody><tr><td>Valor energético</td><td>42 kcal</td><td>83 kcal</td><td>4%</td></tr><tr><td>Carbohidratos</td><td>4,6 g</td><td>9,2 g</td><td>3%</td></tr><tr><td>Azúcares</td><td>4,6 g</td><td>9,2 g</td><td></td></tr><tr><td>Proteínas</td><td>5 g</td><td>10 g</td><td>13%</td></tr><tr><td>Grasas totales</td><td>0 g</td><td>0 g</td><td>0%</td></tr><tr><td>Grasas saturadas</td><td>0 g</td><td>0 g</td><td>0%</td></tr><tr><td>Sodio</td><td>53 mg</td><td>106 mg</td><td>4%</td></tr></tbody></table><p class="coto-unit-nutri-note">%VD: con base en una dieta de 2000 kcal</p><p class="coto-unit-nutri-tacc coto-unit-nutri-tacc--ok"><strong>Sin TACC: </strong>Coto lo marca Sin TACC. <span class="coto-unit-nutri-hint">Verificá el símbolo oficial en el envase.</span></p><div class="coto-unit-nutri-allergens"><strong>Alérgenos</strong><p class="coto-unit-nutri-chips">Declara: <span class="coto-unit-nutri-chip">Leche</span></p><p class="coto-unit-nutri-hint">Revisá el envase: los datos los carga la comunidad.</p></div><p class="coto-unit-nutri-nova">NOVA 1: sin procesar o mínimamente procesado</p><p class="coto-unit-nutri-source">Fuente: Open Food Facts, datos cargados por la comunidad. <a href="https://world.openfoodfacts.org/product/7790742358608" target="_blank" rel="noopener noreferrer">Ver ficha</a></p><p class="coto-unit-nutri-meta"><a href="https://world.openfoodfacts.org/product/7790742358608" target="_blank" rel="noopener noreferrer">Corregir en Open Food Facts</a></p></section>`;
+
+    it("sin la piel: sin piezas nuevas y el mismo HTML que antes de la piel", async () => {
       await draw({ "7790742358608": LECHE }, label(), { skin: () => false });
       expect(sec().querySelector(".coto-unit-nutri-tiles")).toBeNull();
       expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
-      expect(sec().outerHTML).toBe(before);
+      expect(sec().outerHTML).toBe(BEFORE_SKIN);
+      reset();
+      await draw({ "7790742358608": LECHE }, label(), {});
+      expect(sec().outerHTML).toBe(BEFORE_SKIN);
+    });
+
+    // El CSS elige las columnas por posición (2 cada 100, 3 porción, 4 %VD): toda fila tiene
+    // las cuatro celdas, aunque falte el dato de la porción.
+    it("con porción incompleta: cada fila tiene cuatro celdas y la de la porción queda vacía", async () => {
+      const { sodiumMg, ...sinSodio } = LECHE.perServing;
+      await draw({ "7790742358608": { ...LECHE, perServing: sinSodio } });
+      const rows = [...sec().querySelectorAll(".coto-unit-nutri-table tbody tr")];
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((tr) => tr.children.length === 4)).toBe(true);
+      const sodio = rows.find((tr) => tr.firstElementChild.textContent === "Sodio");
+      expect(sodio.children[1].textContent).toBe("53 mg");
+      expect(sodio.children[2].textContent).toBe("");
+    });
+
+    it("sin porción, con la piel: dos columnas, sin nota de %VD ni interruptor, data-basis 100", async () => {
+      await draw({ "7790742358608": { ...LECHE, perServing: null } });
+      const table = sec().querySelector(".coto-unit-nutri-table");
+      expect(table.querySelectorAll("thead th")).toHaveLength(2);
+      expect([...table.querySelectorAll("tbody tr")].every((tr) => tr.children.length === 2)).toBe(true);
+      expect(sec().querySelector(".coto-unit-nutri-note")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().dataset.basis).toBe("100");
     });
 
     it("apagar la piel y repintar: la sección se rehace sin las piezas nuevas (y vuelven al prenderla)", async () => {
