@@ -327,6 +327,8 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
     await flush(); await flush();
     const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
     expect(msg.labels["_/R-00299912-00299912-200"].tacc).toBe("SI");
+    // El nombre va en la etiqueta: lo usa la regla de seguridad de Sin TACC.
+    expect(typeof msg.labels["_/R-00299912-00299912-200"].name).toBe("string");
   });
 
   it("página de producto: con varios resultados busca con el filtro SIN TACC", async () => {

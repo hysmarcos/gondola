@@ -1,7 +1,8 @@
 // Bloque "Información nutricional" de la página de producto.
 // Los datos llegan de Open Food Facts a través del service worker.
 import qrcode from "qrcode-generator";
-import { NUTRIENTS, offProductUrl } from "./nutrition.js";
+import { NUTRIENTS, ALLERGENS, offProductUrl } from "./nutrition.js";
+import { taccStatus } from "./tacc.js";
 import { paintGallery } from "./nutrition-gallery.js";
 
 const ROOT = "coto-unit-nutri";
@@ -96,10 +97,65 @@ function table(doc, n, base) {
   return t;
 }
 
-// Pie: fuente, fotos del envase, fecha de actualización y link para corregir.
-function source(doc, n) {
+const vdNote = (doc, n) => (n.perServing ? [el(doc, "p", `${ROOT}-note`, "%VD: con base en una dieta de 2000 kcal")] : []);
+
+const NOVA = {
+  1: "NOVA 1: sin procesar o mínimamente procesado",
+  2: "NOVA 2: ingrediente culinario procesado",
+  3: "NOVA 3: procesado",
+  4: "NOVA 4: ultraprocesado",
+};
+
+// Chip de alérgeno: ícono de la FSA (si hay assetUrl) y nombre en español.
+function chip(doc, key, assetUrl) {
+  const c = el(doc, "span", `${ROOT}-chip`);
+  if (assetUrl) {
+    const i = el(doc, "img", `${ROOT}-chip-icon`);
+    i.src = assetUrl(`assets/allergens/${key}.png`);
+    i.alt = "";
+    i.width = 20;
+    i.height = 20;
+    c.append(i);
+  }
+  c.append(ALLERGENS[key]);
+  return c;
+}
+
+// Sin TACC, alérgenos, ingredientes, aditivos y NOVA. fsa: si se usaron íconos de la FSA.
+function extras(doc, n, label, assetUrl) {
   const nodes = [];
-  if (n.perServing) nodes.push(el(doc, "p", `${ROOT}-note`, "%VD: con base en una dieta de 2000 kcal"));
+  const status = taccStatus(label?.tacc ?? null, label?.name, n);
+  const tacc = el(doc, "p", `${ROOT}-tacc ${ROOT}-tacc--${status.kind}`);
+  tacc.append(el(doc, "strong", null, "Sin TACC: "), `${status.text}. `, el(doc, "span", `${ROOT}-hint`, "Verificá el símbolo oficial en el envase."));
+  nodes.push(tacc);
+
+  const box = el(doc, "div", `${ROOT}-allergens`);
+  box.append(el(doc, "strong", null, "Alérgenos"));
+  const allergens = n.allergens ?? [];
+  const traces = n.traces ?? [];
+  for (const [title, keys] of [["Declara:", allergens], ["Puede contener:", traces]]) {
+    if (!keys.length) continue;
+    const p = el(doc, "p", `${ROOT}-chips`);
+    p.append(`${title} `, ...keys.map((k) => chip(doc, k, assetUrl)));
+    box.append(p);
+  }
+  if (!allergens.length && !traces.length) box.append(el(doc, "p", null, "Sin datos de alérgenos."));
+  box.append(el(doc, "p", `${ROOT}-hint`, "Revisá el envase: los datos los carga la comunidad."));
+  nodes.push(box);
+
+  if (n.ingredients) {
+    const d = el(doc, "details", `${ROOT}-ingredients`);
+    d.append(el(doc, "summary", null, "Ingredientes"), el(doc, "p", null, n.ingredients.spanish ? n.ingredients.text : `${n.ingredients.text} (en otro idioma)`));
+    nodes.push(d);
+  }
+  if (n.additives?.length) nodes.push(el(doc, "p", `${ROOT}-additives`, `Aditivos: ${n.additives.join(", ")}`));
+  if (NOVA[n.nova]) nodes.push(el(doc, "p", `${ROOT}-nova`, NOVA[n.nova]));
+  return { nodes, fsa: Boolean(assetUrl && (allergens.length || traces.length)) };
+}
+
+// Pie: fuente, fotos del envase, fecha de actualización y link para corregir.
+function source(doc, n, fsa = false) {
+  const nodes = [];
   const foot = el(doc, "p", `${ROOT}-source`, "Fuente: Open Food Facts, datos cargados por la comunidad. ");
   foot.append(link(doc, n.url, "Ver ficha"));
   nodes.push(foot);
@@ -114,6 +170,7 @@ function source(doc, n) {
   if (updated) meta.append(`${updated} · `);
   meta.append(link(doc, n.url, "Corregir en Open Food Facts"));
   nodes.push(meta);
+  if (fsa) nodes.push(el(doc, "p", `${ROOT}-meta`, "Íconos de alérgenos: Food Standards Agency (Reino Unido), Open Government Licence v3.0."));
   return nodes;
 }
 
@@ -173,7 +230,7 @@ export function renderNutrition(doc, result, { ean, liquid }) {
   details.dataset.ean = ean;
   const kcal = result.per100.kcal;
   details.append(el(doc, "summary", null, kcal === undefined ? "Información nutricional" : `Información nutricional · ${Math.round(kcal)} kcal cada ${base}`));
-  details.append(table(doc, result, base), ...source(doc, result));
+  details.append(table(doc, result, base), ...vdNote(doc, result), ...source(doc, result));
   return details;
 }
 
@@ -203,7 +260,7 @@ function renderSummary(doc, n, { ean, liquid, iconUrl }) {
 }
 
 // Sección "Información nutricional" junto a la descripción del producto.
-function renderSection(doc, result, { ean, liquid, iconUrl, label }) {
+function renderSection(doc, result, { ean, liquid, iconUrl, label, assetUrl }) {
   const sec = el(doc, "section", `${ROOT}-section`);
   sec.dataset.ean = ean;
   const h = el(doc, "h4", `${ROOT}-title`);
@@ -221,15 +278,17 @@ function renderSection(doc, result, { ean, liquid, iconUrl, label }) {
   if (pack) sec.append(el(doc, "p", `${ROOT}-pack`, pack));
   const value = valueLine(result, label);
   if (value) sec.append(el(doc, "p", `${ROOT}-value`, value));
-  sec.append(table(doc, result, liquid ? "100 ml" : "100 g"), ...source(doc, result));
+  const more = extras(doc, result, label, assetUrl);
+  sec.append(table(doc, result, liquid ? "100 ml" : "100 g"), ...vdNote(doc, result), ...more.nodes, ...source(doc, result, more.fsa));
   return sec;
 }
 
 const HOST = "data-coto-unit-nutri-host";
 
 // request(ean) → Promise<Nutrition | "missing" | "error">. onUpdate(): pedir un repintado.
-// iconUrl: ícono de Open Food Facts (opcional).
-export function createNutritionUi(doc, { request, onUpdate, iconUrl = null }) {
+// iconUrl: ícono de Open Food Facts (opcional). assetUrl(path): URL de un archivo de la
+// extensión (íconos de alérgenos; opcional).
+export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, assetUrl = null }) {
   const results = new Map(); // ean -> resultado
   const asked = new Set();
 
@@ -251,7 +310,7 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null }) {
 
   // Nodos de Góndola ya dibujados: en la columna y en la sección.
   const ours = (container, section) => [
-    ...container.querySelectorAll(`:scope > .${ROOT}, :scope > .${ROOT}-sum`),
+    ...container.querySelectorAll(`:scope > .${ROOT}, :scope > .${ROOT}-sum, :scope > .${ROOT}-badge`),
     ...(section ? section.host.querySelectorAll(`:scope > .${ROOT}-section`) : []),
   ];
 
@@ -282,7 +341,7 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null }) {
     if (!keep) return;
     // Bebida: cada 100 ml, salvo que Coto la venda por peso (polvos para preparar).
     const liquid = label.group === "L" || (label.drink === true && label.group !== "kg");
-    const opts = { ean, liquid, iconUrl, label };
+    const opts = { ean, liquid, iconUrl, label, assetUrl };
     if (!section) {
       if (!container.querySelector(`:scope > .${ROOT}`)) place(renderNutrition(doc, r, opts), container, anchor);
       return;
@@ -294,6 +353,13 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null }) {
     if (r !== "missing" && !container.querySelector(`:scope > .${ROOT}-sum`)) {
       const sum = renderSummary(doc, r, opts);
       if (sum) place(sum, container, anchor);
+    }
+    // Marca Sin TACC en la columna: solo si Coto u OFF lo dicen (verde) o hay que revisar (ámbar).
+    const status = taccStatus(label.tacc ?? null, label.name, r === "missing" ? null : r);
+    if ((status.kind === "ok" || status.kind === "warn") && !container.querySelector(`:scope > .${ROOT}-badge`)) {
+      const badge = el(doc, "p", `${ROOT}-badge ${ROOT}-badge--${status.kind}`, status.text);
+      badge.dataset.ean = ean;
+      place(badge, container, container.querySelector(`:scope > .${ROOT}-sum`) ?? anchor);
     }
   }
 

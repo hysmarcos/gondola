@@ -477,6 +477,81 @@
   text-decoration: underline;
 }
 
+/* Sin TACC en la columna de compra: verde si Coto u OFF lo dicen, ámbar si hay que revisar. */
+.coto-unit-nutri-badge {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.coto-unit-nutri-badge--ok {
+  background: #eaf3de;
+  color: #27500a;
+}
+
+.coto-unit-nutri-badge--warn {
+  background: #faeeda;
+  color: #633806;
+}
+
+/* Sección: Sin TACC, alérgenos, ingredientes, aditivos y NOVA, debajo de la tabla. */
+.coto-unit-nutri-tacc,
+.coto-unit-nutri-allergens,
+.coto-unit-nutri-ingredients,
+.coto-unit-nutri-additives,
+.coto-unit-nutri-nova {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.coto-unit-nutri-tacc--ok strong { color: #27500a; }
+.coto-unit-nutri-tacc--warn strong { color: #633806; }
+
+.coto-unit-nutri-allergens p {
+  margin: 4px 0 0;
+}
+
+.coto-unit-nutri-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.coto-unit-nutri-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 2px;
+  border: 1px solid #e3e6e8;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.coto-unit-nutri-chip-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.coto-unit-nutri-hint {
+  font-size: 12px;
+  color: #6b7177;
+}
+
+.coto-unit-nutri-ingredients summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.coto-unit-nutri-ingredients p {
+  margin: 4px 0 0;
+  color: #51585e;
+}
+
 /* Sin datos: QR para cargarla desde el celular. */
 .coto-unit-nutri-add {
   display: flex;

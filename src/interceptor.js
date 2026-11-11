@@ -247,7 +247,10 @@ export function installInterceptor(win, deps) {
     if (!data) return;
     const tacc = await lookupTacc(String(plu)).catch(() => null);
     const labels = lookupLabels(data, key, store(), settings.selected, settings.day, opts());
-    for (const label of new Set(Object.values(labels))) label.tacc = tacc;
+    for (const label of new Set(Object.values(labels))) {
+      label.tacc = tacc;
+      label.name = data.sku_display_name ?? null;
+    }
     if (labels[key]) post({ type: "labels", labels });
   }
 

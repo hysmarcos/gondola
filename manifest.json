@@ -58,7 +58,8 @@
     {
       "resources": [
         "assets/banks/*",
-        "assets/off/*"
+        "assets/off/*",
+        "assets/allergens/*"
       ],
       "matches": [
         "https://www.coto.com.ar/*"
