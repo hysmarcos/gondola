@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createNutritionService } from "../src/nutrition-service.js";
+import { createNutritionService, NUTRI_CACHE_KEY } from "../src/nutrition-service.js";
 import { offApiUrl } from "../src/nutrition.js";
 import { OFF } from "./fixtures/off.js";
 
@@ -107,4 +107,9 @@ describe("límite de pedidos a la vez", () => {
     expect(out.every((r) => r === "missing")).toBe(true);
     expect(max).toBeLessThanOrEqual(4);
   });
+});
+
+it("la memoria usa una clave nueva: lo guardado por la primera ola no tiene alérgenos ni ingredientes", () => {
+  expect(NUTRI_CACHE_KEY).not.toBe("nutriCache");
+  expect(NUTRI_CACHE_KEY).toMatch(/^nutriCache/);
 });

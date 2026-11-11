@@ -3,6 +3,10 @@
 import { parseOff, offApiUrl } from "./nutrition.js";
 import { validEan } from "./compare.js";
 
+// Clave de la memoria en chrome.storage.local. Cambia cuando cambian los datos guardados:
+// "nutriCache2" (segunda ola) suma ingredientes, alérgenos, aditivos y NOVA.
+export const NUTRI_CACHE_KEY = "nutriCache2";
+
 export function createNutritionService({ fetch, cache, timeoutMs = 8000, concurrency = 4 }) {
   const inflight = new Map(); // ean -> Promise<Nutrition | "missing" | "error">
   // Hasta `concurrency` pedidos a Open Food Facts a la vez (un carrito grande pide muchos).
