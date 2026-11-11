@@ -505,7 +505,8 @@
 .coto-unit-nutri-foryou {
   margin: 0 0 12px;
   padding: 8px 10px;
-  border-left: 3px solid #0c447c;
+  border: 1px solid #d6e4f2;
+  border-radius: 8px;
   background: #f4f8fc;
   font-size: 13px;
 }
