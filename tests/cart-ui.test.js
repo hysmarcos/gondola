@@ -376,3 +376,40 @@ describe("v7: logos en el carrito", () => {
     expect(doc.querySelector(".coto-unit-cart-box").textContent).toContain("Subtotal");
   });
 });
+
+describe("resumen nutricional del carrito", () => {
+  const food = { kcal: 350, sugars: 2, sodiumMg: 5 };
+  const analysis = () => {
+    const a = analyzeCart(CART_LINES, [], 1, "200");
+    // Dos líneas de comida: 2 × 500 g y una sin tabla.
+    a.lines = [
+      { ...a.lines[0], ean: "1", nutri: true, qty: 2, amount: 0.5 },
+      { ...a.lines[1], ean: "2", nutri: true, qty: 1, amount: 0.4 },
+    ];
+    return a;
+  };
+
+  it("pide la tabla de cada producto de comida y suma la compra en la caja", async () => {
+    const asked = [];
+    const nutrition = { request: async (ean) => (asked.push(ean), ean === "1" ? { per100: food } : "missing") };
+    const { doc, send } = setup("/carrito", "$48.355,92", { nutrition });
+    send({ type: "settings", selected: [], day: 1 });
+    send({ type: "cart", analysis: analysis(), seq: 1 });
+    await tick(); await tick(); await tick();
+    expect(asked.sort()).toEqual(["1", "2"]);
+    const box = doc.querySelector(".coto-unit-cart-box");
+    expect(box.textContent).toContain("Tu compra: 3.500 kcal · 20 g de azúcares · 0,1 g de sodio");
+    expect(box.textContent).toContain("1 de 2 productos sin datos nutricionales");
+  });
+
+  it("con la información nutricional apagada no pide ni muestra", async () => {
+    const asked = [];
+    const nutrition = { request: async (ean) => (asked.push(ean), { per100: food }) };
+    const { doc, send } = setup("/carrito", "$48.355,92", { nutrition });
+    send({ type: "settings", selected: [], day: 1, nutrition: false });
+    send({ type: "cart", analysis: analysis(), seq: 1 });
+    await tick(); await tick();
+    expect(asked).toEqual([]);
+    expect(doc.querySelector(".coto-unit-cart-box").textContent).not.toContain("Tu compra");
+  });
+});

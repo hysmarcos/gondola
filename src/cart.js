@@ -1,5 +1,6 @@
 // Cuánto se paga de verdad por un carrito de Coto: promos de Coto + reintegro del banco.
-import { finalPrice, takeQty, bankBlock, offerText } from "./unit-price.js";
+import { finalPrice, takeQty, bankBlock, offerText, unitPrice } from "./unit-price.js";
+import { nutriEligible } from "./nutrition.js";
 import { compareFields } from "./compare.js";
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -9,7 +10,10 @@ function analyzeLine({ id, name, qty, list, data }, store, opts = {}) {
   // Cuánto le saca Coto a esta línea y con qué promo (para el detalle del carrito).
   const discount = Math.max(0, round2(core.listTotal - core.total));
   const promoLabel = discount > 0.5 && data ? offerText(data, opts) : null;
-  return { ...core, discount: discount > 0.5 ? discount : 0, promoLabel, ...compareFields(data, store, opts) };
+  // Para la información nutricional de la compra: si es comida y el tamaño del envase.
+  const nutri = data ? nutriEligible(data) : false;
+  const amount = nutri ? unitPrice(data, store, [], 0, opts).amount ?? null : null;
+  return { ...core, qty, nutri, amount, discount: discount > 0.5 ? discount : 0, promoLabel, ...compareFields(data, store, opts) };
 }
 
 function analyzeCore({ id, name, qty, list, data }, store, opts = {}) {
@@ -90,9 +94,9 @@ export function analyzeCart(lines, promos, day, store, opts = {}) {
   const used = [today?.promo, best?.promo].filter((p) => p?.capWeekly);
   return {
     lines: analyzed.map((l) => {
-      const { id, name, total, listTotal, missing, saving, promoText, ean, cmp, discount, promoLabel } = l;
+      const { id, name, total, listTotal, missing, saving, promoText, ean, cmp, discount, promoLabel, qty, nutri, amount } = l;
       return {
-        id, name, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText, ean, cmp,
+        id, name, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText, ean, cmp, qty, nutri, amount,
         discount, promoLabel, bankShare: shareOf(l),
       };
     }),

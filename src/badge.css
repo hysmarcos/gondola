@@ -835,6 +835,23 @@
   color: #51585e;
 }
 
+/* Información nutricional de la compra (Open Food Facts). */
+.coto-unit-sum-row--nutri {
+  justify-content: flex-start;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e3e6e8;
+  font-size: 13px;
+  color: #0c447c;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-sum-row--nutri-note {
+  justify-content: flex-start;
+  font-size: 12px;
+  color: #6b7177;
+}
+
 /* Precio de Coto tachado en el mini-carrito: gris, para que no parezca el que se paga. */
 .dropdown-carrito .precio-final[data-coto-unit-strike] {
   color: #8a9096 !important;

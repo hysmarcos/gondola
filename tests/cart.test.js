@@ -70,3 +70,14 @@ describe("analyzeCart EAN", () => {
     expect(a.lines[1]).toMatchObject({ ean: null, cmp: null });
   });
 });
+
+describe("líneas con datos para la información nutricional", () => {
+  it("cada línea lleva cantidad, si es comida y el tamaño del envase", () => {
+    const a = analyzeCart(CART_LINES, [], 1, "200");
+    for (const l of a.lines) {
+      expect(typeof l.qty).toBe("number");
+      expect(typeof l.nutri).toBe("boolean");
+      expect(l.amount === null || typeof l.amount === "number").toBe(true);
+    }
+  });
+});

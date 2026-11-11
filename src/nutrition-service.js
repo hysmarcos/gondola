@@ -3,11 +3,27 @@
 import { parseOff, offApiUrl } from "./nutrition.js";
 import { validEan } from "./compare.js";
 
-export function createNutritionService({ fetch, cache, timeoutMs = 8000 }) {
+export function createNutritionService({ fetch, cache, timeoutMs = 8000, concurrency = 4 }) {
   const inflight = new Map(); // ean -> Promise<Nutrition | "missing" | "error">
+  // Hasta `concurrency` pedidos a Open Food Facts a la vez (un carrito grande pide muchos).
+  let active = 0;
+  const queue = [];
+  const slot = () =>
+    new Promise((resolve) => {
+      if (active < concurrency) {
+        active++;
+        resolve();
+      } else queue.push(resolve);
+    });
+  const release = () => {
+    const next = queue.shift();
+    if (next) next();
+    else active--;
+  };
 
   // Sin cookies: nada del usuario viaja a Open Food Facts, solo el código de barras.
   async function load(ean) {
+    await slot();
     try {
       const res = await fetch(offApiUrl(ean), { credentials: "omit", signal: AbortSignal.timeout(timeoutMs) });
       if (res.status === 404) return "missing";
@@ -15,6 +31,8 @@ export function createNutritionService({ fetch, cache, timeoutMs = 8000 }) {
       return parseOff(await res.json(), ean);
     } catch {
       return "error";
+    } finally {
+      release();
     }
   }
 

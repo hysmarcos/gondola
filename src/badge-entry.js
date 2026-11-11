@@ -13,14 +13,15 @@ const compare = createCompareClient({ send: (eans) => chrome.runtime.sendMessage
 
 // Información nutricional: si el service worker no responde (extensión recargada), es "error".
 let badges = null;
+const nutritionRequest = (ean) => chrome.runtime.sendMessage({ type: "nutrition", ean }).catch(() => "error");
 const nutrition = createNutritionUi(document, {
-  request: (ean) => chrome.runtime.sendMessage({ type: "nutrition", ean }).catch(() => "error"),
+  request: nutritionRequest,
   onUpdate: () => badges?.refresh(),
   iconUrl: chrome.runtime.getURL("assets/off/off-logo-icon-light.svg"),
   assetUrl: (path) => chrome.runtime.getURL(path),
 });
 
 badges = installBadges(window, document, { logoUrl: logo, compare, nutrition });
-installCartUi(window, document, { logoUrl: logo, compare });
+installCartUi(window, document, { logoUrl: logo, compare, nutrition: { request: nutritionRequest } });
 installPromoUi(window, document);
 installBridge(window, chrome.storage.local);
