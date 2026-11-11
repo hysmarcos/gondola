@@ -14,8 +14,9 @@ const CAPTURAS = ["lista", "pdp", "header", "footer", "home", "ingresar"];
 // Tope de reglas sin captura. Eran 15; sube por dos grupos que no se pueden capturar sin sesión
 // ni sin abrirlos: el carrito y el mini carrito (sin sesión /carrito lleva al ingreso) y las
 // ventanas, globos y avisos (solo existen abiertos). Uno más por el respaldo de .list-group-item
-// y .bg-white, que solo aparecen en páginas con sesión.
-const MAX_SIN_CAPTURA = 33;
+// y .bg-white, que solo aparecen en páginas con sesión. Dos más por el error del ingreso (campo
+// inválido y su texto), que solo aparece al mandar el formulario.
+const MAX_SIN_CAPTURA = 35;
 const SIN_CAPTURA = /^\/\*\s*sin captura:\s*\S/;
 
 const docs = CAPTURAS.map((f) => new JSDOM(readFileSync(`tests/fixtures/dom/${f}.html`, "utf8")).window.document);

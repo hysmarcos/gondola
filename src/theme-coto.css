@@ -491,6 +491,18 @@
   color: var(--g-ink2) !important;
 }
 
+/* sin captura: solo aparece al mandar el formulario con un error. El campo inválido conserva
+   el borde rojo de Bootstrap (la regla de arriba lo pisaría), en el rojo de texto. */
+[data-gondola-theme="dark"] login-main .form-control.is-invalid {
+  border-color: var(--g-red-text) !important;
+}
+
+/* sin captura: solo aparece al mandar el formulario con un error. El texto del error, en el
+   rojo de texto (el de Bootstrap no se lee sobre la tarjeta oscura). */
+[data-gondola-theme="dark"] login-main :is(.invalid-feedback, .text-danger) {
+  color: var(--g-red-text) !important;
+}
+
 /* El ojo de la contraseña y "¿Olvidaste tu contraseña / usuario?": el rojo de texto. */
 [data-gondola-theme="dark"] login-main :is(.show-pass, a.back) {
   color: var(--g-red-text) !important;
