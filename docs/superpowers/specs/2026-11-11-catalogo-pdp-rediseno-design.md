@@ -300,7 +300,10 @@ Estados:
 | `src/popup.js` | Suma el interruptor del diseño. | `chrome.storage` |
 
 - Todas las reglas de los archivos `skin-*.css` empiezan con `[data-gondola-skin]`.
-- `src/badge.css` no cambia de comportamiento: es el aspecto con la piel apagada.
+- `src/badge.css` es el aspecto con la piel apagada. Su único cambio es un arreglo para los
+  carruseles (inicio y "También te pueden interesar"), que valen con o sin piel: el logo
+  del banco mide 14 px de alto y el bloque de Góndola tiene alto fijo y va pegado abajo,
+  para que el precio por unidad y la comparación queden a la misma altura en cada tarjeta.
 - `manifest.json` suma los tres CSS a `content_scripts`.
 
 ## 9. Pruebas

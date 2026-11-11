@@ -1188,3 +1188,66 @@
   justify-content: center;
   min-height: 24px;
 }
+
+/* ---------- Carruseles (inicio, "También te pueden interesar"): filas parejas ----------
+   El CSS de la extensión va antes que el de Coto y pierde los empates: el componente de
+   Coto le daba a toda imagen de la tarjeta su tamaño natural y el logo del banco salía de
+   52 × 64 px. Además cada tarjeta acomodaba el bloque de Góndola a su manera. Acá el bloque
+   tiene alto fijo y va pegado abajo, sobre "1 UNI" y el botón: el precio por unidad y la
+   comparación quedan a la misma altura en todo el carrusel. */
+.mini-product-card .coto-unit-box.coto-unit-box--mini {
+  display: flex !important;
+  flex-direction: column;
+  flex: none;
+  height: 56px;
+  margin: auto 0 4px !important;
+  overflow: hidden;
+}
+
+.mini-product-card .coto-unit-box--mini .coto-unit-unit {
+  flex: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  height: 20px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.mini-product-card .coto-unit-box--mini .coto-unit-why:has(.coto-unit-logo) {
+  padding: 0;
+}
+
+.mini-product-card .coto-unit-box--mini img.coto-unit-logo {
+  width: auto !important;
+  height: 14px !important;
+  max-width: 40px !important;
+  max-height: 14px !important;
+}
+
+/* Dos líneas: "Coto el más barato" y "Carrefour $3.897 ▼ (x2)" entran sin cortar. */
+.mini-product-card .coto-unit-box--mini .coto-unit-cmp {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  margin-top: 2px;
+  padding-top: 2px;
+  overflow: hidden;
+  line-height: 16px;
+}
+
+/* Debajo del bloque, Coto pone "1 UNI" (13 px + 10 de margen) y, solo en las ofertas,
+   "Precio regular" (11 px + 4 de margen). Donde falta alguno, el bloque deja ese lugar:
+   así queda a la misma distancia del botón en todas las tarjetas. */
+.mini-product-card .mini-product-card__body:not(:has(> .mini-product-card__regular-price)) > .coto-unit-box.coto-unit-box--mini {
+  margin-bottom: 19px !important;
+}
+
+.mini-product-card .mini-product-card__body:not(:has(> .mini-product-card__unit)) > .coto-unit-box.coto-unit-box--mini {
+  margin-bottom: 27px !important;
+}
+
+.mini-product-card .mini-product-card__body:not(:has(> .mini-product-card__regular-price)):not(:has(> .mini-product-card__unit)) > .coto-unit-box.coto-unit-box--mini {
+  margin-bottom: 42px !important;
+}
