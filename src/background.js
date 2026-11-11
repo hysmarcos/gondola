@@ -13,6 +13,9 @@ const service = createCompareService({
   cache: createPriceCache(chrome.storage.local),
 });
 
+// La memoria de la primera ola ("nutriCache") ya no se usa.
+chrome.storage.local.remove("nutriCache").catch(() => {});
+
 const nutrition = createNutritionService({
   fetch,
   cache: createPriceCache(chrome.storage.local, Date.now, { key: NUTRI_CACHE_KEY, ttlMs: 604_800_000, max: 2000 }),

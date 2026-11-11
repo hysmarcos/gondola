@@ -305,6 +305,8 @@ export function forYouItems(profile, label, n, liquid) {
     for (const key of mine) {
       if (declared.includes(key)) items.push(["danger", `Declara ${lcfirst(ALLERGENS[key])}`]);
       else if (traces.includes(key)) items.push(["warn", `Puede contener ${lcfirst(ALLERGENS[key])}`]);
+      // Que no figure no quiere decir que no tenga: los datos de la comunidad pueden estar incompletos.
+      else if (declared.length || traces.length) items.push(["unknown", `${ALLERGENS[key]}: no figura (datos de la comunidad, revisá el envase)`]);
     }
   }
   const base = liquid ? "100 ml" : "100 g";

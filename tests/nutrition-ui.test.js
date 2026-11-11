@@ -571,6 +571,7 @@ describe("perfil personal: línea 'Para vos'", () => {
       ["unknown", "Sin dato de TACC. Verificá el símbolo oficial en el envase."],
       ["danger", "Declara leche"],
       ["warn", "Puede contener maní"],
+      ["unknown", "Huevo: no figura (datos de la comunidad, revisá el envase)"],
       ["info", "Sodio: 250 mg cada 100 g"],
       ["info", "Azúcares: 30 g cada 100 g"],
     ]);
