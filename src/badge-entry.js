@@ -1,4 +1,5 @@
 // Entrada del content script aislado (document_start, para no perder mensajes).
+import { installTheme } from "./theme.js";
 import { installBadges } from "./badge.js";
 import { installBridge } from "./bridge.js";
 import { createCompareClient } from "./compare-client.js";
@@ -9,6 +10,9 @@ import { createNutritionUi } from "./nutrition-ui.js";
 import { installProfile } from "./profile.js";
 import { installSkin } from "./skin.js";
 import { installCotoMenu } from "./coto-menu.js";
+
+// El tema va primero: tiene que correr antes de que la página se dibuje.
+installTheme(window, document, chrome.storage.local);
 
 // Logos de bancos: los empaquetados salen de la extensión, los nuevos del sitio de Coto.
 const logo = (icono) => logoUrl(icono, (p) => chrome.runtime.getURL(p));
