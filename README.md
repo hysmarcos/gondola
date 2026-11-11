@@ -15,7 +15,7 @@
   <a href="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest_V3-2a78d6?logo=googlechrome&logoColor=white">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-2a78d6?logo=node.js&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-461-2a78d6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-534-2a78d6">
   <a href="https://hysmarcos.github.io/gondola/privacidad.html"><img alt="Sin servidores" src="https://img.shields.io/badge/servidores-0-2a78d6"></a>
   <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-2a78d6">
   <a href="CONTRIBUTING.md"><img alt="Colaboraciones bienvenidas" src="https://img.shields.io/badge/colaboraciones-bienvenidas-2a78d6"></a>
@@ -45,7 +45,7 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 | Precio por unidad | Kilo, litro, unidad o 10 metros (papel higiénico y rollos) |
 | Datos personales enviados | Ninguno. Los ajustes quedan en tu navegador. |
 | Servidores propios | Ninguno |
-| Tests | 461, con respuestas reales de las APIs de Coto, Carrefour, Día, Más y Open Food Facts |
+| Tests | 534, con respuestas reales de las APIs de Coto, Carrefour, Día, Más y Open Food Facts |
 
 ## Qué vas a encontrar
 
@@ -93,6 +93,7 @@ La web de Coto sirve para comprar, pero no para comparar:
 
 | Función | Qué hace |
 |---|---|
+| Diseño Góndola | Diseño nuevo de la lista de productos y de la página de producto. Se apaga en el popup ("Diseño Góndola") y vuelve el de Coto. |
 | Ordenar por precio por kg/L | Agrega "Precio por kg/L: menor a mayor" al menú "Ordenar por", en categorías y búsquedas. |
 | Precio real en cada producto | Muestra el precio final con la mejor oferta y el original tachado, y el precio por kilo, litro o unidad. |
 | Tu banco | Elegís tus tarjetas y el día en el popup. Ves el precio con la promo solo si Coto la aplica a ese producto. |
@@ -103,6 +104,7 @@ La web de Coto sirve para comprar, pero no para comparar:
 | Información nutricional | En la página de un producto de comida o bebida, la tabla nutricional de [Open Food Facts](https://world.openfoodfacts.org), si existe. Si falta, un link para cargarla. Suma Sin TACC (dato de Coto, con aviso si menciona trigo, avena, cebada o centeno), alérgenos, ingredientes, aditivos y NOVA. Se apaga en Ajustes. |
 | Mi perfil | En Ajustes elegís si sos celíaco/a, si cuidás el sodio o el azúcar, y tus alergias. La página de cada producto te muestra "Para vos". Queda solo en tu navegador. No es consejo médico. |
 | Nutrición del carrito | En el carrito, el total de kcal, azúcares y sodio de tu compra. |
+| Alergias en la lista | Con el diseño Góndola prendido y tu perfil con celiaquía o alguna alergia, las tarjetas de comida marcan los productos que declaran tus alergias, o dicen que no hay datos de alérgenos. Si no hay etiqueta, no significa que sea seguro. |
 
 Todo lo de Coto sigue funcionando: agregar, cantidades, carrito y pago. La extensión solo agrega elementos. No borra ninguno.
 
@@ -142,7 +144,7 @@ Estas pruebas buscan dónde falla la extensión:
 
 | | Prueba | Pregunta | Resultado |
 |:---:|---|---|---|
-| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 461 tests con respuestas guardadas de Coto, Carrefour, Día, Más y Open Food Facts |
+| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 534 tests con respuestas guardadas de Coto, Carrefour, Día, Más y Open Food Facts |
 | ✅ | Coto sigue funcionando | ¿Agregar, cantidades y carrito andan igual? | Sí. La extensión agrega elementos y oculta partes con un atributo. No borra nada de Coto. |
 | ✅ | Promos bancarias | ¿Muestra un descuento que Coto no aplica? | No. Respeta los días, los topes y las exclusiones de la API de Coto. |
 | ⚠️ | Otros súper | ¿El precio es el de tu sucursal? | No siempre. Usa la zona por defecto de cada web y no incluye descuentos bancarios. |
@@ -157,7 +159,7 @@ Góndola no junta datos personales, no tiene analítica y no tiene publicidad. L
 | `storage` | Guardar tus tarjetas, el día y los ajustes en tu navegador |
 | `www.coto.com.ar` | Agregar el precio real, las promos y el carrito en las páginas de Coto |
 | `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar`, `www.masonline.com.ar` | Buscar el mismo producto por código de barras. Se apaga en Ajustes. |
-| `world.openfoodfacts.org` | Traer la tabla nutricional del producto que abrís y, con tu perfil cargado, de los productos de la lista que se ven en pantalla. Solo se manda el código de barras, sin cookies. Se apaga en Ajustes. |
+| `world.openfoodfacts.org` | Traer la tabla nutricional del producto que abrís, de los productos de tu carrito y, solo con el diseño Góndola prendido y celiaquía o alguna alergia en tu perfil, de los productos de comida de la lista que se ven en pantalla. Solo se manda el código de barras, sin cookies. Se apaga en Ajustes. |
 
 ## 6. Cómo está armado
 

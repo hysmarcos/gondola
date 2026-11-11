@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Góndola para Coto: precio por kilo, promos y comparador",
   "short_name": "Góndola",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Ordená Coto Digital por precio final por kilo o litro, con tu banco, el total real del carrito y el precio en Carrefour, Día y Más.",
   "icons": {
     "16": "assets/icon/icon-16.png",

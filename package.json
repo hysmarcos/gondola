@@ -1,6 +1,6 @@
 {
   "name": "gondola",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "private": true,
   "description": "Góndola: extensión de Chrome que mejora la web de cada supermercado. Primero Coto: precio por kilo, promos bancarias, carrito real y comparador.",
   "license": "MIT",
