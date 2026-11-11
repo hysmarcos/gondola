@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { installBadges, formatUnit, formatWhy, formatNote, formatBlocked, groupMark } from "../src/badge.js";
+import { createNutritionUi } from "../src/nutrition-ui.js";
 
 const K = (n) => `_/R-0000000${n}-0000000${n}-200`;
 // Tarjetas con la estructura real de Coto (listas de categoría, 2026-11).
@@ -721,6 +722,25 @@ describe("v5: comparar con otros súper", () => {
   });
 });
 
+// Sin la piel, la tarjeta es la de la 0.12.0: HTML fijado con el código de antes de la piel
+// (commit c995c57, src/badge.js y src/compare-ui.js), con estos mismos datos: oferta, banco con
+// logo, comparación resuelta (con un link) y perfil con alergias.
+const CARD_0_12 = "<div class=\"card-container\" data-coto-unit-card=\"\"><div class=\"top-imagen-promos\"><div class=\"coto-unit-tags\"><div class=\"coto-unit-offer\">40% dto</div></div><span class=\"cucarda-promo\" data-coto-unit-hide=\"\">40%DTO</span>\n    <a href=\"/productos/x/_/R-00000001-00000001-200\"><img class=\"product-image\"></a></div>\n    <div class=\"centro-precios\"><h3 class=\"nombre-producto\">Gaseosa Pomelo Cunnington 2250ml</h3><div class=\"coto-unit-price\"><div class=\"coto-unit-pricerow\"><span class=\"coto-unit-final\">$1.155,00</span><span class=\"coto-unit-sr\">Precio original:</span><s class=\"coto-unit-regular\">$2.750,00</s></div><div class=\"coto-unit-detail\" data-sig=\"30% hoy|https://x/logo_icbc_1.png|ICBC\" data-coto-unit-bank=\"\">con <img class=\"coto-unit-logo\" src=\"https://x/logo_icbc_1.png\" alt=\"ICBC\"> 30% hoy</div><div class=\"coto-unit-cmprow\" data-coto-unit-ean=\"7790070318213\"><div class=\"coto-unit-cmp coto-unit-cmp--icon\" data-state=\"worse\" data-coto-unit-sig=\"[{&quot;kind&quot;:&quot;icon&quot;,&quot;state&quot;:&quot;worse&quot;,&quot;text&quot;:&quot;Más barato en Día&quot;,&quot;label&quot;:&quot;Más barato en Día. Ver comparación&quot;,&quot;rows&quot;:[{&quot;name&quot;:&quot;Coto&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;coto&quot;,&quot;price&quot;:&quot;$2.225&quot;,&quot;qty&quot;:null,&quot;delta&quot;:null},{&quot;name&quot;:&quot;Carrefour&quot;,&quot;url&quot;:&quot;https://www.carrefour.com.ar/x/p&quot;,&quot;state&quot;:&quot;lower&quot;,&quot;price&quot;:&quot;$2.049&quot;,&quot;qty&quot;:null,&quot;delta&quot;:&quot;−8%&quot;},{&quot;name&quot;:&quot;Día&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;lower&quot;,&quot;price&quot;:&quot;$1.899&quot;,&quot;qty&quot;:&quot;x2&quot;,&quot;delta&quot;:&quot;−15%&quot;},{&quot;name&quot;:&quot;Más&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;equal&quot;,&quot;price&quot;:&quot;$2.229&quot;,&quot;qty&quot;:null,&quot;delta&quot;:&quot;igual&quot;}]}]\"><button class=\"coto-unit-cmp-btn\" type=\"button\" aria-label=\"Más barato en Día. Ver comparación\" aria-expanded=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z\"></path><path d=\"M7.5 7.5h.01\"></path></svg><span class=\"coto-unit-cmp-text\">Más barato en Día</span></button><div class=\"coto-unit-cmp-pop\" role=\"group\" aria-label=\"Mismo producto en otros súper\"><div class=\"coto-unit-cmp-head\">Mismo producto en otros súper</div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--coto\"><span class=\"coto-unit-cmp-name\">Coto</span><span class=\"coto-unit-cmp-price\">$2.225</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--lower\"><a class=\"coto-unit-cmp-name\" href=\"https://www.carrefour.com.ar/x/p\" target=\"_blank\" rel=\"noopener noreferrer\">Carrefour</a><span class=\"coto-unit-cmp-price\">$2.049</span><span class=\"coto-unit-cmp-delta\">−8%</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--lower\"><span class=\"coto-unit-cmp-name\">Día</span><span class=\"coto-unit-cmp-price\">$1.899</span><span class=\"coto-unit-cmp-qty\">x2</span><span class=\"coto-unit-cmp-delta\">−15%</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--equal\"><span class=\"coto-unit-cmp-name\">Más</span><span class=\"coto-unit-cmp-price\">$2.229</span><span class=\"coto-unit-cmp-delta\">igual</span></div></div></div></div><div class=\"coto-unit-unit\" title=\"Precio por litro para comparar con otros productos\"><span class=\"coto-unit-value\">$513 /L</span></div></div>\n      <div class=\"descuentos-slot\" data-coto-unit-hide=\"\"><small class=\"offer-crum\"> PRECIO CON 40%DTO </small><h4 class=\"card-title\"> $1.650,00 </h4></div>\n      <div class=\"d-flex flex-column\"><small class=\"card-text\" data-coto-unit-hide=\"\"> Precio Regular: $2.750,00 </small><small class=\"text-center\" data-coto-unit-dim=\"\"> Precio sin impuestos nacionales: $2.272,73 </small></div>\n      <div class=\"w-100\"></div>\n      <div class=\"text-center\" data-coto-unit-hide=\"\"><small class=\"card-text\"> Precio por 1 Litro: $1.222,22 </small></div>\n      <div class=\"bottom-botones\"><product-add-show-remove><button>Agregar</button></product-add-show-remove><a href=\"javascript:void(0)\">Ver planes de cuotas</a></div>\n    </div></div>";
+
+describe("sin la piel, como en la 0.12.0", () => {
+  it("tarjeta: el mismo HTML que antes de la piel", async () => {
+    const res = { ...RES, carrefour: { ...RES.carrefour, url: "https://www.carrefour.com.ar/x/p" } };
+    const nutrition = createNutritionUi(document, { request: async () => ({ allergens: ["milk"], traces: [], per100: {} }), onUpdate: () => {} });
+    nutrition.setProfile({ celiac: true, allergens: ["milk"] });
+    const compare = { peek: () => res, request: () => Promise.resolve(res) };
+    const { doc, send } = setup(offerCard(K(1)), undefined, { compare, nutrition, logoUrl: (n) => (n ? "https://x/" + n : null) });
+    send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
+    send({ type: "labels", labels: { [K(1)]: L(733.33, { group: "L", bankValue: 513.33, bankName: "ICBC", bankLogo: "logo_icbc_1.png", bankPrice: 1155, bankPercent: 30, ean: EAN_A, cmp: CMP, nutri: true }) } });
+    await tick();
+    expect(doc.querySelector(".card-container").outerHTML).toBe(CARD_0_12);
+  });
+});
+
 describe("v7: logos de bancos", () => {
   const logoUrl = (n) => (n ? "https://x/" + n : null);
   function setupLogo(html, path) {
@@ -836,6 +856,25 @@ describe("v8: etiquetas para vos en la tarjeta", () => {
       [["Tiene leche", "Tiene leche. Revisá el envase."]],
       [["Alergias: sin dato", "Open Food Facts no tiene datos de alérgenos de este producto. Revisá el envase."]],
     ]);
+  });
+
+  it("con el createNutritionUi de verdad: pide el EAN, repinta al llegar y pinta 'Tiene leche'", async () => {
+    const asked = [];
+    let badges = null;
+    const nutrition = createNutritionUi(document, {
+      request: async (ean) => { asked.push(ean); return { allergens: ["milk"], traces: [], per100: {} }; },
+      onUpdate: () => badges.refresh(),
+    });
+    nutrition.setProfile({ celiac: false, allergens: ["milk"] });
+    const t = setup(offerCard(K(1)), undefined, { nutrition });
+    badges = t.badges;
+    skin(t.doc, "list");
+    t.send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+    await tick();
+    await tick();
+    expect(asked).toEqual([EAN_A]);
+    const spans = tagsOf(t.doc).flatMap((box) => [...box.children]);
+    expect(spans.map((s) => [s.className, s.textContent, s.title])).toEqual([["coto-unit-foryou-danger", "Tiene leche", "Tiene leche. Revisá el envase."]]);
   });
 
   it("con IntersectionObserver pide cuando la tarjeta se ve, una sola vez", async () => {

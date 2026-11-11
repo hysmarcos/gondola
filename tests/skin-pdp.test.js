@@ -191,7 +191,28 @@ describe("PDP con la piel", () => {
   });
 });
 
+// Caja de la PDP sin la piel: HTML fijado con el código de antes de la piel (commit c995c57,
+// src/badge.js y src/compare-ui.js), con withBank("ICBC", 10, 1816.2), logo del banco y la
+// comparación resuelta (con un link).
+const BOX_0_12 = "<div class=\"coto-unit-box coto-unit-box--pdp\" data-coto-unit-ean=\"7790742358608\"><div class=\"coto-unit-cap\">Precio real para comparar</div><div class=\"coto-unit-unit\" title=\"Precio por litro para comparar con otros productos\"><span class=\"coto-unit-value\">$1.816 /L</span><span class=\"coto-unit-why\" aria-label=\"con ICBC hoy\" title=\"con ICBC hoy\"><img class=\"coto-unit-logo\" src=\"https://x/logo_icbc_1.png\" alt=\"ICBC\"><span class=\"coto-unit-when\">hoy</span></span></div><div class=\"coto-unit-cmp coto-unit-cmp--icon\" data-state=\"worse\" data-coto-unit-sig=\"[{&quot;kind&quot;:&quot;icon&quot;,&quot;state&quot;:&quot;worse&quot;,&quot;text&quot;:&quot;Más barato en Día&quot;,&quot;label&quot;:&quot;Más barato en Día. Ver comparación&quot;,&quot;rows&quot;:[{&quot;name&quot;:&quot;Coto&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;coto&quot;,&quot;price&quot;:&quot;$2.225&quot;,&quot;qty&quot;:null,&quot;delta&quot;:null},{&quot;name&quot;:&quot;Carrefour&quot;,&quot;url&quot;:&quot;https://www.carrefour.com.ar/x/p&quot;,&quot;state&quot;:&quot;lower&quot;,&quot;price&quot;:&quot;$2.049&quot;,&quot;qty&quot;:null,&quot;delta&quot;:&quot;−8%&quot;},{&quot;name&quot;:&quot;Día&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;lower&quot;,&quot;price&quot;:&quot;$1.899&quot;,&quot;qty&quot;:&quot;x2&quot;,&quot;delta&quot;:&quot;−15%&quot;},{&quot;name&quot;:&quot;Más&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;equal&quot;,&quot;price&quot;:&quot;$2.229&quot;,&quot;qty&quot;:null,&quot;delta&quot;:&quot;igual&quot;}]}]\"><button class=\"coto-unit-cmp-btn\" type=\"button\" aria-label=\"Más barato en Día. Ver comparación\" aria-expanded=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z\"></path><path d=\"M7.5 7.5h.01\"></path></svg><span class=\"coto-unit-cmp-text\">Más barato en Día</span></button><div class=\"coto-unit-cmp-pop\" role=\"group\" aria-label=\"Mismo producto en otros súper\"><div class=\"coto-unit-cmp-head\">Mismo producto en otros súper</div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--coto\"><span class=\"coto-unit-cmp-name\">Coto</span><span class=\"coto-unit-cmp-price\">$2.225</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--lower\"><a class=\"coto-unit-cmp-name\" href=\"https://www.carrefour.com.ar/x/p\" target=\"_blank\" rel=\"noopener noreferrer\">Carrefour</a><span class=\"coto-unit-cmp-price\">$2.049</span><span class=\"coto-unit-cmp-delta\">−8%</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--lower\"><span class=\"coto-unit-cmp-name\">Día</span><span class=\"coto-unit-cmp-price\">$1.899</span><span class=\"coto-unit-cmp-qty\">x2</span><span class=\"coto-unit-cmp-delta\">−15%</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--equal\"><span class=\"coto-unit-cmp-name\">Más</span><span class=\"coto-unit-cmp-price\">$2.229</span><span class=\"coto-unit-cmp-delta\">igual</span></div></div></div></div>";
+
 describe("PDP sin la piel", () => {
+  it("la caja tiene el mismo HTML que antes de la piel", async () => {
+    const res = { ...RES, dia: { unit: 1899, qty: 2, promo: "x" }, mas: { unit: 2229, qty: 1, promo: null }, carrefour: { ...RES.carrefour, url: "https://www.carrefour.com.ar/x/p" } };
+    const win = new EventTarget();
+    win.location = { pathname: PATH(KEY) };
+    win.postMessage = () => {};
+    win.MutationObserver = window.MutationObserver;
+    const doc = document.implementation.createHTMLDocument("x");
+    doc.body.innerHTML = FIXTURE;
+    installBadges(win, doc, { compare: { peek: () => res, request: () => Promise.resolve(res) }, logoUrl: (n) => (n ? "https://x/" + n : null) });
+    const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
+    send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
+    send({ type: "labels", labels: { [KEY]: { ...withBank("ICBC", 10, 1816.2), bankLogo: "logo_icbc_1.png" } } });
+    await tick();
+    expect(doc.querySelector(".coto-unit-box--pdp").outerHTML).toBe(BOX_0_12);
+  });
+
   it("no hay piezas nuevas y el comparador es la pastilla", async () => {
     const { doc, send } = setup({ skin: null });
     send({ type: "settings", selected: [], day: 1 });

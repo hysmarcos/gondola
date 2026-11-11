@@ -2,6 +2,7 @@
 // la página se ve como en la 0.12.0), nunca "transition: all" y ningún texto chico.
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
+import { JSDOM } from "jsdom";
 
 const FILES = ["src/skin.css", "src/skin-list.css", "src/skin-pdp.css"].filter(existsSync);
 
@@ -96,6 +97,36 @@ it("ninguna regla oculta todos los links de .bottom-botones (cuotas va con data-
     .flatMap((m) => splitSelectors(m[1].trim()))
     .filter((s) => /\.bottom-botones\s*>\s*a\s*$/.test(s));
   expect(hiding).toEqual([]);
+});
+
+// Etiqueta de nutrición: qué oculta skin-pdp.css según data-basis. Se arma la sección como la
+// dibuja renderSection (tabla de 4 columnas: nombre, cada 100, porción, %VD; y la nota) y se
+// mira qué celdas encuentra alguna regla con display: none.
+describe("etiqueta de nutrición: columnas según data-basis", () => {
+  const clean = readFileSync("src/skin-pdp.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const hiding = [...clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter((m) => /display\s*:\s*none/.test(m[2]))
+    .flatMap((m) => splitSelectors(m[1].trim()));
+  function hidden(basis) {
+    const { document } = new JSDOM(`<html data-gondola-skin="pdp"><body><section class="coto-unit-nutri-section" data-skin="1" data-basis="${basis}">
+      <table class="coto-unit-nutri-table"><thead><tr><th></th><th>cada 100 ml</th><th>Por porción</th><th>%VD</th></tr></thead>
+      <tbody><tr><td>Valor energético</td><td>42 kcal</td><td>83 kcal</td><td>4%</td></tr></tbody></table>
+      <p class="coto-unit-nutri-note">%VD</p></section></body></html>`).window;
+    const parts = {
+      nombre: document.querySelectorAll(":is(th, td):nth-child(1)"),
+      cada100: document.querySelectorAll(":is(th, td):nth-child(2)"),
+      porcion: document.querySelectorAll(":is(th, td):nth-child(3)"),
+      vd: document.querySelectorAll(":is(th, td):nth-child(4)"),
+      nota: document.querySelectorAll(".coto-unit-nutri-note"),
+    };
+    return Object.keys(parts).filter((k) => [...parts[k]].every((el) => hiding.some((s) => el.matches(s))));
+  }
+  it('con data-basis="100" se ocultan la porción, el %VD y su nota', () => {
+    expect(hidden("100")).toEqual(["porcion", "vd", "nota"]);
+  });
+  it('con data-basis="portion" se oculta solo la columna de cada 100', () => {
+    expect(hidden("portion")).toEqual(["cada100"]);
+  });
 });
 
 describe.each(FILES)("%s", (file) => {
