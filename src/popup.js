@@ -15,6 +15,7 @@ const TABS = [
 ];
 
 const SETTINGS = [
+  { key: "skin", title: "Diseño Góndola", text: "Diseño nuevo en la lista de productos y en la página de producto. Apagalo para ver el de Coto." },
   { key: "comunidad", title: "Tengo Comunidad Coto", text: "Usa el precio Comunidad (+5%, +15%…) cuando el producto lo tiene." },
   { key: "autoPromo", title: "Completar promos 2x1, 3x2", text: "En un 2x1, al agregar 1 suma el gratis. En un 3x2, al llegar a 2 suma el tercero." },
   { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
@@ -242,7 +243,7 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 
 // storage: misma interfaz que en bridge.js. meta: { version }.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
+  const s = await storage.get(["skin", "promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
   let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
 
   const header = el(doc, "header", { className: "top" }, [

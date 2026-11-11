@@ -49,7 +49,8 @@
         "dist/badge.js"
       ],
       "css": [
-        "src/badge.css"
+        "src/badge.css",
+        "src/skin.css"
       ],
       "run_at": "document_start"
     }
