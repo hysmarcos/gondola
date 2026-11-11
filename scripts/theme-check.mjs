@@ -18,8 +18,7 @@
 // escribe en la página: solo baja y abre el menú de categorías con un clic.
 import { readFile, mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
-import { createCompareService } from "../src/compare-service.js";
-import { createNutritionService } from "../src/nutrition-service.js";
+import { services, connect, injection } from "./lib/fake-extension.mjs";
 
 const BASE = "https://www.coto.com.ar";
 // Las mismas páginas de ejemplo que scripts/capture-dom.mjs.
@@ -32,7 +31,6 @@ const PAGES = process.env.URL ? [{ name: "pagina", url: process.env.URL }] : [
   { name: "carrito", url: `${BASE}/carrito` },
 ];
 const VIEW = { width: 1280, height: 900 };
-const DEV = "https://gondola.local"; // host falso: sirve assets/ (logos de bancos)
 const MIN_AREA = 2000; // px²
 const MAX_LUMINANCE = 0.6;
 // Banners de publicidad de Coto: son imágenes y quedan como son (spec, fuera de alcance).
@@ -41,63 +39,7 @@ const ADS = "category-banner, .category-banner, app-banner, .banner, .carousel-b
 const manifest = JSON.parse(await readFile("manifest.json", "utf8"));
 const CSS = manifest.content_scripts.find((c) => c.css).css;
 
-const memory = new Map();
-const compareService = createCompareService({
-  fetch: globalThis.fetch.bind(globalThis),
-  cache: {
-    get: async (keys) => Object.fromEntries(keys.filter((k) => memory.has(k)).map((k) => [k, memory.get(k)])),
-    set: async (o) => Object.entries(o).forEach(([k, v]) => memory.set(k, v)),
-  },
-});
-const nutritionMemory = new Map();
-const nutritionService = createNutritionService({
-  fetch: globalThis.fetch.bind(globalThis),
-  cache: {
-    get: async (keys) => Object.fromEntries(keys.filter((k) => nutritionMemory.has(k)).map((k) => [k, nutritionMemory.get(k)])),
-    set: async (o) => Object.entries(o).forEach(([k, v]) => nutritionMemory.set(k, v)),
-  },
-});
-
-async function serve(route) {
-  const path = new URL(route.request().url()).pathname;
-  if (path.startsWith("/assets/") && !path.includes("..")) {
-    const body = await readFile("." + decodeURIComponent(path)).catch(() => null);
-    if (body) return route.fulfill({ body, headers: { "Access-Control-Allow-Origin": "*" }, contentType: path.endsWith(".png") ? "image/png" : path.endsWith(".svg") ? "image/svg+xml" : "application/octet-stream" });
-  }
-  return route.fulfill({ status: 404 });
-}
-
-// El content script con chrome.* de mentira solo para él. El storage arranca con el tema
-// oscuro (y la piel apagada con SKIN=off); src/theme.js y src/skin.js ponen sus atributos solos.
-function injection(badge, styles, initial) {
-  return `(() => {
-  const data = ${JSON.stringify(initial)};
-  const listeners = [];
-  const local = {
-    get: async (keys) => Object.fromEntries([].concat(keys).filter((k) => k in data).map((k) => [k, data[k]])),
-    set: async (o) => { Object.assign(data, o); const ch = Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { newValue: v }])); listeners.forEach((f) => f(ch)); },
-    remove: async () => {},
-    onChanged: { addListener: (f) => listeners.push(f) },
-  };
-  const chrome = {
-    runtime: {
-      getURL: (p) => ${JSON.stringify(DEV)} + "/" + p,
-      sendMessage: (m) => m && m.type === "compare" ? window.__gondolaCompare(m.eans) : m && m.type === "nutrition" ? window.__gondolaNutrition(m.ean) : Promise.resolve("error"),
-    },
-    storage: { local },
-  };
-  const start = () => {
-    if (!document.documentElement) return setTimeout(start, 0);
-    const style = document.createElement("style");
-    style.id = "gondola-theme-check";
-    style.textContent = ${JSON.stringify(styles)};
-    // Primero en la página, como el CSS de una extensión real: el de Coto gana los empates.
-    (document.head ?? document.documentElement).prepend(style);
-    (function (chrome) { ${badge} })(chrome);
-  };
-  start();
-})();`;
-}
+const svc = services();
 
 // Corre en la página. Devuelve los bloques claros y los textos con poco contraste de
 // root (todo el documento o una parte, como el menú abierto).
@@ -311,11 +253,11 @@ try {
   for (const [i, pg] of PAGES.entries()) {
     console.log(`${pg.name}: ${pg.url}`);
     const context = await browser.newContext({ viewport: VIEW, locale: "es-AR" });
-    await context.route(DEV + "/**", serve);
-    await context.exposeBinding("__gondolaCompare", (_src, eans) => compareService.compare(eans).catch(() => ({})));
-    await context.exposeBinding("__gondolaNutrition", (_src, ean) => nutritionService.get(ean).catch(() => "error"));
+    await connect(context, svc);
     await context.addInitScript({ content: interceptor });
-    await context.addInitScript({ content: injection(badge, styles, initial) });
+    // El storage arranca con el tema oscuro (y la piel apagada con SKIN=off); src/theme.js y
+    // src/skin.js ponen sus atributos solos.
+    await context.addInitScript({ content: injection({ badge, styles, styleId: "gondola-theme-check", initial }) });
     const page = await context.newPage();
     try {
       const n = await checkPage(page, pg, i === 0);
