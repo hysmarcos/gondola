@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { renderNutrition, createNutritionUi, packageLine, valueLine, vdPercent, updatedText } from "../src/nutrition-ui.js";
+import { renderNutrition, createNutritionUi, packageLine, valueLine, vdPercent, updatedText, tileItems } from "../src/nutrition-ui.js";
 
 const N = {
   per100: { kcal: 480, carbs: 70.25, sugars: 30, fat: 20, sodiumMg: 250 },
@@ -621,5 +621,150 @@ describe("revisión: la etiqueta cambia después del primer dibujo", () => {
     ui.paint(container, anchor, { ...first, tacc: "SI", name: "Avena Tradicional" }, true, section);
     expect(container.querySelector(".coto-unit-nutri-badge").classList.contains("coto-unit-nutri-badge--warn")).toBe(true);
     expect(section.host.querySelector(".coto-unit-nutri-tacc").classList.contains("coto-unit-nutri-tacc--warn")).toBe(true);
+  });
+});
+
+describe("piel de la PDP: interruptor 100 / porción y números grandes", () => {
+  // Leche Protein La Serenísima 1 L (PLU 508911), con los valores de la tabla del envase.
+  const LECHE = {
+    per100: { kcal: 42, carbs: 4.6, sugars: 4.6, proteins: 5, fat: 0, saturatedFat: 0, sodiumMg: 53 },
+    perServing: { kcal: 83, carbs: 9.2, sugars: 9.2, proteins: 10, fat: 0, saturatedFat: 0, sodiumMg: 106 },
+    servingSize: "200 ml", servingQty: 200, updatedAt: null, url: "https://world.openfoodfacts.org/product/7790742358608",
+    photos: {}, ingredients: null, allergens: ["milk"], traces: [], additives: [], nova: 1, glutenFreeLabel: false,
+  };
+  const OTRA = {
+    ...LECHE,
+    per100: { kcal: 380, carbs: 70, sugars: 20, proteins: 8, fat: 9, sodiumMg: 400 },
+    perServing: { kcal: 114, carbs: 21, sugars: 6, proteins: 2.4, fat: 2.7, sodiumMg: 120 },
+    servingSize: "30 g", servingQty: 30, url: "https://world.openfoodfacts.org/product/2",
+  };
+
+  describe("tileItems", () => {
+    it("cada 100 ml: calorías, proteínas, azúcares y sodio, con el formato de la tabla", () => {
+      const items = tileItems(LECHE, "100", true);
+      expect(items).toHaveLength(4);
+      expect(items[0].at(-1)).toMatch(/kcal cada 100 ml$/);
+      expect(items).toEqual([["42", "kcal cada 100 ml"], ["5 g", "proteínas"], ["4,6 g", "azúcares"], ["53 mg", "sodio"]]);
+      expect(tileItems(LECHE, "100", false)[0]).toEqual(["42", "kcal cada 100 g"]);
+    });
+    it("por porción: los valores de la porción", () => {
+      const items = tileItems(LECHE, "portion", true);
+      expect(items[0].at(-1)).toMatch(/kcal por porción$/);
+      expect(items).toEqual([["83", "kcal por porción"], ["10 g", "proteínas"], ["9,2 g", "azúcares"], ["106 mg", "sodio"]]);
+    });
+    it("sin proteínas ni sodio: dos ítems", () => {
+      const n = { per100: { kcal: 480, carbs: 70.25, sugars: 30, fat: 20 }, perServing: null };
+      expect(tileItems(n, "100", false)).toEqual([["480", "kcal cada 100 g"], ["30 g", "azúcares"]]);
+    });
+  });
+
+  describe("sección", () => {
+    let container, anchor, host, desc, skinOn;
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+    const reset = () => {
+      document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+      container = document.querySelector(".mt-4"); anchor = document.getElementById("a");
+      desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+    };
+    beforeEach(() => {
+      reset();
+      skinOn = true;
+    });
+    const label = (ean = "7790742358608", extra = {}) => ({ ean, nutri: true, group: "L", tacc: "SI", name: "Leche Protein La Serenisima 1L", amount: 1, value: 3244, ...extra });
+    // Dibuja con la opción skin que se pase (o sin ella, como antes de la piel).
+    async function draw(byEan, lab = label(), options = { skin: () => skinOn }) {
+      const ui = createNutritionUi(document, { request: async (ean) => byEan[ean] ?? "missing", onUpdate: () => {}, ...options });
+      const section = { host, after: desc };
+      ui.paint(container, anchor, lab, true, section);
+      await settle();
+      ui.paint(container, anchor, lab, true, section);
+      return { ui, section };
+    }
+    const sec = () => host.querySelector(".coto-unit-nutri-section");
+    const tiles = () => [...sec().querySelectorAll(".coto-unit-nutri-tiles > *")].map((t) => t.textContent);
+    const buttons = () => [...sec().querySelectorAll(".coto-unit-nutri-seg button")];
+
+    it("con la piel: interruptor de dos botones y cuatro números grandes antes de la tabla", async () => {
+      await draw({ "7790742358608": LECHE });
+      const s = sec();
+      expect(s.dataset.skin).toBe("1");
+      expect(s.dataset.basis).toBe("100");
+      expect(s.querySelector(".coto-unit-nutri-tiles").children).toHaveLength(4);
+      expect(tiles()).toEqual(["42kcal cada 100 ml", "5 gproteínas", "4,6 gazúcares", "53 mgsodio"]);
+      expect(buttons().map((b) => b.textContent)).toEqual(["Cada 100 ml", "Por porción"]);
+      expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false"]);
+      expect(buttons().every((b) => b.type === "button")).toBe(true);
+      const table = s.querySelector("table");
+      for (const node of [s.querySelector(".coto-unit-nutri-seg"), s.querySelector(".coto-unit-nutri-tiles")]) {
+        expect(node.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      }
+    });
+
+    it("click en Por porción: cambia data-basis, el botón apretado y los números; la tabla no se rehace", async () => {
+      await draw({ "7790742358608": LECHE });
+      const table = sec().querySelector("table");
+      buttons()[1].click();
+      expect(sec().dataset.basis).toBe("portion");
+      expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["false", "true"]);
+      expect(tiles()).toEqual(["83kcal por porción", "10 gproteínas", "9,2 gazúcares", "106 mgsodio"]);
+      expect(sec().querySelector("table")).toBe(table);
+      buttons()[0].click();
+      expect(sec().dataset.basis).toBe("100");
+      expect(tiles()[0]).toBe("42kcal cada 100 ml");
+    });
+
+    it("sin porción: no hay interruptor; los números grandes están", async () => {
+      await draw({ "7790742358608": { ...LECHE, perServing: null } });
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-tiles").children).toHaveLength(4);
+      expect(sec().dataset.basis).toBe("100");
+    });
+
+    it("missing: sin números grandes ni interruptor; queda el aviso de siempre", async () => {
+      await draw({});
+      expect(sec().querySelector(".coto-unit-nutri-tiles")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().textContent).toContain("Sin información nutricional. Podés cargarla en Open Food Facts");
+    });
+
+    it("sin la piel: sin piezas nuevas y el mismo HTML que sin la opción skin", async () => {
+      await draw({ "7790742358608": LECHE }, label(), {});
+      const before = sec().outerHTML;
+      reset();
+      await draw({ "7790742358608": LECHE }, label(), { skin: () => false });
+      expect(sec().querySelector(".coto-unit-nutri-tiles")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().outerHTML).toBe(before);
+    });
+
+    it("apagar la piel y repintar: la sección se rehace sin las piezas nuevas (y vuelven al prenderla)", async () => {
+      const { ui, section } = await draw({ "7790742358608": LECHE });
+      expect(sec().querySelector(".coto-unit-nutri-tiles")).not.toBeNull();
+      skinOn = false;
+      ui.paint(container, anchor, label(), true, section);
+      expect(host.querySelectorAll(".coto-unit-nutri-section")).toHaveLength(1);
+      expect(sec().querySelector(".coto-unit-nutri-tiles")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().hasAttribute("data-skin")).toBe(false);
+      expect(sec().hasAttribute("data-basis")).toBe(false);
+      skinOn = true;
+      ui.paint(container, anchor, label(), true, section);
+      expect(host.querySelectorAll(".coto-unit-nutri-section")).toHaveLength(1);
+      expect(sec().querySelector(".coto-unit-nutri-tiles").children).toHaveLength(4);
+    });
+
+    it("otro producto en los mismos nodos: números del producto nuevo y data-basis vuelve a 100", async () => {
+      const { ui, section } = await draw({ "7790742358608": LECHE, 2: OTRA });
+      buttons()[1].click();
+      expect(sec().dataset.basis).toBe("portion");
+      const other = label("2", { group: "kg", drink: false, name: "Galletitas" });
+      ui.paint(container, anchor, other, true, section);
+      await settle();
+      ui.paint(container, anchor, other, true, section);
+      expect(sec().dataset.ean).toBe("2");
+      expect(sec().dataset.basis).toBe("100");
+      expect(tiles()).toEqual(["380kcal cada 100 g", "8 gproteínas", "20 gazúcares", "400 mgsodio"]);
+      expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false"]);
+    });
   });
 });

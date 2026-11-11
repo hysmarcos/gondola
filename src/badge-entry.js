@@ -21,6 +21,8 @@ const nutrition = createNutritionUi(document, {
   onUpdate: () => badges?.refresh(),
   iconUrl: chrome.runtime.getURL("assets/off/off-logo-icon-light.svg"),
   assetUrl: (path) => chrome.runtime.getURL(path),
+  // Con la piel de la PDP, la sección suma el interruptor 100 / porción y los números grandes.
+  skin: () => document.documentElement.getAttribute("data-gondola-skin") === "pdp",
 });
 
 badges = installBadges(window, document, { logoUrl: logo, compare, nutrition });

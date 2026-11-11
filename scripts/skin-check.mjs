@@ -13,7 +13,10 @@
 // Página de producto (PLU 508911, 1280 × 900): la caja de compra mide 380 px, sigue en la
 // ventana al bajar 600 px, nunca pasa por encima del pie y no hay barra horizontal.
 //   ONLY_PDP=1: mide solo la página de producto. PDP_URL=<dirección>: otra página de producto.
-//   Con SHOTS, guarda pdp-top.png (arriba de todo) y pdp-600.png (600 px más abajo).
+//   Etiqueta de nutrición: la columna mide 300 px; "Por porción" oculta la columna de cada
+//   100 y cambia el primer número grande; sin barra horizontal.
+//   Con SHOTS, guarda pdp-top.png (arriba de todo), pdp-600.png (600 px más abajo) y
+//   pdp-detalle.png (nutrición, descripción y características).
 //   Con INTERACT=1, además hace click en "Agregar" y en "Ver planes de cuotas" y cuenta qué
 //   hizo Coto (sin sesión, "Agregar" abre su aviso para ingresar).
 // Sin la extensión cargada y sin sesión: inyecta dist/ (con un chrome.* de mentira, como
@@ -45,6 +48,7 @@ const PDP = { name: "PDP Leche Protein (PLU 508911)", url: process.env.PDP_URL |
 const PDP_SIZE = { name: "1280x900", viewport: { width: 1280, height: 900 }, scale: 1 };
 const BUY_WIDTH = 380; // caja de compra (spec 5.1), más o menos 2 px
 const PDP_SCROLL = 600;
+const LABEL_WIDTH = 300; // columna de la etiqueta de nutrición (spec 5.3), más o menos 2 px
 const DEV = "https://gondola.local"; // host falso: sirve assets/ (logos de bancos)
 const TOLERANCE = 1;
 const FILTER_WIDTH = 184; // ancho de la columna de filtros (spec 4.1), más o menos 2 px
@@ -377,6 +381,63 @@ async function checkPdp(page) {
   return { problems, notes };
 }
 
+// Etiqueta de nutrición (spec 5.3): columna de 300 px; "Por porción" oculta la columna de
+// "cada 100" y cambia los números grandes; sin barra horizontal. Vacío si no hay tabla.
+async function checkNutrition(page) {
+  const problems = [];
+  const notes = [];
+  const state = () => page.evaluate(() => {
+    const sec = document.querySelector(".coto-unit-nutri-section[data-skin][data-basis]");
+    if (!sec) return null;
+    const width = (el) => (el ? Math.round(el.getBoundingClientRect().width * 10) / 10 : null);
+    const shown = (el) => !!el && el.getClientRects().length > 0;
+    return {
+      title: width(sec.querySelector(".coto-unit-nutri-title")),
+      table: width(sec.querySelector(".coto-unit-nutri-table")),
+      per100: shown(sec.querySelector(".coto-unit-nutri-table thead th:nth-child(2)")),
+      hasSeg: !!sec.querySelector(".coto-unit-nutri-seg"),
+      tile: sec.querySelector(".coto-unit-nutri-tiles > *")?.textContent ?? null,
+      basis: sec.dataset.basis,
+      docWidth: document.documentElement.scrollWidth,
+      innerWidth,
+    };
+  });
+  const before = await state();
+  if (!before) return { problems, notes: ["sin tabla de nutrición con la piel: no se midió la etiqueta"] };
+  for (const [name, w] of [["título", before.title], ["tabla", before.table]]) {
+    if (w === null || Math.abs(w - LABEL_WIDTH) > 2) problems.push(`etiqueta de nutrición (${name}): mide ${w} px, se esperaban ${LABEL_WIDTH} (más o menos 2)`);
+  }
+  if (!before.per100) problems.push("etiqueta de nutrición: con \"cada 100\" no se ve esa columna");
+  if (!before.hasSeg) problems.push("etiqueta de nutrición: no está el interruptor \"Por porción\"");
+  else {
+    await page.locator(".coto-unit-nutri-seg button").nth(1).click();
+    await page.waitForTimeout(200);
+    const after = await state();
+    if (after.basis !== "portion") problems.push(`etiqueta de nutrición: tras "Por porción", data-basis es ${after.basis}`);
+    if (after.per100) problems.push("etiqueta de nutrición: tras \"Por porción\" se sigue viendo la columna de cada 100");
+    if (after.tile === before.tile) problems.push(`etiqueta de nutrición: tras "Por porción" el primer número grande sigue igual (${after.tile})`);
+    else notes.push(`primer número grande: "${before.tile}" → "${after.tile}"`);
+    if (after.docWidth > after.innerWidth) problems.push(`barra horizontal tras "Por porción": la página mide ${after.docWidth} px y la ventana ${after.innerWidth}`);
+    await page.locator(".coto-unit-nutri-seg button").nth(0).click();
+  }
+  if (before.docWidth > before.innerWidth) problems.push(`barra horizontal con la etiqueta: la página mide ${before.docWidth} px y la ventana ${before.innerWidth}`);
+  return { problems, notes };
+}
+
+// Captura de la columna izquierda: de la nutrición (o la descripción) al final de las
+// características, para mirar la etiqueta y la ficha.
+async function shootDetail(page, path) {
+  const box = await page.evaluate(() => {
+    const first = document.querySelector(".coto-unit-nutri-section") ?? document.querySelector(".pdp-description");
+    const host = first?.parentElement;
+    if (!host) return null;
+    const r = host.getBoundingClientRect();
+    return { y: r.top + scrollY, height: r.height };
+  });
+  if (!box) return;
+  await page.screenshot({ path, fullPage: true, clip: { x: 0, y: Math.max(0, box.y - 24), width: PDP_SIZE.viewport.width, height: box.height + 48 } });
+}
+
 // Con la piel puesta, los controles de Coto de la caja de compra siguen respondiendo.
 async function interactPdp(page) {
   const notes = [];
@@ -447,6 +508,15 @@ async function runPdp() {
     } else {
       console.log(`${PDP_SIZE.name}: caja de compra de ${BUY_WIDTH} px, fija (${notes.join("; ")}), no tapa el pie, sin barra horizontal`);
     }
+    const label = await checkNutrition(page);
+    if (label.problems.length) {
+      failed = true;
+      console.log(`${PDP_SIZE.name} nutrición:\n  ${label.problems.join("\n  ")}`);
+    } else if (label.notes[0]?.startsWith("sin tabla")) {
+      console.log(`${PDP_SIZE.name} nutrición: ${label.notes[0]}`);
+    } else {
+      console.log(`${PDP_SIZE.name} nutrición: etiqueta de ${LABEL_WIDTH} px; "Por porción" oculta la columna de cada 100 y cambia los números (${label.notes.join("; ")}); sin barra horizontal`);
+    }
     if (shots) {
       await page.evaluate(() => scrollTo(0, 0));
       await page.waitForTimeout(400);
@@ -454,6 +524,7 @@ async function runPdp() {
       await page.evaluate((y) => scrollTo(0, y), PDP_SCROLL);
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${shots}/pdp-600.png` });
+      await shootDetail(page, `${shots}/pdp-detalle.png`);
       await page.evaluate(() => scrollTo(0, 0));
     }
     if (process.env.INTERACT) for (const n of await interactPdp(page)) console.log(`  interacción: ${n}`);

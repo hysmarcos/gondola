@@ -259,12 +259,61 @@ function renderSummary(doc, n, { ean, liquid, iconUrl }) {
   return p;
 }
 
+// Números grandes de la piel: [valor, leyenda] de calorías, proteínas, azúcares y sodio, los
+// que haya. basis: "100" (cada 100 g o ml) o "portion". Las kcal van sin unidad: la dice la
+// leyenda.
+const TILES = [["proteins", "g", "proteínas"], ["sugars", "g", "azúcares"], ["sodiumMg", "mg", "sodio"]];
+export function tileItems(n, basis, liquid) {
+  const values = (basis === "portion" ? n.perServing : n.per100) ?? {};
+  const items = [];
+  if (values.kcal !== undefined) items.push([String(Math.round(values.kcal)), basis === "portion" ? "kcal por porción" : `kcal cada ${liquid ? "100 ml" : "100 g"}`]);
+  for (const [key, unit, name] of TILES) if (values[key] !== undefined) items.push([format(values[key], unit), name]);
+  return items;
+}
+
+function fillTiles(doc, box, n, basis, liquid) {
+  box.replaceChildren(...tileItems(n, basis, liquid).map(([value, legend]) => {
+    const tile = el(doc, "div", `${ROOT}-tile`);
+    tile.append(el(doc, "span", `${ROOT}-tile-value`, value), el(doc, "span", `${ROOT}-tile-label`, legend));
+    return tile;
+  }));
+}
+
+// Piezas de la piel, antes de la tabla: interruptor (si hay porción) y números grandes. El
+// interruptor cambia data-basis de la sección (el CSS oculta la columna que no va) y vuelve
+// a dibujar solo los números.
+function skinPieces(doc, sec, n, liquid) {
+  sec.dataset.basis = "100";
+  const tiles = el(doc, "div", `${ROOT}-tiles`);
+  fillTiles(doc, tiles, n, "100", liquid);
+  if (!n.perServing) return [tiles];
+  const seg = el(doc, "div", `${ROOT}-seg`);
+  seg.setAttribute("role", "group");
+  seg.setAttribute("aria-label", "Valores de la tabla");
+  const options = [["100", liquid ? "Cada 100 ml" : "Cada 100 g"], ["portion", "Por porción"]].map(([basis, text]) => {
+    const b = el(doc, "button", null, text);
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(basis === "100"));
+    b.addEventListener("click", () => {
+      if (sec.dataset.basis === basis) return;
+      sec.dataset.basis = basis;
+      for (const o of options) o.setAttribute("aria-pressed", String(o === b));
+      fillTiles(doc, tiles, n, basis, liquid);
+    });
+    return b;
+  });
+  seg.append(...options);
+  return [seg, tiles];
+}
+
 // Sección "Información nutricional" junto a la descripción del producto.
-function renderSection(doc, result, { ean, liquid, iconUrl, label, assetUrl, taccKey }) {
+// skin: la piel de la PDP está prendida (suma el interruptor y los números grandes).
+function renderSection(doc, result, { ean, liquid, iconUrl, label, assetUrl, taccKey, skin = false }) {
   const sec = el(doc, "section", `${ROOT}-section`);
   sec.dataset.ean = ean;
   // Estado Sin TACC con el que se dibujó: si cambia (llega el dato de Coto), se rehace.
   sec.dataset.tacc = taccKey;
+  if (skin) sec.dataset.skin = "1";
   const h = el(doc, "h4", `${ROOT}-title`);
   if (iconUrl) h.append(icon(doc, iconUrl, "Open Food Facts"));
   h.append("Información nutricional");
@@ -280,6 +329,7 @@ function renderSection(doc, result, { ean, liquid, iconUrl, label, assetUrl, tac
   if (pack) sec.append(el(doc, "p", `${ROOT}-pack`, pack));
   const value = valueLine(result, label);
   if (value) sec.append(el(doc, "p", `${ROOT}-value`, value));
+  if (skin) sec.append(...skinPieces(doc, sec, result, liquid));
   const more = extras(doc, result, label, assetUrl);
   sec.append(table(doc, result, liquid ? "100 ml" : "100 g"), ...vdNote(doc, result), ...more.nodes, ...source(doc, result, more.fsa));
   return sec;
@@ -327,8 +377,8 @@ function renderForYou(doc, items, ean, key) {
 
 // request(ean) → Promise<Nutrition | "missing" | "error">. onUpdate(): pedir un repintado.
 // iconUrl: ícono de Open Food Facts (opcional). assetUrl(path): URL de un archivo de la
-// extensión (íconos de alérgenos; opcional).
-export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, assetUrl = null }) {
+// extensión (íconos de alérgenos; opcional). skin(): true con la piel de la PDP prendida.
+export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, assetUrl = null, skin = () => false }) {
   const results = new Map(); // ean -> resultado
   const asked = new Set();
   let profile = null; // perfil personal del popup (o null)
@@ -390,8 +440,10 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, asse
     const status = taccStatus(label.tacc ?? null, label.name, r === "missing" ? null : r);
     const taccKey = `${status.kind}|${status.text}`;
     opts.taccKey = taccKey;
+    opts.skin = Boolean(skin());
+    // Se rehace si cambió el estado Sin TACC o si se prendió o apagó la piel.
     const oldSection = section.host.querySelector(`:scope > .${ROOT}-section`);
-    if (oldSection && oldSection.dataset.tacc !== taccKey) oldSection.remove();
+    if (oldSection && (oldSection.dataset.tacc !== taccKey || (oldSection.dataset.skin === "1") !== opts.skin)) oldSection.remove();
     if (!section.host.querySelector(`:scope > .${ROOT}-section`)) {
       place(renderSection(doc, r, opts), section.host, section.after);
       section.host.setAttribute(HOST, "");
