@@ -1,0 +1,99 @@
+/* Tema de Góndola: paleta clara y oscura en tokens --g-*, regla base, onda e impresión.
+   Los tokens viven en :root; [data-gondola-theme="dark"] (src/theme.js lo pone en <html>) los
+   redefine. En claro el atributo no existe y todo queda como siempre.
+   El orden importa: el bloque de tokens oscuro va antes que la regla base, y el de impresión
+   al final para ganar con igual especificidad (tests/theme-contrast.test.js los lee así). */
+
+:root {
+  --g-bg: #ffffff;
+  --g-surface: #ffffff;
+  --g-surface-2: #ffffff;
+  --g-soft: #f5f6f8;
+  --g-line: #e6e8ec;
+  --g-ink: #16181d;
+  --g-ink2: #5b616e;
+  --g-red: #e20025;
+  --g-red-d: #c4001f;
+  --g-red-text: #e20025;
+  --g-navy: #14284b;
+  --g-navy-fill: #14284b;
+  --g-navy-soft: #eef2f9;
+  --g-amber: #ffc233;
+  --g-amber-soft: #fff4d1;
+  --g-amber-ink: #6b4a00;
+  --g-green: #0a7a3d;
+  --g-green-soft: #e6f4ec;
+  --g-plate: transparent;
+  --g-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+[data-gondola-theme="dark"] {
+  --g-bg: #0f1217;
+  --g-surface: #171b22;
+  --g-surface-2: #1f242d;
+  --g-soft: #1f242d;
+  --g-line: #2b313c;
+  --g-ink: #e6e9ee;
+  --g-ink2: #a3aab8;
+  --g-red: #d81e3a;
+  --g-red-d: #b8162f;
+  --g-red-text: #ff7084;
+  --g-navy: #8fb0f0;
+  --g-navy-fill: #2a4a86;
+  --g-navy-soft: #1a2540;
+  --g-amber: #ffc233;
+  --g-amber-soft: #3a2e0a;
+  --g-amber-ink: #ffd873;
+  --g-green: #4cc38a;
+  --g-green-soft: #12301f;
+  --g-plate: #e9ebef;
+  color-scheme: dark;
+}
+
+/* Regla base: si una parte de Coto no está pintada, la página igual queda oscura. */
+html[data-gondola-theme="dark"],
+html[data-gondola-theme="dark"] body {
+  background-color: var(--g-bg) !important;
+  color: var(--g-ink);
+}
+
+/* Onda: el tema nuevo se abre en círculo desde la esquina superior derecha (View Transitions). */
+html.gondola-theme-wave::view-transition-old(root) { animation: none; }
+html.gondola-theme-wave::view-transition-new(root) {
+  animation: gondola-theme-wave 650ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes gondola-theme-wave {
+  from { clip-path: circle(0% at 100% 0%); }
+  to { clip-path: circle(150% at 100% 0%); }
+}
+
+/* Al imprimir, la página sale clara aunque el tema sea oscuro. */
+@media print {
+  [data-gondola-theme="dark"] {
+    --g-bg: #ffffff;
+    --g-surface: #ffffff;
+    --g-surface-2: #ffffff;
+    --g-soft: #f5f6f8;
+    --g-line: #e6e8ec;
+    --g-ink: #16181d;
+    --g-ink2: #5b616e;
+    --g-red: #e20025;
+    --g-red-d: #c4001f;
+    --g-red-text: #e20025;
+    --g-navy: #14284b;
+    --g-navy-fill: #14284b;
+    --g-navy-soft: #eef2f9;
+    --g-amber: #ffc233;
+    --g-amber-soft: #fff4d1;
+    --g-amber-ink: #6b4a00;
+    --g-green: #0a7a3d;
+    --g-green-soft: #e6f4ec;
+    --g-plate: transparent;
+    color-scheme: light;
+  }
+  html[data-gondola-theme="dark"],
+  html[data-gondola-theme="dark"] body {
+    background-color: #ffffff !important;
+    color: var(--g-ink);
+  }
+}

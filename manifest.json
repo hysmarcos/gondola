@@ -49,10 +49,12 @@
         "dist/badge.js"
       ],
       "css": [
+        "src/theme.css",
         "src/badge.css",
         "src/skin.css",
         "src/skin-list.css",
-        "src/skin-pdp.css"
+        "src/skin-pdp.css",
+        "src/theme-coto.css"
       ],
       "run_at": "document_start"
     }

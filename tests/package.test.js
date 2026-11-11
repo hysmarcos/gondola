@@ -9,7 +9,7 @@ const popup = readFileSync("popup.html", "utf8");
 const REPO = [
   "manifest.json", "popup.html", "LICENSE", "README.md", "package.json", "build.mjs",
   "dist/interceptor.js", "dist/badge.js", "dist/popup.js", "dist/background.js",
-  "src/badge.css", "src/skin.css", "src/skin-list.css", "src/skin-pdp.css", "src/popup.css", "src/popup.js", "src/badge.js",
+  "src/theme.css", "src/theme-coto.css", "src/badge.css", "src/skin.css", "src/skin-list.css", "src/skin-pdp.css", "src/popup.css", "src/popup.js", "src/badge.js",
   "assets/icon/icon.svg", "assets/icon/icon-16.svg", "assets/icon/icon-16.png", "assets/icon/icon-32.png", "assets/icon/icon-48.png", "assets/icon/icon-128.png",
   "assets/banks/logo_icbc_1.png", "assets/banks/logo_galicia.png",
   "assets/off/off-logo-icon-light.svg",
@@ -30,7 +30,7 @@ describe("paquete para la Chrome Web Store", () => {
   it("lleva solo lo que la extensión usa: nada de código fuente, tests ni herramientas", () => {
     const files = packageFiles(REPO);
     expect(files).toEqual(expect.arrayContaining([
-      "manifest.json", "popup.html", "LICENSE", "dist/badge.js", "dist/popup.js", "src/badge.css", "src/skin.css", "src/popup.css",
+      "manifest.json", "popup.html", "LICENSE", "dist/badge.js", "dist/popup.js", "src/theme.css", "src/theme-coto.css", "src/badge.css", "src/skin.css", "src/popup.css",
       "assets/icon/icon.svg", "assets/icon/icon-128.png", "assets/banks/logo_icbc_1.png", "assets/fonts/poppins-latin-400-normal.woff2",
       "assets/off/off-logo-icon-light.svg", "assets/allergens/milk.png",
     ]));

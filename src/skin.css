@@ -1,27 +1,11 @@
-/* Piel Góndola: tokens y piezas comunes de la lista y de la página de producto.
+/* Piel Góndola: piezas comunes de la lista y de la página de producto.
+   Los tokens --g-* viven en src/theme.css (claro y oscuro).
    Todo cuelga de data-gondola-skin en <html>: sin el atributo, la página queda como en la
    0.12.0. Base neutra; rojo Coto solo para comprar y para sus ofertas; azul y ámbar para lo
    que agrega Góndola.
    Los estilos de los componentes de Coto (Angular) entran después y con selectores largos
    ([_ngcontent-…]), y algunos traen !important: en los nodos de Coto, lo que choca con
    ellos lleva !important. */
-
-[data-gondola-skin] {
-  --g-ink: #16181d;
-  --g-ink2: #5b616e;
-  --g-line: #e6e8ec;
-  --g-soft: #f5f6f8;
-  --g-red: #e20025;
-  --g-red-d: #c4001f;
-  --g-navy: #14284b;
-  --g-navy-soft: #eef2f9;
-  --g-amber: #ffc233;
-  --g-amber-soft: #fff4d1;
-  --g-amber-ink: #6b4a00;
-  --g-green: #0a7a3d;
-  --g-green-soft: #e6f4ec;
-  --g-out: cubic-bezier(0.23, 1, 0.32, 1);
-}
 
 /* ---------- "Agregar" de Coto (lista y página de producto) ----------
    Solo dentro de la celda de la lista (.producto-card) y de la columna de compra de la
