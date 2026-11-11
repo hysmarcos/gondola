@@ -5,6 +5,7 @@
 const INCLUDE = [
   /^manifest\.json$/,
   /^popup\.html$/,
+  /^welcome\.html$/,
   /^LICENSE$/,
   /^dist\/[\w-]+\.js$/,
   /^src\/[\w-]+\.css$/,

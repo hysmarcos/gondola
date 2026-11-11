@@ -14,14 +14,23 @@ const TABS = [
   { id: "ayuda", label: "Ayuda", icon: ["M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18z", "M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6", "M12 17.2v.1"] },
 ];
 
+// Ajustes por secciones: cada una es una fila del menú y abre su propia pantalla.
+// Para sumar un ajuste: una entrada en SETTINGS con la sección donde va.
+const SECTIONS = [
+  { id: "apariencia", title: "Apariencia", text: "Cómo se ve Coto", icon: ["M4 5h16v14H4z", "M4 10h16", "M10 10v9"] },
+  { id: "precios", title: "Precios y promos", text: "Comunidad, 2x1 y avisos", icon: ["M4 4h7l9 9l-7 7l-9-9z", "M8.5 8.5v.1"] },
+  { id: "datos", title: "Comparar y nutrición", text: "Datos de afuera de Coto", icon: ["M4 9l1.5-5h13L20 9", "M4 9v11h16V9", "M4 9a3 3 0 0 0 5.3 0a3 3 0 0 0 5.4 0A3 3 0 0 0 20 9", "M10 20v-5h4v5"] },
+  { id: "perfil", title: "Mi perfil", text: "Celiaquía y alergias", icon: ["M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8z", "M4 21a8 8 0 0 1 16 0"] },
+];
+
 const SETTINGS = [
-  { key: "skin", title: "Diseño Góndola", text: "Diseño nuevo en la lista de productos y en la página de producto. Apagalo para ver el de Coto." },
-  { key: "comunidad", title: "Tengo Comunidad Coto", text: "Usa el precio Comunidad (+5%, +15%…) cuando el producto lo tiene." },
-  { key: "autoPromo", title: "Completar promos 2x1, 3x2", text: "En un 2x1, al agregar 1 suma el gratis. En un 3x2, al llegar a 2 suma el tercero." },
-  { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
-  { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato de la categoría\" en el producto que más conviene por kg, litro o unidad." },
-  { key: "compareStores", title: "Comparar con otros súper", text: "Un botón dice si Coto tiene el mejor precio o en qué súper está más barato." },
-  { key: "nutrition", title: "Información nutricional", text: "La tabla nutricional de Open Food Facts en el producto, el resumen del carrito y las etiquetas de alergias en la lista." },
+  { key: "skin", section: "apariencia", title: "Diseño Góndola", text: "Diseño nuevo en la lista de productos y en la página de producto. Apagalo para ver el de Coto." },
+  { key: "comunidad", section: "precios", title: "Tengo Comunidad Coto", text: "Usa el precio Comunidad (+5%, +15%…) cuando el producto lo tiene." },
+  { key: "autoPromo", section: "precios", title: "Completar promos 2x1, 3x2", text: "En un 2x1, al agregar 1 suma el gratis. En un 3x2, al llegar a 2 suma el tercero." },
+  { key: "notifyPromo", section: "precios", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
+  { key: "markBest", section: "apariencia", title: "Marcar el más barato", text: "Cartel \"Más barato de la categoría\" en el producto que más conviene por kg, litro o unidad." },
+  { key: "compareStores", section: "datos", title: "Comparar con otros súper", text: "Un botón dice si Coto tiene el mejor precio o en qué súper está más barato." },
+  { key: "nutrition", section: "datos", title: "Información nutricional", text: "La tabla nutricional de Open Food Facts en el producto, el resumen del carrito y las etiquetas de alergias en la lista." },
 ];
 
 const HELP = [
@@ -31,7 +40,7 @@ const HELP = [
   ["Ordenar por precio por kg/L", "Nueva opción en \"Ordenar por\" de cada categoría y búsqueda."],
   ["Información nutricional", "Tabla de Open Food Facts por código de barras, cargada por la comunidad. Si falta, podés cargarla vos."],
   ["Sin TACC", "Lo que marca Coto. Si el producto menciona trigo, avena, cebada o centeno, te avisa. Verificá siempre el símbolo oficial en el envase."],
-  ["Mi perfil", "En Ajustes. Destaca lo que te importa en cada producto. En la lista, con \"Diseño Góndola\" e \"Información nutricional\" prendidos, marca los productos que declaran tus alergias y avisa si Open Food Facts no tiene datos de alérgenos. Sin etiqueta no significa que sea seguro. Queda solo en tu navegador. No es consejo médico."],
+  ["Mi perfil", "En Ajustes, sección Mi perfil. Destaca lo que te importa en cada producto. En la lista, con \"Diseño Góndola\" e \"Información nutricional\" prendidos, marca los productos que declaran tus alergias y avisa si Open Food Facts no tiene datos de alérgenos. Sin etiqueta no significa que sea seguro. Queda solo en tu navegador. No es consejo médico."],
   ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
 ];
 
@@ -170,9 +179,12 @@ const PROFILE = [
   { key: "profileSugar", title: "Cuido el azúcar", text: "Destaca los azúcares cada 100 g o 100 ml." },
 ];
 
-function settingRow(doc, { key, title, text }, checked, storage) {
+function settingRow(doc, { key, title, text }, checked, storage, onChange = () => {}) {
   const box = switchInput(doc, { name: key, checked });
-  box.addEventListener("change", () => storage.set({ [key]: box.checked }));
+  box.addEventListener("change", () => {
+    storage.set({ [key]: box.checked });
+    onChange();
+  });
   return el(doc, "label", { className: "setting" }, [
     el(doc, "span", { className: "setting-text" }, [el(doc, "span", { className: "setting-title", textContent: title }), el(doc, "span", { className: "setting-desc", textContent: text })]),
     box,
@@ -180,7 +192,7 @@ function settingRow(doc, { key, title, text }, checked, storage) {
 }
 
 // Mi perfil: apagado por defecto. Queda en el navegador.
-function profileView(doc, s, storage) {
+function profileView(doc, s, storage, onChange = () => {}) {
   const chosen = new Set(Array.isArray(s.profileAllergens) ? s.profileAllergens : []);
   const boxes = Object.entries(ALLERGENS).map(([key, name]) => {
     const box = el(doc, "input", { type: "checkbox", name: "profileAllergens", value: key, checked: chosen.has(key) });
@@ -188,19 +200,69 @@ function profileView(doc, s, storage) {
       if (box.checked) chosen.add(key);
       else chosen.delete(key);
       storage.set({ profileAllergens: Object.keys(ALLERGENS).filter((k) => chosen.has(k)) });
+      onChange();
     });
     return el(doc, "label", { className: "profile-allergen" }, [box, ` ${name}`]);
   });
   return [
-    el(doc, "h2", { className: "profile-title", textContent: "Mi perfil" }),
-    el(doc, "p", { className: "profile-desc", textContent: "Destaca lo que te importa en la página de cada producto. No es consejo médico." }),
-    ...PROFILE.map((item) => settingRow(doc, item, s[item.key] === true, storage)),
+    el(doc, "p", { className: "profile-desc", textContent: "Destaca lo que te importa en la página de cada producto. Queda solo en tu navegador. No es consejo médico." }),
+    ...PROFILE.map((item) => settingRow(doc, item, s[item.key] === true, storage, onChange)),
     el(doc, "fieldset", { className: "profile-allergens" }, [el(doc, "legend", { textContent: "Mis alergias" }), ...boxes]),
   ];
 }
 
-function settingsView(doc, s, storage) {
-  return [...SETTINGS.map((item) => settingRow(doc, item, s[item.key] !== false, storage)), ...profileView(doc, s, storage)];
+// Ajustes: un menú de secciones. Cada fila abre su pantalla y "Ajustes" vuelve al menú.
+function settingsView(doc, s, storage, meta = {}) {
+  const menu = el(doc, "ul", { className: "menu" });
+  const screens = {};
+  const rows = {};
+  const show = (id, focus = true) => {
+    menu.hidden = !!id;
+    for (const [k, sc] of Object.entries(screens)) sc.hidden = k !== id;
+    if (!focus) return;
+    if (id) screens[id].querySelector(".back").focus();
+    else (rows[show.last] ?? menu.querySelector("button")).focus();
+  };
+  for (const sec of SECTIONS) {
+    const status = el(doc, "span", { className: "menu-status" });
+    const body = el(doc, "div", { className: "screen-body" });
+    // El estado de la fila: cuántos ajustes están prendidos, o qué hay en el perfil.
+    const update = () => {
+      const boxes = [...body.querySelectorAll("input.switch")];
+      const on = boxes.filter((b) => b.checked).length;
+      if (sec.id !== "perfil") status.replaceChildren(`${on} de ${boxes.length}`, el(doc, "span", { className: "sr-only", textContent: " prendidos" }));
+      else {
+        const allergies = body.querySelectorAll('input[name="profileAllergens"]:checked').length;
+        status.textContent = on + allergies ? [on && plural(on, "cuidado", "cuidados"), allergies && plural(allergies, "alergia", "alergias")].filter(Boolean).join(" · ") : "Sin cargar";
+      }
+    };
+    if (sec.id === "perfil") body.append(...profileView(doc, s, storage, update));
+    else body.append(...SETTINGS.filter((x) => x.section === sec.id).map((item) => settingRow(doc, item, s[item.key] !== false, storage, update)));
+    update();
+
+    const row = el(doc, "button", { type: "button", className: "menu-row" }, [
+      el(doc, "span", { className: "menu-icon" }, [icon(doc, sec.icon)]),
+      el(doc, "span", { className: "menu-text" }, [el(doc, "span", { className: "menu-title", textContent: sec.title }), el(doc, "span", { className: "menu-desc", textContent: sec.text })]),
+      status,
+      icon(doc, ["M9 6l6 6l-6 6"]),
+    ]);
+    row.dataset.section = sec.id;
+    row.addEventListener("click", () => { show.last = sec.id; show(sec.id); });
+    rows[sec.id] = row;
+    menu.append(el(doc, "li", {}, [row]));
+
+    const back = el(doc, "button", { type: "button", className: "back" }, [icon(doc, ["M15 6l-6 6l6 6"]), el(doc, "span", { textContent: "Ajustes" })]);
+    back.addEventListener("click", () => show(null));
+    const screen = el(doc, "div", { className: "screen", hidden: true }, [
+      back,
+      el(doc, "h2", { className: "screen-title" }, [el(doc, "span", { className: "menu-icon" }, [icon(doc, sec.icon)]), el(doc, "span", { textContent: sec.title })]),
+      body,
+    ]);
+    screen.dataset.section = sec.id;
+    screens[sec.id] = screen;
+  }
+  if (SECTIONS.some((x) => x.id === meta.section)) show(meta.section, false);
+  return [menu, ...Object.values(screens)];
 }
 
 function helpView(doc, meta) {
@@ -210,6 +272,7 @@ function helpView(doc, meta) {
       el(doc, "strong", { textContent: "No afiliado a Coto." }),
       " Usa los datos de coto.com.ar. Solo envía códigos de barras: a Carrefour, Día y Más para comparar, y a Open Food Facts para la tabla nutricional.",
     ]),
+    meta.welcomeUrl ? el(doc, "p", { className: "welcome-link" }, [el(doc, "a", { href: meta.welcomeUrl, target: "_blank", rel: "noopener noreferrer", textContent: "Ver la bienvenida de nuevo" })]) : null,
     el(doc, "p", { className: "version", textContent: `Versión ${meta.version ?? ""}`.trim() }),
   ];
 }
@@ -241,10 +304,12 @@ function contribView(doc, meta) {
 
 const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), ajustes: settingsView, colabora: (doc, s, st, meta) => contribView(doc, meta), ayuda: (doc, s, st, meta) => helpView(doc, meta) };
 
-// storage: misma interfaz que en bridge.js. meta: { version }.
+// storage: misma interfaz que en bridge.js.
+// meta: { version, logoUrl, welcomeUrl, tab, section }. tab y section abren el popup en ese lugar.
 export async function renderPopup(doc, storage, meta = {}) {
   const s = await storage.get(["skin", "promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
-  let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
+  const wanted = meta.section ? "ajustes" : meta.tab ?? s.popupTab;
+  let active = TABS.some((t) => t.id === wanted) ? wanted : "tarjetas";
 
   const header = el(doc, "header", { className: "top" }, [
     el(doc, "img", { className: "mark", src: "assets/icon/icon.svg", alt: "", attrs: { width: "34", height: "34" } }),
