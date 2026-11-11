@@ -2,7 +2,9 @@
    sombras y el filtro del logo: nada cambia de tamaño ni de lugar. Sobre los estilos de Coto,
    lo que choca lleva !important (misma norma que src/skin.css).
    Superficies: página --g-bg, tarjetas y barras --g-surface, menús y ventanas --g-surface-2;
-   la altura se marca con superficies más claras y bordes --g-line, nunca con sombras.
+   la altura se marca con superficies más claras y bordes --g-line, nunca con sombras. Donde
+   Coto no tiene borde, la línea es un anillo de box-shadow o un outline (como en la piel), así
+   nada crece.
    Cada selector se prueba contra las capturas de tests/fixtures/dom/ (tests/theme-css-dom.test.js);
    lo que solo existe con sesión o al abrirse lleva encima la marca "sin captura". */
 
@@ -138,9 +140,10 @@
    cubren lo que la piel no toca y la lista de Coto tal cual (piel apagada). Las que chocarían
    con un diseño distinto de la piel van bajo :not([data-gondola-skin]). */
 
-/* Columna de filtros: Coto le pone fondo blanco; queda sobre el fondo de la página. */
+/* Columna de filtros: Coto le pone fondo blanco; pasa al fondo de la página (opaco: en el
+   celular la columna es un panel que se abre encima de la lista). */
 [data-gondola-theme="dark"] #filtrosmenu {
-  background-color: transparent;
+  background-color: var(--g-bg);
   color: var(--g-ink);
 }
 
@@ -186,9 +189,10 @@
   box-shadow: 0 0 0 1px var(--g-line) !important;
 }
 
-/* Foto sobre la placa clara, con bordes redondos; la foto no lleva filtro. */
+/* Foto sobre la placa clara, con bordes redondos; la foto no lleva filtro. Sin relleno extra:
+   con la piel ya tiene el suyo y sin la piel la foto ocupa 65 % del ancho, así que la placa
+   se ve igual a los costados. */
 [data-gondola-theme="dark"] .card-container .top-imagen-promos {
-  padding: 6px;
   border-radius: 8px;
   background-color: var(--g-plate) !important;
 }
