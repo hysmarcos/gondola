@@ -123,6 +123,11 @@
   color: var(--g-navy);
 }
 
+/* En oscuro --g-navy es un azul claro que no se lee sobre el ámbar: tinta oscura. */
+[data-gondola-skin="list"][data-gondola-theme="dark"] .coto-unit-tags > .coto-unit-best {
+  color: var(--g-on-amber);
+}
+
 [data-gondola-skin="list"] .coto-unit-tags > .coto-unit-offer,
 [data-gondola-skin="list"] .producto-card .top-imagen-promos .cucarda-promo {
   background-color: var(--g-red) !important;
