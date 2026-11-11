@@ -11,6 +11,7 @@
   --g-soft: #f5f6f8;
   --g-line: #e6e8ec;
   --g-ink: #16181d;
+  --g-ink-soft: #444444;
   --g-ink2: #5b616e;
   --g-red: #e20025;
   --g-red-d: #c4001f;
@@ -48,6 +49,7 @@
   --g-soft: #1f242d;
   --g-line: #2b313c;
   --g-ink: #e6e9ee;
+  --g-ink-soft: #e6e9ee;
   --g-ink2: #a3aab8;
   --g-red: #d81e3a;
   --g-red-d: #b8162f;
@@ -104,6 +106,7 @@ html.gondola-theme-wave::view-transition-new(root) {
     --g-soft: #f5f6f8;
     --g-line: #e6e8ec;
     --g-ink: #16181d;
+    --g-ink-soft: #444444;
     --g-ink2: #5b616e;
     --g-red: #e20025;
     --g-red-d: #c4001f;

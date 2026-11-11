@@ -60,6 +60,9 @@ const PARES = [ // [texto, fondo, mínimo]
   ["on-amber", "amber", 4.5], ["navy", "navy-hover", 4.5],
   ["orange", "surface", 4.5], ["rust", "surface", 4.5],
   ["green-ink", "green-soft", 4.5], ["green-ink", "blue-soft", 4.5], ["green-ink", "surface", 4.5],
+  // Texto gris oscuro de antes del tema (#444): marcas de las etiquetas y el aviso rojo claro.
+  ["ink-soft", "line", 4.5], ["ink-soft", "danger-soft", 4.5], ["ink-soft", "surface", 4.5],
+  ["ink-soft", "bg", 4.5], ["ink-soft", "soft", 4.5],
 ];
 
 // Solo en oscuro: en claro --g-ink3 y --g-line-2 conservan sus valores de antes del tema
