@@ -325,7 +325,7 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
     s.env.searchBody = (u, body) => ({ ...body, response: { ...body.response, facets: [{ name: "SIN TACC", options: [{ value: "SI", count: 1 }] }] } });
     s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
     await flush(); await flush();
-    const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    const msg = s.env.posts.filter((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]).at(-1);
     expect(msg.labels["_/R-00299912-00299912-200"].tacc).toBe("SI");
     // El nombre va en la etiqueta: lo usa la regla de seguridad de Sin TACC.
     expect(typeof msg.labels["_/R-00299912-00299912-200"].name).toBe("string");
@@ -343,16 +343,28 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
     };
     s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
     await flush(); await flush(); await flush(); await flush();
-    const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    const msg = s.env.posts.filter((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]).at(-1);
     expect(msg.labels["_/R-00299912-00299912-200"].tacc).toBe("NO");
     expect(filters).toEqual([null, "SI", "NO"]);
+  });
+
+  it("página de producto: el precio se publica sin esperar la búsqueda de Sin TACC", async () => {
+    const s = setup();
+    s.env.searchBody = (u, body) => {
+      if (new URL(u).searchParams.get("filters[SIN TACC]")) return new Promise(() => {}); // Coto no responde
+      return { ...body, response: { ...body.response, results: [...body.response.results, { data: { id: "prod00000001" } }] } };
+    };
+    s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
+    await flush(); await flush(); await flush();
+    const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    expect(msg.labels["_/R-00299912-00299912-200"]).toMatchObject({ group: "kg", take: 3 });
   });
 
   it("página de producto: sin faceta, tacc es null y no hay pedidos extra", async () => {
     const s = setup();
     s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
     await flush(); await flush();
-    const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    const msg = s.env.posts.filter((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]).at(-1);
     expect(msg.labels["_/R-00299912-00299912-200"].tacc).toBeNull();
     expect(s.env.searched).toEqual(["299912"]);
   });

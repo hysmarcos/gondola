@@ -245,13 +245,15 @@ export function installInterceptor(win, deps) {
     const data = await lookupPlu(String(plu));
     await ready;
     if (!data) return;
-    const tacc = await lookupTacc(String(plu)).catch(() => null);
     const labels = lookupLabels(data, key, store(), settings.selected, settings.day, opts());
-    for (const label of new Set(Object.values(labels))) {
-      label.tacc = tacc;
-      label.name = data.sku_display_name ?? null;
-    }
-    if (labels[key]) post({ type: "labels", labels });
+    if (!labels[key]) return;
+    const unique = new Set(Object.values(labels));
+    for (const label of unique) label.name = data.sku_display_name ?? null;
+    // El precio primero: la búsqueda de Sin TACC puede tardar o no responder.
+    post({ type: "labels", labels });
+    const tacc = await lookupTacc(String(plu)).catch(() => null);
+    for (const label of unique) label.tacc = tacc;
+    post({ type: "labels", labels });
   }
 
   deps.listen?.((msg) => {
