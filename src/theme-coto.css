@@ -78,3 +78,57 @@
 [data-gondola-theme="dark"] .cio-autocomplete :is(.cio-item:hover, .cio-item[aria-selected="true"]) {
   background-color: var(--g-navy-hover) !important;
 }
+
+/* ---------- Menú de categorías ---------- */
+
+/* La tira de categorías es parte de la barra del encabezado; el panel que abre cada categoría
+   es un menú: más claro, con borde y sin sombra. */
+[data-gondola-theme="dark"] header-category .dropdown-menu,
+[data-gondola-theme="dark"] header-category .categoria-producto {
+  background-color: var(--g-surface) !important;
+}
+
+[data-gondola-theme="dark"] header-category .detalle-categoria {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface-2) !important;
+  box-shadow: none !important;
+}
+
+/* Coto le pone fondo blanco y una raya blanca a la izquierda (la que se pinta de rojo al
+   pasar el mouse): acá la raya queda transparente hasta entonces. */
+[data-gondola-theme="dark"] header-category .categorias-generales {
+  border-left-color: transparent !important;
+  background-color: var(--g-surface) !important;
+  color: var(--g-ink) !important;
+}
+
+/* Al pasar el mouse Coto la marca en rojo con una raya a la izquierda; acá, el rojo de texto. */
+[data-gondola-theme="dark"] header-category .categorias-generales:hover {
+  border-left-color: var(--g-red-text) !important;
+  background-color: var(--g-surface) !important;
+  color: var(--g-red-text) !important;
+}
+
+/* La flecha de cada categoría es un dibujo gris oscuro: pasa a gris claro (un solo color, no
+   es una foto). */
+[data-gondola-theme="dark"] header-category .icono-chevron {
+  filter: brightness(0) invert(0.7);
+}
+
+/* Panel abierto: subcategorías en texto claro y el título de cada grupo en el rojo de texto. */
+[data-gondola-theme="dark"] header-category .detalle-categoria a {
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] header-category .detalle-categoria b {
+  color: var(--g-red-text) !important;
+}
+
+/* Barras de desplazamiento propias de Coto (claras) en la tira y en el panel. */
+[data-gondola-theme="dark"] header-category ::-webkit-scrollbar-track {
+  background: var(--g-surface-2);
+}
+
+[data-gondola-theme="dark"] header-category ::-webkit-scrollbar-thumb {
+  background: var(--g-line-2);
+}
