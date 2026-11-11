@@ -1251,3 +1251,19 @@
 .mini-product-card .mini-product-card__body:not(:has(> .mini-product-card__regular-price)):not(:has(> .mini-product-card__unit)) > .coto-unit-box.coto-unit-box--mini {
   margin-bottom: 42px !important;
 }
+
+/* "Configurar Góndola" en el menú de perfil de Coto: el ícono al lado del texto. */
+[data-gondola-menu] .gondola-menu-link,
+[data-gondola-menu].gondola-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+[data-gondola-menu] img.gondola-menu-icon {
+  flex: none;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 4px;
+}

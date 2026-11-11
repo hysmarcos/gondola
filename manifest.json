@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Góndola para Coto: diseño claro, precio por kilo, nutrición y comparador",
   "short_name": "Góndola",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "description": "Mejora Coto Digital: diseño más claro, precio real por kilo o litro, tu banco, otros súper, información nutricional y alergias.",
   "icons": {
     "16": "assets/icon/icon-16.png",
@@ -60,6 +60,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "assets/icon/icon.svg",
         "assets/banks/*",
         "assets/off/*",
         "assets/allergens/*"
