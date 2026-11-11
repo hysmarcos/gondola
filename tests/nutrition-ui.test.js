@@ -798,47 +798,91 @@ describe("piel de la PDP: interruptor 100 / porción y números grandes", () => 
 
 describe("etiquetas para vos en la tarjeta", () => {
   const milk = { allergens: ["milk"], traces: ["soybeans"], per100: {} };
+  // [tipo, texto] de cada etiqueta, sin el title (lo prueba su propio test).
+  const short = (items) => items.map(([kind, text]) => [kind, text]);
+  const tags = (...args) => short(cardTagItems(...args));
 
   it("cardTagItems: alérgenos, trazas y TACC, como máximo 2 y en ese orden", () => {
-    expect(cardTagItems({ allergens: ["milk", "soybeans"] }, {}, milk)).toEqual([["danger", "Tiene leche"], ["warn", "Puede tener soja"]]);
-    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "SI", name: "Leche" }, null)).toEqual([["ok", "Sin TACC"]]);
-    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "SI", name: "Avena tradicional" }, null)).toEqual([["warn", "Revisá TACC"]]);
-    expect(cardTagItems({ celiac: true, allergens: ["milk", "soybeans"] }, { tacc: "SI", name: "Leche" }, milk)).toHaveLength(2);
-    expect(cardTagItems({ celiac: false, allergens: [], sodium: true, sugar: true }, {}, milk)).toEqual([]);
-    expect(cardTagItems(null, {}, milk)).toEqual([]);
+    expect(tags({ allergens: ["milk", "soybeans"] }, {}, milk)).toEqual([["danger", "Tiene leche"], ["warn", "Puede tener soja"]]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "SI", name: "Leche" }, null)).toEqual([["ok", "Sin TACC"]]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "SI", name: "Avena tradicional" }, null)).toEqual([["warn", "Revisá TACC"]]);
+    expect(tags({ celiac: true, allergens: ["milk", "soybeans"] }, { tacc: "SI", name: "Leche" }, milk)).toHaveLength(2);
+    expect(tags({ celiac: false, allergens: [], sodium: true, sugar: true }, {}, milk)).toEqual([]);
+    expect(tags(null, {}, milk)).toEqual([]);
   });
 
   it("cardTagItems: nunca marca como seguro por falta de datos", () => {
     // Celíaco sin alergias, sin tabla y sin dato de TACC: nada. Con datos de otro alérgeno: nada.
-    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: null, name: "Leche" }, null)).toEqual([]);
-    expect(cardTagItems({ celiac: true, allergens: [] }, {}, null)).toEqual([]);
-    expect(cardTagItems({ allergens: ["eggs"] }, {}, milk)).toEqual([]);
-    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "NO", name: "Leche" }, null)).toEqual([]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: null, name: "Leche" }, null)).toEqual([]);
+    expect(tags({ celiac: true, allergens: [] }, {}, null)).toEqual([]);
+    expect(tags({ allergens: ["eggs"] }, {}, milk)).toEqual([]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "NO", name: "Leche" }, null)).toEqual([]);
     // Un alérgeno declarado no se repite como traza.
-    expect(cardTagItems({ allergens: ["milk"] }, {}, { allergens: ["milk"], traces: ["milk"] })).toEqual([["danger", "Tiene leche"]]);
+    expect(tags({ allergens: ["milk"] }, {}, { allergens: ["milk"], traces: ["milk"] })).toEqual([["danger", "Tiene leche"]]);
+  });
+
+  it("cardTagItems: el verde 'Sin TACC' es solo el de Coto; el de Open Food Facts es gris y lo dice", () => {
+    const gf = { allergens: [], traces: [], glutenFreeLabel: true, per100: {} };
+    // En la lista Coto no da el dato (tacc undefined): sello de OFF, gris, nunca verde.
+    expect(tags({ celiac: true, allergens: [] }, { name: "Arroz Gallo" }, gf)).toEqual([["unknown", "Sin TACC según OFF"]]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: null, name: "Arroz Gallo" }, gf)).toEqual([["unknown", "Sin TACC según OFF"]]);
+    // Con el dato de Coto y sin riesgo en el nombre: verde.
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "SI", name: "Arroz Gallo" }, gf)).toEqual([["ok", "Sin TACC"]]);
+    // Coto dice NO: nada, aunque OFF tenga el sello.
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "NO", name: "Arroz Gallo" }, gf)).toEqual([]);
+    // Sello de OFF pero el nombre menciona avena: ni verde ni gris (taccStatus no lo da por bueno).
+    expect(tags({ celiac: true, allergens: [] }, { name: "Avena con sello" }, gf)).toEqual([]);
+  });
+
+  it("cardTagItems: cada etiqueta trae su explicación larga (title)", () => {
+    const gf = { allergens: [], traces: [], glutenFreeLabel: true, per100: {} };
+    expect(cardTagItems({ celiac: true, allergens: [] }, { name: "Arroz" }, gf)).toEqual([
+      ["unknown", "Sin TACC según OFF", "Según Open Food Facts, datos cargados por la comunidad. Verificá el símbolo oficial en el envase."],
+    ]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "SI", name: "Arroz" }, null)).toEqual([
+      ["ok", "Sin TACC", "Coto lo marca Sin TACC. Verificá el símbolo oficial en el envase."],
+    ]);
+    expect(cardTagItems({ allergens: ["milk"] }, {}, null)).toEqual([
+      ["unknown", "Alergias: sin dato", "Open Food Facts no tiene datos de alérgenos de este producto. Revisá el envase."],
+    ]);
+    expect(cardTagItems({ allergens: ["milk", "soybeans"] }, {}, milk)).toEqual([
+      ["danger", "Tiene leche", "Tiene leche. Revisá el envase."],
+      ["warn", "Puede tener soja", "Puede tener soja. Revisá el envase."],
+    ]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "SI", name: "Avena" }, null)).toEqual([
+      ["warn", "Revisá TACC", "Revisá TACC. Revisá el envase."],
+    ]);
   });
 
   it("cardTagItems: con alergias y sin datos de alérgenos dice 'sin dato', nunca en silencio", () => {
     const unknown = [["unknown", "Alergias: sin dato"]];
-    expect(cardTagItems({ allergens: ["milk"] }, {}, { allergens: [], traces: [] })).toEqual(unknown);
-    expect(cardTagItems({ allergens: ["milk"] }, {}, {})).toEqual(unknown);
-    expect(cardTagItems({ allergens: ["milk"] }, {}, null)).toEqual(unknown);
-    expect(cardTagItems({ celiac: true, allergens: ["milk"] }, { tacc: "SI", name: "Fideos" }, null)).toEqual([...unknown, ["ok", "Sin TACC"]]);
-    expect(cardTagItems({ celiac: true, allergens: ["milk"] }, { tacc: "SI", name: "Avena" }, null)).toEqual([...unknown, ["warn", "Revisá TACC"]]);
+    expect(tags({ allergens: ["milk"] }, {}, { allergens: [], traces: [] })).toEqual(unknown);
+    expect(tags({ allergens: ["milk"] }, {}, {})).toEqual(unknown);
+    expect(tags({ allergens: ["milk"] }, {}, null)).toEqual(unknown);
+    expect(tags({ celiac: true, allergens: ["milk"] }, { tacc: "SI", name: "Fideos" }, null)).toEqual([...unknown, ["ok", "Sin TACC"]]);
     // Con datos de otro alérgeno, nada. Sin alergias en el perfil, nunca.
-    expect(cardTagItems({ allergens: ["eggs"] }, {}, { allergens: ["milk"], traces: [] })).toEqual([]);
-    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: null }, null)).toEqual([]);
+    expect(tags({ allergens: ["eggs"] }, {}, { allergens: ["milk"], traces: [] })).toEqual([]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: null }, null)).toEqual([]);
+  });
+
+  it("cardTagItems: 'Revisá TACC' va antes que 'Alergias: sin dato' (lo neutro no saca el aviso)", () => {
+    expect(tags({ celiac: true, allergens: ["milk"] }, { tacc: "SI", name: "Avena tradicional" }, null)).toEqual([["warn", "Revisá TACC"], ["unknown", "Alergias: sin dato"]]);
+    // Y "sin dato" va antes que el Sin TACC (verde o gris).
+    const gf = { allergens: [], traces: [], glutenFreeLabel: true, per100: {} };
+    expect(tags({ celiac: true, allergens: ["milk"] }, { name: "Arroz" }, gf)).toEqual([["unknown", "Alergias: sin dato"], ["unknown", "Sin TACC según OFF"]]);
+    // Una traza va antes que "Revisá TACC".
+    expect(tags({ celiac: true, allergens: ["soybeans"] }, { tacc: "SI", name: "Avena" }, milk)).toEqual([["warn", "Puede tener soja"], ["warn", "Revisá TACC"]]);
   });
 
   it("cardTagItems: el límite de 2 nunca saca el peligro", () => {
     const n = { allergens: ["milk"], traces: ["soybeans"] };
-    expect(cardTagItems({ celiac: true, allergens: ["milk", "soybeans"] }, { tacc: "SI", name: "Fideos" }, n)).toEqual([["danger", "Tiene leche"], ["warn", "Puede tener soja"]]);
-    expect(cardTagItems({ celiac: true, allergens: ["milk", "eggs", "fish"] }, { tacc: "SI", name: "Fideos" }, { allergens: ["milk", "eggs", "fish"], traces: [] }).map((i) => i[0])).toEqual(["danger", "danger"]);
+    expect(tags({ celiac: true, allergens: ["milk", "soybeans"] }, { tacc: "SI", name: "Fideos" }, n)).toEqual([["danger", "Tiene leche"], ["warn", "Puede tener soja"]]);
+    expect(tags({ celiac: true, allergens: ["milk", "eggs", "fish"] }, { tacc: "SI", name: "Fideos" }, { allergens: ["milk", "eggs", "fish"], traces: [] }).map((i) => i[0])).toEqual(["danger", "danger"]);
   });
 
   it("cardTagItems: nombres de ALLERGENS en minúscula", () => {
     const n = { allergens: ["tree-nuts", "gluten"], traces: [] };
-    expect(cardTagItems({ allergens: ["tree-nuts", "gluten"] }, {}, n)).toEqual([["danger", "Tiene frutos secos"], ["danger", "Tiene gluten (TACC)"]]);
+    expect(tags({ allergens: ["tree-nuts", "gluten"] }, {}, n)).toEqual([["danger", "Tiene frutos secos"], ["danger", "Tiene gluten (TACC)"]]);
   });
 
   it("wantsCards: celíaco o alguna alergia", () => {
@@ -867,11 +911,11 @@ describe("etiquetas para vos en la tarjeta", () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(calls).toEqual(["1"]);
     expect(updates).toBe(1);
-    expect(ui.cardTags(label)).toEqual([["danger", "Tiene leche"]]);
+    expect(short(ui.cardTags(label))).toEqual([["danger", "Tiene leche"]]);
     ui.setProfile({ celiac: false, allergens: ["soybeans"] });
-    expect(ui.cardTags(label)).toEqual([["warn", "Puede tener soja"]]);
+    expect(short(ui.cardTags(label))).toEqual([["warn", "Puede tener soja"]]);
     ui.setProfile({ celiac: false, allergens: [] });
-    expect(ui.cardTags(label)).toEqual([]);
+    expect(short(ui.cardTags(label))).toEqual([]);
   });
 
   it("missing y error: sin dato de alergias, TACC con el dato de Coto, y sin reintento", async () => {
@@ -883,9 +927,9 @@ describe("etiquetas para vos en la tarjeta", () => {
     ui.request("2");
     await new Promise((r) => setTimeout(r, 0));
     const unknown = ["unknown", "Alergias: sin dato"];
-    expect(ui.cardTags({ ean: "1", tacc: "SI", name: "Fideos" })).toEqual([unknown, ["ok", "Sin TACC"]]);
-    expect(ui.cardTags({ ean: "1", name: "Fideos" })).toEqual([unknown]);
-    expect(ui.cardTags({ ean: "2", tacc: "SI", name: "Fideos" })).toEqual([unknown, ["ok", "Sin TACC"]]);
+    expect(short(ui.cardTags({ ean: "1", tacc: "SI", name: "Fideos" }))).toEqual([unknown, ["ok", "Sin TACC"]]);
+    expect(short(ui.cardTags({ ean: "1", name: "Fideos" }))).toEqual([unknown]);
+    expect(short(ui.cardTags({ ean: "2", tacc: "SI", name: "Fideos" }))).toEqual([unknown, ["ok", "Sin TACC"]]);
     expect(ui.cardTags({ ean: "9" })).toBeUndefined();
     ui.request("2");
     expect(calls).toEqual(["1", "2"]);

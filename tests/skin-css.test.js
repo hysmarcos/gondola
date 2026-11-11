@@ -73,6 +73,22 @@ describe("splitSelectors", () => {
   });
 });
 
+// Cuerpo de la regla con ese selector exacto (sin comentarios), o null.
+function ruleBody(css, selector) {
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const m of clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (splitSelectors(m[1].trim()).includes(selector)) return m[2];
+  }
+  return null;
+}
+
+it("etiquetas para vos de la tarjeta: cada una se puede achicar, así dos comparten la fila", () => {
+  const body = ruleBody(readFileSync("src/skin-list.css", "utf8"), '[data-gondola-skin="list"] .coto-unit-foryou > span');
+  expect(body).toMatch(/flex:\s*0 1 auto/);
+  expect(body).toMatch(/min-width:\s*0/);
+  expect(body).toMatch(/text-overflow:\s*ellipsis/);
+});
+
 describe.each(FILES)("%s", (file) => {
   const css = readFileSync(file, "utf8");
   it("toda regla cuelga de data-gondola-skin", () => {

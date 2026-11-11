@@ -365,27 +365,35 @@ export function forYouItems(profile, label, n, liquid) {
   return items;
 }
 
-// Etiquetas "para vos" de la tarjeta de la lista: [tipo, texto], como máximo 2. Orden de
-// prioridad: alérgenos declarados, trazas, "sin dato" (alergias en el perfil y ningún dato de
-// alérgenos: misma condición que forYouItems) y TACC para celíacos. n: Nutrition o null (sin
-// tabla o falló el pedido). Nunca se marca como seguro por falta de datos, y sodio y azúcar
-// no entran: en la tarjeta serían un sello. "Sin TACC" sale solo si taccStatus lo da por bueno.
-// El límite de 2 corta desde el final: nunca saca un "Tiene" por otra etiqueta.
+// Explicación larga de cada etiqueta de la tarjeta (va en el title): el texto corto no es
+// la única información.
+const CARD_TAG_TITLE = {
+  "Sin TACC": "Coto lo marca Sin TACC. Verificá el símbolo oficial en el envase.",
+  "Sin TACC según OFF": "Según Open Food Facts, datos cargados por la comunidad. Verificá el símbolo oficial en el envase.",
+  "Alergias: sin dato": "Open Food Facts no tiene datos de alérgenos de este producto. Revisá el envase.",
+};
+
+// Etiquetas "para vos" de la tarjeta de la lista: [tipo, texto, title], como máximo 2. Orden
+// de prioridad: alérgenos declarados, trazas, "Revisá TACC", "sin dato" (alergias en el perfil
+// y ningún dato de alérgenos: misma condición que forYouItems) y Sin TACC. Así una etiqueta
+// neutra nunca saca un aviso. n: Nutrition o null (sin tabla o falló el pedido). Nunca se
+// marca como seguro por falta de datos, y sodio y azúcar no entran: en la tarjeta serían un
+// sello. El verde "Sin TACC" es solo el de Coto (label.tacc "SI", que en la lista casi nunca
+// llega); el sello de Open Food Facts sale gris, "Sin TACC según OFF". Los dos, solo si
+// taccStatus lo da por bueno. El límite de 2 corta desde el final.
 export function cardTagItems(profile, label, n) {
   if (!profile) return [];
   const items = [];
   const mine = (profile.allergens ?? []).filter((key) => ALLERGENS[key]);
   const declared = n?.allergens ?? [];
   const traces = n?.traces ?? [];
+  const tacc = profile.celiac ? taccStatus(label?.tacc ?? null, label?.name, n).kind : null;
   for (const key of mine) if (declared.includes(key)) items.push(["danger", `Tiene ${lcfirst(ALLERGENS[key])}`]);
   for (const key of mine) if (!declared.includes(key) && traces.includes(key)) items.push(["warn", `Puede tener ${lcfirst(ALLERGENS[key])}`]);
+  if (tacc === "warn") items.push(["warn", "Revisá TACC"]);
   if (mine.length && !declared.length && !traces.length) items.push(["unknown", "Alergias: sin dato"]);
-  if (profile.celiac) {
-    const kind = taccStatus(label?.tacc ?? null, label?.name, n).kind;
-    if (kind === "warn") items.push(["warn", "Revisá TACC"]);
-    else if (kind === "ok") items.push(["ok", "Sin TACC"]);
-  }
-  return items.slice(0, 2);
+  if (tacc === "ok") items.push(label?.tacc === "SI" ? ["ok", "Sin TACC"] : ["unknown", "Sin TACC según OFF"]);
+  return items.slice(0, 2).map(([kind, text]) => [kind, text, CARD_TAG_TITLE[text] ?? `${text}. Revisá el envase.`]);
 }
 
 function renderForYou(doc, items, ean, key) {

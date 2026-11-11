@@ -761,8 +761,8 @@ describe("v8: etiquetas para vos en la tarjeta", () => {
         const r = n.results[label.ean];
         if (r === undefined) return undefined;
         const mine = n.profile.allergens ?? [];
-        if (r === "error") return mine.length ? [["unknown", "Alergias: sin dato"]] : [];
-        return mine.filter((k) => r.allergens?.includes(k)).map(() => ["danger", "Tiene leche"]);
+        if (r === "error") return mine.length ? [["unknown", "Alergias: sin dato", "Open Food Facts no tiene datos de alérgenos de este producto. Revisá el envase."]] : [];
+        return mine.filter((k) => r.allergens?.includes(k)).map(() => ["danger", "Tiene leche", "Tiene leche. Revisá el envase."]);
       },
       paint: () => {},
     };
@@ -802,6 +802,19 @@ describe("v8: etiquetas para vos en la tarjeta", () => {
     expect(box.getAttribute("data-coto-unit-ean")).toBe(EAN_A);
     expect(box.closest(".top-imagen-promos")).not.toBeNull();
     expect(box.querySelector(".coto-unit-foryou-danger").textContent).toBe("Tiene leche");
+  });
+
+  it("cada etiqueta lleva su explicación larga en el title", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK, [EAN_B]: "error" });
+    const { doc, send } = setup(two(), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels() });
+    await tick();
+    const spans = tagsOf(doc).map((box) => [...box.children].map((s) => [s.textContent, s.title]));
+    expect(spans).toEqual([
+      [["Tiene leche", "Tiene leche. Revisá el envase."]],
+      [["Alergias: sin dato", "Open Food Facts no tiene datos de alérgenos de este producto. Revisá el envase."]],
+    ]);
   });
 
   it("con IntersectionObserver pide cuando la tarjeta se ve, una sola vez", async () => {

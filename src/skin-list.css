@@ -152,8 +152,10 @@
   pointer-events: none;
 }
 
+/* Cualquiera de las dos se achica (y se corta con "…") si no entran: comparten la fila en
+   lugar de dejar a la segunda en una tira. */
 [data-gondola-skin="list"] .coto-unit-foryou > span {
-  flex: none;
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
   padding: 4px 8px;
@@ -164,17 +166,12 @@
   white-space: nowrap;
 }
 
-/* La de menor prioridad es la que se achica (y se corta con "…") si no entran las dos. */
-[data-gondola-skin="list"] .coto-unit-foryou > span:last-child {
-  flex: 0 1 auto;
-}
-
 [data-gondola-skin="list"] .coto-unit-foryou > .coto-unit-foryou-ok {
   background-color: var(--g-green-soft);
   color: var(--g-green);
 }
 
-/* Sin dato: neutra, nunca verde. Lo que no entra en la fila se corta desde el final. */
+/* "Alergias: sin dato" y "Sin TACC según OFF": neutras, nunca verdes. */
 [data-gondola-skin="list"] .coto-unit-foryou > .coto-unit-foryou-unknown {
   background-color: var(--g-soft);
   color: var(--g-ink2);

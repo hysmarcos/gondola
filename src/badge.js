@@ -360,7 +360,7 @@ export function installBadges(win, doc, deps = {}) {
     }
     unwant(card);
     if (!items.length) return box?.remove();
-    const sig = items.map(([kind, text]) => `${kind}:${text}`).join("|");
+    const sig = items.map(([kind, text, title]) => `${kind}:${text}:${title ?? ""}`).join("|");
     if (box && box.dataset.sig === sig) return;
     if (!box) {
       box = doc.createElement("div");
@@ -369,10 +369,12 @@ export function installBadges(win, doc, deps = {}) {
       (card.querySelector(".top-imagen-promos") ?? card).append(box);
     }
     box.dataset.sig = sig;
-    box.replaceChildren(...items.map(([kind, text]) => {
+    // Cada etiqueta: [tipo, texto corto, explicación larga para el title].
+    box.replaceChildren(...items.map(([kind, text, title]) => {
       const tag = doc.createElement("span");
       tag.className = `${FORYOU}-${kind}`;
       tag.textContent = text;
+      if (title) tag.title = title;
       return tag;
     }));
   }
