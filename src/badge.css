@@ -609,6 +609,15 @@
   border-radius: 4px;
 }
 
+/* El QR se lee negro sobre blanco en los dos temas: muchos lectores no leen el QR invertido. */
+.coto-unit-nutri-qr-bg {
+  fill: #fff; /* fijo: fondo blanco del QR */
+}
+
+.coto-unit-nutri-qr-dots {
+  fill: #000; /* fijo: módulos negros del QR */
+}
+
 /* Pantallas grandes: descripción y tabla en dos columnas; "Características" debajo. */
 @media (min-width: 992px) {
   [data-coto-unit-nutri-host] {

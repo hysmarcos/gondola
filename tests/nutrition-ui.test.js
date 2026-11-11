@@ -423,6 +423,9 @@ describe("primera ola de mejoras", () => {
       expect(svg.getAttribute("role")).toBe("img");
       expect(svg.getAttribute("aria-label")).toBe("Código QR de https://world.openfoodfacts.org/product/1");
       expect(svg.querySelectorAll("path, rect").length).toBeGreaterThan(0);
+      // Los colores del QR (negro sobre blanco, fijos) van en badge.css, por clase.
+      expect(svg.querySelector("rect.coto-unit-nutri-qr-bg")).not.toBeNull();
+      expect(svg.querySelector("path.coto-unit-nutri-qr-dots")).not.toBeNull();
       expect(sec.textContent).toContain("Escaneá el código con el celular para cargarla con fotos del envase.");
     });
   });
