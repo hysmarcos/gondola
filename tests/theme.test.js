@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { JSDOM } from "jsdom";
 import { installTheme, resolveTheme, normalizeTheme } from "../src/theme.js";
+import { renderPopup } from "../src/popup.js";
 
 function setup(stored = {}, { systemDark = false, cache, reducedMotion = false, hidden = false, viewTransitions = false, brokenLocalStorage = false, slowFinish = false } = {}) {
   const dom = new JSDOM("<body></body>", { url: "https://www.coto.com.ar/" });
@@ -174,5 +175,63 @@ describe("installTheme", () => {
     expect(() => installTheme(t.win, t.doc, t.storage)).not.toThrow();
     await tick();
     expect(attr(t.doc)).toBeNull();
+  });
+});
+
+describe("popup: tema", () => {
+  function fakeStorage(initial = {}) {
+    const data = { ...initial };
+    return { data, get: async (keys) => Object.fromEntries(keys.filter((k) => k in data).map((k) => [k, data[k]])), set: vi.fn(async (obj) => Object.assign(data, obj)) };
+  }
+  async function open(initial) {
+    document.body.replaceChildren();
+    const storage = fakeStorage(initial);
+    await renderPopup(document, storage, { version: "1", section: "apariencia" });
+    return storage;
+  }
+  const radios = () => [...document.querySelectorAll('input[type="radio"][name="theme"]')];
+  const checked = () => radios().find((r) => r.checked)?.value;
+
+  it("sin tema guardado ofrece Claro, Oscuro y Automático, y marca claro", async () => {
+    await open();
+    expect(radios().map((r) => r.value)).toEqual(["light", "dark", "auto"]);
+    expect(checked()).toBe("light");
+  });
+
+  it("marca el tema guardado y trata lo inválido como claro", async () => {
+    await open({ theme: "auto" });
+    expect(checked()).toBe("auto");
+    await open({ theme: "x" });
+    expect(checked()).toBe("light");
+  });
+
+  it("al elegir Oscuro lo guarda", async () => {
+    const storage = await open();
+    const dark = radios().find((r) => r.value === "dark");
+    dark.checked = true;
+    dark.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(storage.set).toHaveBeenCalledWith({ theme: "dark" });
+  });
+
+  it("muestra los textos en español", async () => {
+    await open();
+    const group = document.querySelector("fieldset.theme");
+    expect(group.querySelector("legend").textContent).toBe("Tema");
+    expect([...group.querySelectorAll("label")].map((l) => l.textContent.trim())).toEqual(["Claro", "Oscuro", "Automático"]);
+  });
+
+  it("va en Apariencia, antes de la fila Diseño Góndola", async () => {
+    await open();
+    const screen = document.querySelector('[data-section="apariencia"].screen');
+    const group = screen.querySelector("fieldset.theme");
+    const skin = screen.querySelector('input[name="skin"]').closest(".setting");
+    expect(group).not.toBeNull();
+    expect(group.compareDocumentPosition(skin) & 4).toBeTruthy();
+  });
+
+  it("los radios no cuentan como interruptores en el menú", async () => {
+    await open();
+    const row = document.querySelector('button.menu-row[data-section="apariencia"]');
+    expect(row.querySelector(".menu-status").textContent).toContain("2 de 2");
   });
 });

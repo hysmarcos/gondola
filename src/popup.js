@@ -3,6 +3,7 @@
 import { dayName, isComunidad } from "./banks.js";
 import { ALLERGENS } from "./nutrition.js";
 import { feedbackLinks, REPO } from "./feedback.js";
+import { normalizeTheme } from "./theme.js";
 
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const SVG = "http://www.w3.org/2000/svg";
@@ -34,6 +35,7 @@ const SETTINGS = [
 ];
 
 const HELP = [
+  ["Modo oscuro", "En Ajustes, sección Apariencia, elegí Claro, Oscuro o Automático. Cambia todo el sitio de Coto. La ventana de Góndola sigue clara."],
   ["Precio real para comparar", "El precio por kg, litro, unidad o 10 m de papel, ya con la oferta de Coto."],
   ["Hoy con tu banco", "El mismo precio con la promo de tu tarjeta, si Coto la aplica a ese producto."],
   ["Banco no aplica", "El producto ya está en oferta o Coto lo excluye de las promos bancarias."],
@@ -192,6 +194,25 @@ function settingRow(doc, { key, title, text }, checked, storage, onChange = () =
   ]);
 }
 
+// Tema del sitio: tres opciones excluyentes. Lo inválido vale "light".
+const THEMES = [["light", "Claro"], ["dark", "Oscuro"], ["auto", "Automático"]];
+
+function themeRow(doc, value, storage) {
+  const current = normalizeTheme(value);
+  const options = THEMES.map(([id, label]) => {
+    const radio = el(doc, "input", { type: "radio", name: "theme", value: id, checked: id === current });
+    radio.addEventListener("change", () => {
+      if (radio.checked) storage.set({ theme: id });
+    });
+    return el(doc, "label", {}, [radio, el(doc, "span", { textContent: label })]);
+  });
+  return el(doc, "fieldset", { className: "setting theme" }, [
+    el(doc, "legend", { className: "setting-title", textContent: "Tema" }),
+    el(doc, "span", { className: "setting-desc", textContent: "Modo oscuro para todo el sitio de Coto. Automático sigue el tema de tu sistema." }),
+    el(doc, "div", { className: "segmented" }, options),
+  ]);
+}
+
 // Mi perfil: apagado por defecto. Queda en el navegador.
 function profileView(doc, s, storage, onChange = () => {}) {
   const chosen = new Set(Array.isArray(s.profileAllergens) ? s.profileAllergens : []);
@@ -238,7 +259,7 @@ function settingsView(doc, s, storage, meta = {}) {
       }
     };
     if (sec.id === "perfil") body.append(...profileView(doc, s, storage, update));
-    else body.append(...SETTINGS.filter((x) => x.section === sec.id).map((item) => settingRow(doc, item, s[item.key] !== false, storage, update)));
+    else body.append(...(sec.id === "apariencia" ? [themeRow(doc, s.theme, storage)] : []), ...SETTINGS.filter((x) => x.section === sec.id).map((item) => settingRow(doc, item, s[item.key] !== false, storage, update)));
     update();
 
     const row = el(doc, "button", { type: "button", className: "menu-row" }, [
@@ -308,7 +329,7 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 // storage: misma interfaz que en bridge.js.
 // meta: { version, logoUrl, welcomeUrl, tab, section }. tab y section abren el popup en ese lugar.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["skin", "promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
+  const s = await storage.get(["skin", "promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab", "theme"]);
   const wanted = meta.section ? "ajustes" : meta.tab ?? s.popupTab;
   let active = TABS.some((t) => t.id === wanted) ? wanted : "tarjetas";
 
