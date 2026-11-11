@@ -282,3 +282,26 @@ se sabe).
    nodos, sin `innerHTML` ni imágenes de afuera) con la URL de la ficha en OFF y el texto
    "Escaneá el código con el celular para cargarla con fotos del envase." Librería:
    `qrcode-generator` 2.0.4 (MIT, sin dependencias).
+
+## 10. Fotos de Open Food Facts en la galería del producto (2026-11-10)
+
+**HTML real de la galería de Coto.** `article.gallery-wrap` con `div.img-big-wrap` (la foto
+grande, `img.image` con zoom de Coto) y `div.thumbs-wrap` (miniaturas: `div.item-thumb` con
+`img` de 60 × 60). Verificado en la página: Coto deja cargar imágenes de
+`images.openfoodfacts.org`.
+
+- **Miniaturas.** Al final de `div.thumbs-wrap`, una por foto que exista, en este orden:
+  frente, tabla, ingredientes. Clase `item-thumb coto-unit-offthumb`, con la foto de 400 px
+  de OFF y, en la esquina, el ícono de Open Food Facts. Texto alternativo: "Foto de Open
+  Food Facts: frente" (o "tabla nutricional", "ingredientes").
+- **Al hacer clic.** Encima de la foto grande de Coto aparece un visor
+  (`div.coto-unit-offview`) con la foto en tamaño completo (la URL de OFF con `.full.jpg`
+  en vez de `.400.jpg`) y una franja abajo: ícono + "Foto de Open Food Facts, cargada por
+  la comunidad. No es una foto de Coto." + link "Ver en Open Food Facts" (ficha del
+  producto, pestaña nueva). La miniatura elegida queda marcada.
+- **Volver a Coto.** Un clic en cualquier miniatura de Coto cierra el visor.
+- **Cuándo no se muestran.** Sin fotos, con `"missing"` o `"error"`, con el ajuste apagado
+  o al pasar a otro producto: se borran las miniaturas y el visor.
+- Góndola no cambia la foto de Coto ni sus miniaturas: solo agrega las suyas y el visor.
+- Los links "Fotos del envase" del pie de la sección se mantienen.
+- Licencia de las fotos: CC BY-SA; la franja del visor nombra a Open Food Facts.
