@@ -114,7 +114,7 @@ corta con "…".
 
 | Orden | Parte | Alto | Contenido |
 |---|---|---|---|
-| 1 | Foto | cuadrada | Fondo suave. Arriba a la izquierda, una etiqueta: "Más barato por litro" (ámbar), o la oferta de Coto (roja). Abajo, las etiquetas "para vos". |
+| 1 | Foto | cuadrada | Fondo suave. Arriba a la izquierda, una etiqueta: "Más barato de la categoría" o, en búsquedas y ofertas, "Más barato de esta lista" (ámbar), o la oferta de Coto (roja). Abajo, las etiquetas "para vos". |
 | 2 | Nombre | 36 px | 2 líneas. |
 | 3 | Precio | 28 px | Precio final de 20 px y, al lado, el precio regular tachado. |
 | 4 | Precio por unidad | 20 px | Azul. Valor, unidad y motivo ("llevando 2", "con ICBC hoy"). Vacío si no hay dato. |
@@ -126,8 +126,9 @@ Reglas de cada parte:
 - **Etiqueta de arriba**: una sola entre "más barato de la categoría" y la oferta de Coto,
   en ese orden de prioridad. La marca de inicio de grupo al ordenar por unidad ("▸ Por
   litro") se sigue viendo, debajo.
-- **Etiquetas "para vos"**: máximo 2, en una fila. Flotan sobre la foto, así que no cambian
-  el alto. Si no entran las dos, cualquiera se achica y se corta con "…". Cada una lleva
+- **Etiquetas "para vos"**: máximo 2. Flotan sobre la foto, abajo, así que no cambian el
+  alto. No se cortan: si las dos no entran en una fila, la segunda baja a otra fila, sobre
+  la foto. Cada una lleva
   la explicación larga en el `title`. Solo para alergias y celíaco, en este orden de
   prioridad (el límite de 2 corta desde el final):
   1. "Tiene leche" (ámbar con borde), una por alérgeno declarado.
