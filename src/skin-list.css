@@ -1,0 +1,528 @@
+/* Piel Góndola: tarjeta de la lista de productos (spec 4.2).
+   Cada parte tiene alto fijo, haya dato o no: foto cuadrada, nombre 36 px, precio 28 px,
+   precio por unidad 20 px, comparador 33 px, acción 40 px y "sin impuestos" 18 px. Así el
+   nombre, el precio y el botón quedan a la misma altura en toda la fila.
+   Nodos de Coto: div.producto-card (celda) > constructor-result-item > .card-container >
+   [.top-imagen-promos (foto y cucardas), .centro-precios (nombre, precios, .bottom-botones)].
+   En los nodos de Coto, lo que choca con sus estilos (componentes de Angular con
+   selectores largos, y utilidades de Bootstrap con !important: text-center, d-flex,
+   align-items-center, justify-content-*) lleva !important. */
+
+/* ---------- Tarjeta: llena su celda, así las de una fila miden lo mismo ---------- */
+
+[data-gondola-skin="list"] .productos > .producto-card > constructor-result-item {
+  display: block;
+  height: 100%;
+}
+
+[data-gondola-skin="list"] .producto-card .card-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  min-width: 0 !important;
+  padding: 12px !important;
+  border: 0;
+  border-radius: 14px !important;
+  background-color: #fff;
+  box-shadow: 0 0 0 1px var(--g-line) !important;
+  color: var(--g-ink);
+  font-family: Poppins, system-ui, sans-serif;
+  line-height: 1.4;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  transition: box-shadow 150ms ease;
+}
+
+/* En el carrito: borde rojo de 2 px (el selector de cantidad está en lugar de "Agregar"). */
+[data-gondola-skin="list"] .producto-card .card-container:has(.bottom-botones product-add-show-remove input[id^="input-prod"]) {
+  box-shadow: 0 0 0 2px var(--g-red) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-gondola-skin="list"] .producto-card .card-container:hover {
+    box-shadow: 0 0 0 1px #cfd4dc, 0 6px 16px -8px rgba(20, 40, 75, 0.2) !important;
+  }
+
+  [data-gondola-skin="list"] .producto-card .card-container:has(.bottom-botones product-add-show-remove input[id^="input-prod"]):hover {
+    box-shadow: 0 0 0 2px var(--g-red), 0 6px 16px -8px rgba(20, 40, 75, 0.2) !important;
+  }
+}
+
+/* ---------- 1. Foto: cuadrada, fondo suave, etiquetas arriba a la izquierda ---------- */
+
+[data-gondola-skin="list"] .card-container > .top-imagen-promos {
+  position: relative;
+  flex: none;
+  justify-content: center !important;
+  aspect-ratio: 1;
+  margin: 0 0 10px;
+  padding: 12px;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: var(--g-soft);
+}
+
+[data-gondola-skin="list"] .top-imagen-promos > a {
+  display: flex;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100%;
+  height: 100%;
+}
+
+/* Las fotos de Coto tienen fondo blanco: con multiply toman el fondo suave. */
+[data-gondola-skin="list"] .top-imagen-promos .product-image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+/* Etiquetas y cucardas flotan sobre la foto: no cambian el alto. */
+[data-gondola-skin="list"] .top-imagen-promos > .promos {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  z-index: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  pointer-events: none;
+}
+
+[data-gondola-skin="list"] .top-imagen-promos .coto-unit-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 100%;
+}
+
+[data-gondola-skin="list"] .top-imagen-promos .coto-unit-tags > div,
+[data-gondola-skin="list"] .top-imagen-promos .cucarda-promo {
+  max-width: 100%;
+  margin: 0 !important;
+  padding: 4px 8px !important;
+  overflow: hidden;
+  border-radius: 6px !important;
+  font: 600 11px/14px Poppins, system-ui, sans-serif !important;
+  letter-spacing: 0;
+  text-transform: none !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Una sola etiqueta arriba: "más barato" antes que la oferta de Coto. La marca de grupo
+   ("▸ Por litro", al ordenar por unidad) se sigue viendo debajo. */
+[data-gondola-skin="list"] .coto-unit-tags > .coto-unit-best {
+  background-color: var(--g-amber);
+  color: var(--g-navy);
+}
+
+[data-gondola-skin="list"] .coto-unit-tags > .coto-unit-offer,
+[data-gondola-skin="list"] .top-imagen-promos .cucarda-promo {
+  background-color: var(--g-red) !important;
+  color: #fff !important;
+}
+
+[data-gondola-skin="list"] .coto-unit-tags > .coto-unit-best ~ .coto-unit-offer {
+  display: none;
+}
+
+[data-gondola-skin="list"] .coto-unit-tags > .coto-unit-mark {
+  background-color: var(--g-navy-soft);
+  color: var(--g-navy);
+}
+
+/* ---------- 2. Nombre: 2 líneas en 36 px ---------- */
+
+[data-gondola-skin="list"] .card-container > .centro-precios {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+[data-gondola-skin="list"] .card-container .nombre-producto {
+  display: -webkit-box !important;
+  flex: none;
+  height: 36px;
+  margin: 0 0 6px !important;
+  padding: 0;
+  overflow: hidden;
+  color: var(--g-ink) !important;
+  font: 500 13px/18px Poppins, system-ui, sans-serif !important;
+  text-align: left !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical;
+}
+
+/* ---------- 3 a 5. Bloque de Góndola: precio, precio por unidad, comparador ----------
+   badge.js dibuja los hijos en el orden precio, detalle, comparador, unidad; la grilla
+   los ubica sin moverlos. */
+
+[data-gondola-skin="list"] .card-container .coto-unit-price {
+  display: grid;
+  flex: none;
+  grid-template-areas:
+    "price price"
+    "unit detail"
+    "cmp cmp";
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 28px 20px 33px;
+  gap: 0 8px;
+  align-items: center;
+  justify-items: stretch;
+  width: 100%;
+  margin: 0;
+  line-height: 20px;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-gondola-skin="list"] .coto-unit-price > .coto-unit-pricerow {
+  grid-area: price;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  height: 28px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+[data-gondola-skin="list"] .coto-unit-pricerow > .coto-unit-final {
+  color: var(--g-ink);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+}
+
+[data-gondola-skin="list"] .coto-unit-pricerow > .coto-unit-regular {
+  color: var(--g-ink2);
+  font-size: 12px;
+  line-height: 28px;
+}
+
+/* Precio por unidad (azul) y, al lado, el motivo: "c/u llevando 2", "con [banco] 10% hoy". */
+[data-gondola-skin="list"] .coto-unit-price > .coto-unit-unit {
+  grid-area: unit;
+  display: flex;
+  justify-content: flex-start;
+  min-width: 0;
+  height: 20px;
+  overflow: hidden;
+}
+
+[data-gondola-skin="list"] .coto-unit-unit > .coto-unit-value {
+  overflow: hidden;
+  color: var(--g-navy);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+}
+
+[data-gondola-skin="list"] .coto-unit-price > .coto-unit-detail {
+  grid-area: detail;
+  display: block;
+  min-width: 0;
+  height: 20px;
+  overflow: hidden;
+  color: var(--g-ink2);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-gondola-skin="list"] .coto-unit-price > .coto-unit-detail[data-coto-unit-bank] {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  color: var(--g-navy);
+  font-weight: 600;
+}
+
+[data-gondola-skin="list"] .coto-unit-detail .coto-unit-logo {
+  flex: none;
+  height: 14px;
+  max-width: 40px;
+}
+
+/* Comparador: una línea a lo ancho, con una línea fina arriba. */
+[data-gondola-skin="list"] .coto-unit-price > .coto-unit-cmprow {
+  grid-area: cmp;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  height: 33px;
+  min-height: 0;
+  padding-top: 1px;
+  box-shadow: inset 0 1px 0 var(--g-line);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow > .coto-unit-cmp--icon {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+/* La pastilla de compare-ui.js, sin fondo: punto de color, texto y una flecha. */
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--g-ink2);
+  font: 500 12px/1 Poppins, system-ui, sans-serif;
+  text-align: left;
+  transition: transform 160ms var(--g-out);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn:active {
+  transform: scale(0.97);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn svg {
+  display: none;
+}
+
+/* El punto: el ::before que badge.css usaba como zona de toque (la fila entera ya mide 32 px). */
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn::before {
+  content: "";
+  position: static;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #c3c8d2;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn::after {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin: -3px 2px 0 auto;
+  border-right: 1.5px solid var(--g-ink2);
+  border-bottom: 1.5px solid var(--g-ink2);
+  transform: rotate(45deg);
+  transition: transform 150ms var(--g-out);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon[data-open] .coto-unit-cmp-btn::after {
+  margin-top: 3px;
+  transform: rotate(-135deg);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-text {
+  min-width: 0;
+  overflow: hidden;
+  font: inherit;
+  text-overflow: ellipsis;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon[data-state] .coto-unit-cmp-btn {
+  background-color: transparent;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon[data-state="better"] .coto-unit-cmp-btn {
+  color: var(--g-green);
+  font-weight: 600;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon[data-state="better"] .coto-unit-cmp-btn::before {
+  background-color: var(--g-green);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon[data-state="worse"] .coto-unit-cmp-btn {
+  color: var(--g-amber-ink);
+  font-weight: 600;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon[data-state="worse"] .coto-unit-cmp-btn::before {
+  background-color: var(--g-amber);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon[data-state="equal"] .coto-unit-cmp-btn::before {
+  background-color: var(--g-ink2);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn:focus-visible {
+  outline: 2px solid var(--g-navy);
+  outline-offset: 0;
+}
+
+/* Panel con Coto y los otros súper: flota sobre la tarjeta, por encima de la línea que lo
+   abre, y no mueve nada. Se abre con un clic (no al pasar el mouse: la línea está pegada
+   al botón "Agregar"). Entrada de 150 ms desde 0,97, con origen abajo a la izquierda. */
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop {
+  top: auto;
+  right: 0;
+  bottom: calc(100% + 6px);
+  left: 0;
+  width: auto;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--g-line), 0 12px 32px -8px rgba(20, 40, 75, 0.28);
+  color: var(--g-ink);
+  font-size: 12px;
+  transform-origin: bottom left;
+  transition-property: opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--g-out);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon:not([data-open]) .coto-unit-cmp-pop {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.97);
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon[data-open] .coto-unit-cmp-pop {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+/* Coto pone 15 px a todos los elementos (html, *): acá cada texto lleva su tamaño. */
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop .coto-unit-cmp-name,
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop .coto-unit-cmp-price {
+  font-size: 13px;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop .coto-unit-cmp-delta {
+  font-size: 12px;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop .coto-unit-cmp-qty {
+  background-color: var(--g-amber-soft);
+  color: var(--g-amber-ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ---------- 6. Acción: "Agregar" o el selector de cantidad, abajo de todo ---------- */
+
+[data-gondola-skin="list"] .card-container .bottom-botones {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  align-self: stretch;
+  width: 100%;
+  margin-top: auto;
+  padding: 8px 0 0;
+}
+
+[data-gondola-skin="list"] .bottom-botones > product-add-show-remove {
+  display: block;
+  width: 100% !important;
+}
+
+[data-gondola-skin="list"] .bottom-botones > product-add-show-remove > div {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* "Ver planes de cuotas" no va en la tarjeta: sigue en la página de producto. */
+[data-gondola-skin="list"] .card-container .bottom-botones > a {
+  display: none !important;
+}
+
+/* ---------- 7. "Precio sin impuestos nacionales": 18 px, debajo del botón ----------
+   Es la última <small class="text-center"> de .centro-precios, dentro de un bloque que en
+   las tarjetas con etiqueta solo la muestra a ella ("Precio regular" está oculto): ese
+   bloque pasa abajo con order. */
+
+[data-gondola-skin="list"] .card-container .centro-precios small.text-center:last-child {
+  display: block !important;
+  align-self: stretch;
+  height: 18px;
+  margin: 0 !important;
+  overflow: hidden;
+  color: var(--g-ink2) !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 18px;
+  text-align: left !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-gondola-skin="list"] .card-container[data-coto-unit-card] .centro-precios > :has(> small.text-center:last-child) {
+  order: 1;
+  align-items: stretch !important;
+  margin: 4px 0 0;
+}
+
+/* ---------- Tarjeta sin etiqueta de Góndola: el precio de Coto ----------
+   Mismo borde, foto y nombre; sin altos internos. El botón queda abajo y, como el
+   "sin impuestos" de estas tarjetas está arriba del botón, se le reserva el mismo lugar
+   debajo: así queda a la altura del de sus vecinas. */
+
+[data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .centro-precios small {
+  margin: 0 !important;
+  color: var(--g-ink2);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: left !important;
+}
+
+[data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .centro-precios > div {
+  align-items: stretch !important;
+  text-align: left !important;
+}
+
+[data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .centro-precios h4.card-title {
+  margin: 0 !important;
+  color: var(--g-ink);
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  line-height: 28px;
+  text-align: left !important;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .bottom-botones {
+  margin-bottom: 22px;
+}
+
+/* Movimiento reducido: solo cambios de color. */
+@media (prefers-reduced-motion: reduce) {
+  [data-gondola-skin="list"] .producto-card .card-container,
+  [data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn,
+  [data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn::after,
+  [data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop {
+    transition-duration: 0ms;
+  }
+
+  [data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-btn:active,
+  [data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp--icon .coto-unit-cmp-pop {
+    transform: none !important;
+  }
+}

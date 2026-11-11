@@ -1,1 +1,143 @@
-/* Piel Góndola: tokens y piezas comunes (los llena la Task 3). */
+/* Piel Góndola: tokens y piezas comunes de la lista y de la página de producto.
+   Todo cuelga de data-gondola-skin en <html>: sin el atributo, la página queda como en la
+   0.12.0. Base neutra; rojo Coto solo para comprar y para sus ofertas; azul y ámbar para lo
+   que agrega Góndola.
+   Los estilos de los componentes de Coto (Angular) entran después y con selectores largos
+   ([_ngcontent-…]), y algunos traen !important: en los nodos de Coto, lo que choca con
+   ellos lleva !important. */
+
+[data-gondola-skin] {
+  --g-ink: #16181d;
+  --g-ink2: #5b616e;
+  --g-line: #e6e8ec;
+  --g-soft: #f5f6f8;
+  --g-red: #e20025;
+  --g-red-d: #c4001f;
+  --g-navy: #14284b;
+  --g-navy-soft: #eef2f9;
+  --g-amber: #ffc233;
+  --g-amber-soft: #fff4d1;
+  --g-amber-ink: #6b4a00;
+  --g-green: #0a7a3d;
+  --g-green-soft: #e6f4ec;
+  --g-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ---------- "Agregar" de Coto (lista y página de producto) ---------- */
+
+[data-gondola-skin] product-add-show-remove .btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  height: 40px !important;
+  margin: 0 !important;
+  padding: 0 16px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background-color: var(--g-red) !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  font: 600 13px/1 Poppins, system-ui, sans-serif !important;
+  letter-spacing: 0;
+  text-transform: none !important;
+  white-space: nowrap;
+  transition: transform 160ms var(--g-out), background-color 150ms ease;
+}
+
+[data-gondola-skin] product-add-show-remove .btn-primary:active {
+  transform: scale(0.97);
+}
+
+[data-gondola-skin] product-add-show-remove .btn-primary:focus-visible {
+  outline: 2px solid var(--g-navy);
+  outline-offset: 2px;
+}
+
+[data-gondola-skin] product-add-show-remove .btn-primary:disabled {
+  background-color: var(--g-soft) !important;
+  color: var(--g-ink2) !important;
+  transform: none;
+}
+
+/* ---------- Selector de cantidad de Coto: − cantidad + ----------
+   Solo existe con sesión iniciada; el selector sale de src/promo-clicks.js (el campo
+   input-prod… entre los dos botones), sin captura de HTML real. */
+
+[data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  width: 100% !important;
+  height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background-color: #fff !important;
+  box-shadow: inset 0 0 0 1.5px var(--g-red) !important;
+}
+
+[data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px !important;
+  min-width: 40px;
+  height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--g-red) !important;
+  font: 600 18px/1 Poppins, system-ui, sans-serif !important;
+  text-transform: none !important;
+  transition: transform 160ms var(--g-out), background-color 150ms ease;
+}
+
+[data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button:active {
+  transform: scale(0.92);
+}
+
+[data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button:focus-visible {
+  outline: 2px solid var(--g-navy);
+  outline-offset: -2px;
+}
+
+[data-gondola-skin] product-add-show-remove input[id^="input-prod"] {
+  flex: 1;
+  min-width: 0;
+  width: auto !important;
+  height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--g-ink) !important;
+  font: 600 13px/1 Poppins, system-ui, sans-serif !important;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-gondola-skin] product-add-show-remove .btn-primary:not(:disabled):hover {
+    background-color: var(--g-red-d) !important;
+  }
+
+  [data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button:hover {
+    background-color: #fff3f5 !important;
+  }
+}
+
+/* Movimiento reducido: solo cambios de color. */
+@media (prefers-reduced-motion: reduce) {
+  [data-gondola-skin] product-add-show-remove .btn-primary,
+  [data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button {
+    transform: none !important;
+    animation: none !important;
+  }
+}

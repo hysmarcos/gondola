@@ -18,7 +18,8 @@
     "icons": "node scripts/icons.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "fixtures:off": "node scripts/capture-off-fixtures.mjs",
-    "fixtures:dom": "node scripts/capture-dom.mjs"
+    "fixtures:dom": "node scripts/capture-dom.mjs",
+    "skin:check": "node scripts/skin-check.mjs"
   },
   "devDependencies": {
     "@fontsource/poppins": "^5.2.7",
