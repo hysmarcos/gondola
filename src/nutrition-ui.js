@@ -285,12 +285,49 @@ function renderSection(doc, result, { ean, liquid, iconUrl, label, assetUrl }) {
 
 const HOST = "data-coto-unit-nutri-host";
 
+const lcfirst = (t) => t.charAt(0).toLowerCase() + t.slice(1);
+
+// Ítems de "Para vos" según el perfil: [clase, texto]. n: Nutrition o null (sin tabla).
+export function forYouItems(profile, label, n, liquid) {
+  if (!profile) return [];
+  const items = [];
+  if (profile.celiac) {
+    const st = taccStatus(label?.tacc ?? null, label?.name, n);
+    items.push([st.kind, `${st.text}. Verificá el símbolo oficial en el envase.`]);
+  }
+  const mine = profile.allergens ?? [];
+  if (mine.length) {
+    const declared = n?.allergens ?? [];
+    const traces = n?.traces ?? [];
+    if (!declared.length && !traces.length) items.push(["unknown", "Sin datos de alérgenos: revisá el envase"]);
+    for (const key of mine) {
+      if (declared.includes(key)) items.push(["danger", `Declara ${lcfirst(ALLERGENS[key])}`]);
+      else if (traces.includes(key)) items.push(["warn", `Puede contener ${lcfirst(ALLERGENS[key])}`]);
+    }
+  }
+  const base = liquid ? "100 ml" : "100 g";
+  if (profile.sodium && n?.per100?.sodiumMg !== undefined) items.push(["info", `Sodio: ${format(n.per100.sodiumMg, "mg")} cada ${base}`]);
+  if (profile.sugar && n?.per100?.sugars !== undefined) items.push(["info", `Azúcares: ${format(n.per100.sugars, "g")} cada ${base}`]);
+  return items;
+}
+
+function renderForYou(doc, items, ean, key) {
+  const box = el(doc, "div", `${ROOT}-foryou`);
+  box.dataset.ean = ean;
+  box.dataset.profile = key;
+  const ul = el(doc, "ul");
+  for (const [kind, text] of items) ul.append(el(doc, "li", `${ROOT}-foryou-${kind}`, text));
+  box.append(el(doc, "p", `${ROOT}-foryou-title`, "Para vos"), ul);
+  return box;
+}
+
 // request(ean) → Promise<Nutrition | "missing" | "error">. onUpdate(): pedir un repintado.
 // iconUrl: ícono de Open Food Facts (opcional). assetUrl(path): URL de un archivo de la
 // extensión (íconos de alérgenos; opcional).
 export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, assetUrl = null }) {
   const results = new Map(); // ean -> resultado
   const asked = new Set();
+  let profile = null; // perfil personal del popup (o null)
 
   function ask(ean) {
     if (asked.has(ean)) return;
@@ -310,7 +347,7 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, asse
 
   // Nodos de Góndola ya dibujados: en la columna y en la sección.
   const ours = (container, section) => [
-    ...container.querySelectorAll(`:scope > .${ROOT}, :scope > .${ROOT}-sum, :scope > .${ROOT}-badge`),
+    ...container.querySelectorAll(`:scope > .${ROOT}, :scope > .${ROOT}-sum, :scope > .${ROOT}-badge, :scope > .${ROOT}-foryou`),
     ...(section ? section.host.querySelectorAll(`:scope > .${ROOT}-section`) : []),
   ];
 
@@ -361,7 +398,16 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, asse
       badge.dataset.ean = ean;
       place(badge, container, container.querySelector(`:scope > .${ROOT}-sum`) ?? anchor);
     }
+    // "Para vos": se rehace si cambió el perfil.
+    const items = forYouItems(profile, label, r === "missing" ? null : r, liquid);
+    const key = JSON.stringify(items);
+    const current = container.querySelector(`:scope > .${ROOT}-foryou`);
+    if (current && current.dataset.profile !== key) current.remove();
+    if (items.length && !container.querySelector(`:scope > .${ROOT}-foryou`)) {
+      const after = container.querySelector(`:scope > .${ROOT}-badge`) ?? container.querySelector(`:scope > .${ROOT}-sum`) ?? anchor;
+      place(renderForYou(doc, items, ean, key), container, after);
+    }
   }
 
-  return { paint };
+  return { paint, setProfile: (p) => (profile = p ?? null) };
 }

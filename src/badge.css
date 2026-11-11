@@ -498,6 +498,38 @@
   color: #633806;
 }
 
+/* "Para vos": lo que importa según el perfil del popup. */
+.coto-unit-nutri-foryou {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-left: 3px solid #0c447c;
+  background: #f4f8fc;
+  font-size: 13px;
+}
+
+.coto-unit-nutri-foryou-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: #0c447c;
+}
+
+.coto-unit-nutri-foryou ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coto-unit-nutri-foryou li {
+  margin: 2px 0;
+}
+
+.coto-unit-nutri-foryou-danger { color: #a32d2d; font-weight: 600; }
+.coto-unit-nutri-foryou-warn { color: #633806; font-weight: 600; }
+.coto-unit-nutri-foryou-ok { color: #27500a; }
+.coto-unit-nutri-foryou-unknown,
+.coto-unit-nutri-foryou-no { color: #6b7177; }
+.coto-unit-nutri-foryou-info { color: #212529; font-variant-numeric: tabular-nums; }
+
 /* Sección: Sin TACC, alérgenos, ingredientes, aditivos y NOVA, debajo de la tabla. */
 .coto-unit-nutri-tacc,
 .coto-unit-nutri-allergens,

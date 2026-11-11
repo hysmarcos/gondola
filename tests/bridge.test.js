@@ -116,6 +116,44 @@ describe("ajuste información nutricional", () => {
   });
 });
 
+describe("perfil personal", () => {
+  it("el puente manda el perfil: apagado por defecto, con lo que haya en storage", async () => {
+    const win = fakeWin();
+    installBridge(win, fakeStorage(), () => 0);
+    await tick();
+    expect(win.posted.find((m) => m.type === "settings").profile).toEqual({ celiac: false, sodium: false, sugar: false, allergens: [] });
+    const win2 = fakeWin();
+    const st = fakeStorage({ profileCeliac: true, profileAllergens: ["milk", "peanuts", "x"] });
+    installBridge(win2, st, () => 0);
+    await tick();
+    expect(win2.posted.find((m) => m.type === "settings").profile).toEqual({ celiac: true, sodium: false, sugar: false, allergens: ["milk", "peanuts"] });
+    await st.set({ profileSugar: true });
+    await tick();
+    expect(win2.posted.filter((m) => m.type === "settings").at(-1).profile.sugar).toBe(true);
+  });
+
+  it("el popup tiene 'Mi perfil' apagado y guarda las alergias elegidas", async () => {
+    const st = fakeStorage();
+    await renderPopup(document, st, { version: "1" });
+    expect(document.body.textContent).toContain("Mi perfil");
+    expect(document.body.textContent).toContain("No es consejo médico.");
+    const celiac = document.querySelector('input[name="profileCeliac"]');
+    expect(celiac.checked).toBe(false);
+    celiac.click();
+    await tick();
+    expect(st.data.profileCeliac).toBe(true);
+    const milk = document.querySelector('input[name="profileAllergens"][value="milk"]');
+    expect(milk.closest("label").textContent).toContain("Leche");
+    milk.click();
+    await tick();
+    document.querySelector('input[name="profileAllergens"][value="peanuts"]').click();
+    await tick();
+    // En el orden de la tabla de alérgenos (Maní antes que Leche).
+    expect(st.data.profileAllergens).toEqual(["peanuts", "milk"]);
+    expect(document.querySelectorAll('input[name="profileAllergens"]')).toHaveLength(14);
+  });
+});
+
 describe("popup", () => {
   const open = async (st, meta = { version: "0.4.0" }) => {
     document.body.innerHTML = "";

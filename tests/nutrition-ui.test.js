@@ -534,3 +534,66 @@ describe("segunda ola: Sin TACC, alérgenos, ingredientes y NOVA", () => {
     expect(container.querySelector(".coto-unit-nutri-badge")).toBeNull();
   });
 });
+
+describe("perfil personal: línea 'Para vos'", () => {
+  const N3 = {
+    per100: { kcal: 480, sugars: 30, sodiumMg: 250, fat: 20 }, perServing: null, url: "u", photos: {},
+    ingredients: null, allergens: ["milk"], traces: ["peanuts"], additives: [], nova: null, glutenFreeLabel: false,
+  };
+  let container, anchor, host, desc;
+  beforeEach(() => {
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    container = document.querySelector(".mt-4"); anchor = document.getElementById("a");
+    desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+  });
+  async function draw(result, profile, label = { ean: "1", nutri: true, group: "kg", tacc: null, name: "Galletitas" }) {
+    const ui = createNutritionUi(document, { request: async () => result, onUpdate: () => {} });
+    ui.setProfile(profile);
+    const section = { host, after: desc };
+    ui.paint(container, anchor, label, true, section);
+    await new Promise((r) => setTimeout(r, 0));
+    ui.paint(container, anchor, label, true, section);
+    return ui;
+  }
+  const items = () => [...container.querySelectorAll(".coto-unit-nutri-foryou li")].map((li) => [li.className.replace("coto-unit-nutri-foryou-", ""), li.textContent]);
+  const P = (extra) => ({ celiac: false, sodium: false, sugar: false, allergens: [], ...extra });
+
+  it("sin perfil no hay línea", async () => {
+    await draw(N3, P());
+    expect(container.querySelector(".coto-unit-nutri-foryou")).toBeNull();
+  });
+
+  it("alergias: declara (rojo), puede contener (ámbar); sodio y azúcar resaltados; celíaco con el estado", async () => {
+    await draw(N3, P({ celiac: true, sodium: true, sugar: true, allergens: ["milk", "peanuts", "eggs"] }));
+    const box = container.querySelector(".coto-unit-nutri-foryou");
+    expect(box.querySelector(".coto-unit-nutri-foryou-title").textContent).toBe("Para vos");
+    expect(items()).toEqual([
+      ["unknown", "Sin dato de TACC. Verificá el símbolo oficial en el envase."],
+      ["danger", "Declara leche"],
+      ["warn", "Puede contener maní"],
+      ["info", "Sodio: 250 mg cada 100 g"],
+      ["info", "Azúcares: 30 g cada 100 g"],
+    ]);
+  });
+
+  it("alergias sin datos de alérgenos: aviso gris", async () => {
+    await draw({ ...N3, allergens: [], traces: [] }, P({ allergens: ["milk"] }));
+    expect(items()).toEqual([["unknown", "Sin datos de alérgenos: revisá el envase"]]);
+  });
+
+  it("sin tabla (missing): solo celíaco y alergias", async () => {
+    await draw("missing", P({ celiac: true, sugar: true, allergens: ["milk"] }), { ean: "1", nutri: true, group: "kg", tacc: "SI", name: "Leche" });
+    expect(items()).toEqual([
+      ["ok", "Coto lo marca Sin TACC. Verificá el símbolo oficial en el envase."],
+      ["unknown", "Sin datos de alérgenos: revisá el envase"],
+    ]);
+  });
+
+  it("cambiar el perfil actualiza la línea", async () => {
+    const ui = await draw(N3, P({ sugar: true }));
+    expect(items()).toEqual([["info", "Azúcares: 30 g cada 100 g"]]);
+    ui.setProfile(P({ sodium: true }));
+    ui.paint(container, anchor, { ean: "1", nutri: true, group: "kg", tacc: null, name: "Galletitas" }, true, { host, after: desc });
+    expect(items()).toEqual([["info", "Sodio: 250 mg cada 100 g"]]);
+  });
+});

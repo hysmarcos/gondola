@@ -1,6 +1,15 @@
 // Puente entre chrome.storage (mundo aislado) y el intermediario de la página.
+import { ALLERGENS } from "./nutrition.js";
+
 const SOURCE = "coto-unit";
-const KEYS = ["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition"];
+const KEYS = ["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition",
+  "profileCeliac", "profileSodium", "profileSugar", "profileAllergens"];
+
+// Perfil personal: todo apagado salvo que el usuario lo prenda. Solo alergias conocidas.
+export function profileOf(s) {
+  const allergens = Array.isArray(s.profileAllergens) ? s.profileAllergens.filter((k) => k in ALLERGENS) : [];
+  return { celiac: s.profileCeliac === true, sodium: s.profileSodium === true, sugar: s.profileSugar === true, allergens };
+}
 
 export function resolveDay(day) {
   return typeof day === "number" && day >= 0 && day <= 6 ? day : new Date().getDay();
@@ -18,6 +27,7 @@ export function installBridge(win, storage, now = Date.now) {
         // Ajustes del popup: encendidos salvo que el usuario los apague.
         autoPromo: s.autoPromo !== false, notifyPromo: s.notifyPromo !== false, markBest: s.markBest !== false, comunidad: s.comunidad !== false,
         compareStores: s.compareStores !== false, nutrition: s.nutrition !== false,
+        profile: profileOf(s),
       }, "*");
     } catch { /* sin configuración: la página sigue sin banco */ }
   }

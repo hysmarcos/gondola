@@ -271,6 +271,15 @@ describe("página de producto", () => {
     expect(gallery.big).toBe(doc.querySelector(".img-big-wrap"));
   });
 
+  it("el perfil de los ajustes llega a la información nutricional", async () => {
+    const profiles = [];
+    const nutrition = { paint: () => {}, setProfile: (p) => profiles.push(p) };
+    const { send } = setup(pdp, `/productos/papel/${key}`, { nutrition });
+    send({ type: "settings", selected: [], day: 1, profile: { celiac: true, sodium: false, sugar: false, allergens: ["milk"] } });
+    await tick();
+    expect(profiles.at(-1)).toEqual({ celiac: true, sodium: false, sugar: false, allergens: ["milk"] });
+  });
+
   it("refresh vuelve a pintar la información nutricional", async () => {
     const calls = [];
     const nutrition = { paint: (...args) => calls.push(args) };
