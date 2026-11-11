@@ -242,3 +242,43 @@ porción, una ficha sin tabla y un producto que no existe.
   - Un producto sin tabla muestra la línea con el link.
   - La PDP de una lavandina no muestra nada.
 - La política de privacidad y los README nombran a Open Food Facts.
+
+## 9. Primera ola de mejoras (aprobada el 2026-11-10)
+
+Relevamiento: 100 productos de Coto que están en Open Food Facts (OFF), 2026-11-10.
+Porción (`serving_size`) 70%, foto de la tabla 65%, foto de ingredientes 58%, foto del
+frente 95%, editado en los últimos 2 años 97%.
+
+**Datos nuevos.** El pedido a OFF suma `serving_quantity`, `last_modified_t`,
+`image_front_url`, `image_nutrition_url` e `image_ingredients_url`. `parseOff` devuelve
+además `servingQty` (número, g o ml, o null), `updatedAt` (ms, o null) y
+`photos: { front, nutrition, ingredients }` (URL o null; solo `https://` de
+`images.openfoodfacts.org` o `static.openfoodfacts.org`). La etiqueta de Góndola suma
+`amount`: tamaño del envase en kg o L, el mismo que usa el precio por unidad (null si no
+se sabe).
+
+1. **Total por envase.** Debajo del título de la sección: "Envase de 400 g · 13 porciones de
+   30 g · 1.920 kcal en total". Envase = `amount` × 1000 (g o ml). Porciones =
+   envase ÷ `servingQty`, redondeado; solo si da entre 1 y 100. Sin `amount` no hay línea.
+   Sin porción, solo "Envase de 400 g · 1.920 kcal en total". Sin kcal, sin el total.
+2. **Precio por nutriente.** Línea "Rinde:" en la sección, con el precio real de Góndola
+   por kg o L (`bankValue` si hay banco, si no `value`), solo para grupos `kg` y `L`:
+   - "$X cada 100 g de proteína" si hay 5 g o más de proteína cada 100. Cuenta:
+     precio por kg × 10 ÷ proteínas.
+   - "$Y cada 1000 kcal" si hay 50 kcal o más cada 100. Cuenta: precio por kg × 100 ÷ kcal.
+   Sin ninguna de las dos, no hay línea. Montos redondeados a pesos, con formato argentino.
+3. **Fotos del envase.** En el pie: "Fotos del envase: frente · tabla · ingredientes", cada
+   una un link (pestaña nueva) a la foto en OFF. Solo las que existen. Las fotos tienen
+   licencia CC BY-SA: el pie ya nombra a Open Food Facts.
+4. **% del valor diario.** Columna "%VD" a la derecha de "Por porción", solo si hay
+   porción. Valores de referencia (Mercosur, dieta de 2000 kcal): energía 2000 kcal,
+   carbohidratos 300 g, proteínas 75 g, grasas totales 55 g, grasas saturadas 22 g,
+   fibra 25 g, sodio 2400 mg. Azúcares y grasas trans no tienen valor: celda vacía.
+   Redondeado a entero, con "%". Debajo de la tabla: "%VD: con base en una dieta de
+   2000 kcal".
+5. **Calidad del dato.** En el pie: "Actualizado en marzo de 2026" (mes y año de
+   `updatedAt`) y un link "Corregir en Open Food Facts" a la ficha del producto.
+6. **Cargar desde el celular.** En "Sin información nutricional": un QR (SVG dibujado con
+   nodos, sin `innerHTML` ni imágenes de afuera) con la URL de la ficha en OFF y el texto
+   "Escaneá el código con el celular para cargarla con fotos del envase." Librería:
+   `qrcode-generator` 2.0.4 (MIT, sin dependencias).
