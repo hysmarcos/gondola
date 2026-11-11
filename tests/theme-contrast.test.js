@@ -52,6 +52,13 @@ const PARES = [ // [texto, fondo, mínimo]
   ["navy", "navy-soft", 4.5], ["navy", "surface", 4.5],
   ["amber-ink", "amber-soft", 4.5], ["green", "green-soft", 4.5], ["green", "surface", 4.5],
   ["line", "bg", 1.2], // el borde se distingue del fondo
+  ["blue", "blue-soft", 4.5], ["blue", "surface", 4.5],
+  ["danger", "danger-soft", 4.5], ["danger", "surface", 4.5],
+  ["ink3", "surface", 3], // adorno o texto grande
+  ["line-2", "surface", 1.5], ["blue-line", "surface", 1.2],
+  ["#ffffff", "danger-fill", 4.5], ["#ffffff", "green-fill", 4.5],
+  ["on-amber", "amber", 4.5], ["navy", "navy-hover", 4.5],
+  ["orange", "surface", 4.5], ["rust", "surface", 4.5],
 ];
 
 describe("tokens de src/theme.css", () => {

@@ -23,6 +23,19 @@
   --g-amber-ink: #6b4a00;
   --g-green: #0a7a3d;
   --g-green-soft: #e6f4ec;
+  --g-ink3: #8a9096;
+  --g-line-2: #c3c8d2;
+  --g-blue: #0c447c;
+  --g-blue-soft: #eef4fb;
+  --g-blue-line: #d6e4f2;
+  --g-danger: #a32d2d;
+  --g-danger-soft: #fff4f4;
+  --g-danger-fill: #b01f17;
+  --g-green-fill: #1d7a35;
+  --g-on-amber: #212529;
+  --g-orange: #b25e00;
+  --g-rust: #a5512d;
+  --g-navy-hover: #e1e8f4;
   --g-plate: transparent;
   --g-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -46,6 +59,19 @@
   --g-amber-ink: #ffd873;
   --g-green: #4cc38a;
   --g-green-soft: #12301f;
+  --g-ink3: #7d8594;
+  --g-line-2: #3a4250;
+  --g-blue: #8fb0f0;
+  --g-blue-soft: #1a2540;
+  --g-blue-line: #2c3e5e;
+  --g-danger: #ff8a80;
+  --g-danger-soft: #3a1519;
+  --g-danger-fill: #b01f17;
+  --g-green-fill: #1d7a35;
+  --g-on-amber: #212529;
+  --g-orange: #ffbc70;
+  --g-rust: #e4b19b;
+  --g-navy-hover: #22305a;
   --g-plate: #e9ebef;
   color-scheme: dark;
 }
@@ -88,6 +114,19 @@ html.gondola-theme-wave::view-transition-new(root) {
     --g-amber-ink: #6b4a00;
     --g-green: #0a7a3d;
     --g-green-soft: #e6f4ec;
+    --g-ink3: #8a9096;
+    --g-line-2: #c3c8d2;
+    --g-blue: #0c447c;
+    --g-blue-soft: #eef4fb;
+    --g-blue-line: #d6e4f2;
+    --g-danger: #a32d2d;
+    --g-danger-soft: #fff4f4;
+    --g-danger-fill: #b01f17;
+    --g-green-fill: #1d7a35;
+    --g-on-amber: #212529;
+    --g-orange: #b25e00;
+    --g-rust: #a5512d;
+    --g-navy-hover: #e1e8f4;
     --g-plate: transparent;
     color-scheme: light;
   }
