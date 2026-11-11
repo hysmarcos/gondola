@@ -767,3 +767,17 @@
 [data-gondola-theme="dark"] .toast-container .ngx-toastr {
   box-shadow: none !important;
 }
+
+/* ---------- Impresión ----------
+   src/theme.css vuelve los tokens a claro al imprimir, pero estos dos filtros son fijos: en el
+   papel el logo saldría en gris y sin su rojo, y la flecha de cada categoría, gris claro. */
+@media print {
+  [data-gondola-theme="dark"] header .img-logo-coto {
+    filter: none !important;
+    outline: none;
+  }
+
+  [data-gondola-theme="dark"] header-category .icono-chevron {
+    filter: none;
+  }
+}
