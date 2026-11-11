@@ -153,7 +153,9 @@
 }
 
 [data-gondola-skin="list"] .coto-unit-foryou > span {
+  flex: none;
   min-width: 0;
+  max-width: 100%;
   padding: 4px 8px;
   overflow: hidden;
   border-radius: 6px;
@@ -162,9 +164,21 @@
   white-space: nowrap;
 }
 
+/* La de menor prioridad es la que se achica (y se corta con "…") si no entran las dos. */
+[data-gondola-skin="list"] .coto-unit-foryou > span:last-child {
+  flex: 0 1 auto;
+}
+
 [data-gondola-skin="list"] .coto-unit-foryou > .coto-unit-foryou-ok {
   background-color: var(--g-green-soft);
   color: var(--g-green);
+}
+
+/* Sin dato: neutra, nunca verde. Lo que no entra en la fila se corta desde el final. */
+[data-gondola-skin="list"] .coto-unit-foryou > .coto-unit-foryou-unknown {
+  background-color: var(--g-soft);
+  color: var(--g-ink2);
+  box-shadow: inset 0 0 0 1px var(--g-line);
 }
 
 [data-gondola-skin="list"] .coto-unit-foryou > .coto-unit-foryou-warn,

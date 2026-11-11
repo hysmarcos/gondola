@@ -760,8 +760,8 @@ describe("v8: etiquetas para vos en la tarjeta", () => {
       cardTags: (label) => {
         const r = n.results[label.ean];
         if (r === undefined) return undefined;
-        if (r === "error") return [];
         const mine = n.profile.allergens ?? [];
+        if (r === "error") return mine.length ? [["unknown", "Alergias: sin dato"]] : [];
         return mine.filter((k) => r.allergens?.includes(k)).map(() => ["danger", "Tiene leche"]);
       },
       paint: () => {},
@@ -849,7 +849,7 @@ describe("v8: etiquetas para vos en la tarjeta", () => {
     expect(nutrition.asked).toEqual([]);
   });
 
-  it("si Open Food Facts falla: sin etiquetas y sin reintentos en los repintados", async () => {
+  it("si Open Food Facts falla: dice 'sin dato' y no reintenta en los repintados", async () => {
     const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
     const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
     skin(doc, "list");
@@ -860,7 +860,8 @@ describe("v8: etiquetas para vos en la tarjeta", () => {
       send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
       await tick();
     }
-    expect(tagsOf(doc)).toHaveLength(0);
+    expect(tagsOf(doc)).toHaveLength(1);
+    expect(doc.querySelector(".coto-unit-foryou-unknown").textContent).toBe("Alergias: sin dato");
     expect(nutrition.asked).toEqual([EAN_A]);
   });
 

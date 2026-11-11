@@ -366,9 +366,11 @@ export function forYouItems(profile, label, n, liquid) {
 }
 
 // Etiquetas "para vos" de la tarjeta de la lista: [tipo, texto], como máximo 2. Orden de
-// prioridad: alérgenos declarados, trazas, y Sin TACC para celíacos. n: Nutrition o null
-// (sin tabla). Nunca se marca como seguro por falta de datos, y sodio y azúcar no entran:
-// en la tarjeta serían un sello. "Sin TACC" sale solo si taccStatus lo da por bueno.
+// prioridad: alérgenos declarados, trazas, "sin dato" (alergias en el perfil y ningún dato de
+// alérgenos: misma condición que forYouItems) y TACC para celíacos. n: Nutrition o null (sin
+// tabla o falló el pedido). Nunca se marca como seguro por falta de datos, y sodio y azúcar
+// no entran: en la tarjeta serían un sello. "Sin TACC" sale solo si taccStatus lo da por bueno.
+// El límite de 2 corta desde el final: nunca saca un "Tiene" por otra etiqueta.
 export function cardTagItems(profile, label, n) {
   if (!profile) return [];
   const items = [];
@@ -377,6 +379,7 @@ export function cardTagItems(profile, label, n) {
   const traces = n?.traces ?? [];
   for (const key of mine) if (declared.includes(key)) items.push(["danger", `Tiene ${lcfirst(ALLERGENS[key])}`]);
   for (const key of mine) if (!declared.includes(key) && traces.includes(key)) items.push(["warn", `Puede tener ${lcfirst(ALLERGENS[key])}`]);
+  if (mine.length && !declared.length && !traces.length) items.push(["unknown", "Alergias: sin dato"]);
   if (profile.celiac) {
     const kind = taccStatus(label?.tacc ?? null, label?.name, n).kind;
     if (kind === "warn") items.push(["warn", "Revisá TACC"]);
@@ -496,14 +499,13 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, asse
   // Tarjetas de la lista: solo se pide con un perfil que lo necesita (celíaco o alguna alergia).
   const wantsCards = () => Boolean(profile && (profile.celiac || profile.allergens?.length));
 
-  // Etiquetas de la tarjeta, o undefined si el dato de ese EAN todavía no llegó. Un error no
-  // da etiquetas: sin dato no se dice nada.
+  // Etiquetas de la tarjeta, o undefined si el dato de ese EAN todavía no llegó (no se muestra
+  // nada antes de la respuesta). "missing" y "error" son lo mismo: sin tabla, n = null.
   function cardTags(label) {
     if (!label?.ean) return undefined;
     const r = results.get(String(label.ean));
     if (r === undefined) return undefined;
-    if (r === "error") return [];
-    return cardTagItems(profile, label, r === "missing" ? null : r);
+    return cardTagItems(profile, label, typeof r === "object" ? r : null);
   }
 
   return { paint, setProfile: (p) => (profile = p ?? null), wantsCards, cardTags, request: (ean) => ask(String(ean)) };

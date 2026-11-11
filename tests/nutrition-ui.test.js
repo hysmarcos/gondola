@@ -809,14 +809,31 @@ describe("etiquetas para vos en la tarjeta", () => {
   });
 
   it("cardTagItems: nunca marca como seguro por falta de datos", () => {
-    // Sin tabla y sin dato de TACC: nada. Sin que figure el alérgeno: nada.
+    // Celíaco sin alergias, sin tabla y sin dato de TACC: nada. Con datos de otro alérgeno: nada.
     expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: null, name: "Leche" }, null)).toEqual([]);
     expect(cardTagItems({ celiac: true, allergens: [] }, {}, null)).toEqual([]);
     expect(cardTagItems({ allergens: ["eggs"] }, {}, milk)).toEqual([]);
-    expect(cardTagItems({ allergens: ["milk"] }, {}, null)).toEqual([]);
     expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "NO", name: "Leche" }, null)).toEqual([]);
     // Un alérgeno declarado no se repite como traza.
     expect(cardTagItems({ allergens: ["milk"] }, {}, { allergens: ["milk"], traces: ["milk"] })).toEqual([["danger", "Tiene leche"]]);
+  });
+
+  it("cardTagItems: con alergias y sin datos de alérgenos dice 'sin dato', nunca en silencio", () => {
+    const unknown = [["unknown", "Alergias: sin dato"]];
+    expect(cardTagItems({ allergens: ["milk"] }, {}, { allergens: [], traces: [] })).toEqual(unknown);
+    expect(cardTagItems({ allergens: ["milk"] }, {}, {})).toEqual(unknown);
+    expect(cardTagItems({ allergens: ["milk"] }, {}, null)).toEqual(unknown);
+    expect(cardTagItems({ celiac: true, allergens: ["milk"] }, { tacc: "SI", name: "Fideos" }, null)).toEqual([...unknown, ["ok", "Sin TACC"]]);
+    expect(cardTagItems({ celiac: true, allergens: ["milk"] }, { tacc: "SI", name: "Avena" }, null)).toEqual([...unknown, ["warn", "Revisá TACC"]]);
+    // Con datos de otro alérgeno, nada. Sin alergias en el perfil, nunca.
+    expect(cardTagItems({ allergens: ["eggs"] }, {}, { allergens: ["milk"], traces: [] })).toEqual([]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: null }, null)).toEqual([]);
+  });
+
+  it("cardTagItems: el límite de 2 nunca saca el peligro", () => {
+    const n = { allergens: ["milk"], traces: ["soybeans"] };
+    expect(cardTagItems({ celiac: true, allergens: ["milk", "soybeans"] }, { tacc: "SI", name: "Fideos" }, n)).toEqual([["danger", "Tiene leche"], ["warn", "Puede tener soja"]]);
+    expect(cardTagItems({ celiac: true, allergens: ["milk", "eggs", "fish"] }, { tacc: "SI", name: "Fideos" }, { allergens: ["milk", "eggs", "fish"], traces: [] }).map((i) => i[0])).toEqual(["danger", "danger"]);
   });
 
   it("cardTagItems: nombres de ALLERGENS en minúscula", () => {
@@ -857,7 +874,7 @@ describe("etiquetas para vos en la tarjeta", () => {
     expect(ui.cardTags(label)).toEqual([]);
   });
 
-  it("missing: solo TACC con el dato de Coto; error: sin etiquetas y sin reintento", async () => {
+  it("missing y error: sin dato de alergias, TACC con el dato de Coto, y sin reintento", async () => {
     const results = { 1: "missing", 2: "error" };
     const calls = [];
     const ui = createNutritionUi(document, { request: async (e) => { calls.push(e); return results[e]; }, onUpdate: () => {} });
@@ -865,9 +882,11 @@ describe("etiquetas para vos en la tarjeta", () => {
     ui.request("1");
     ui.request("2");
     await new Promise((r) => setTimeout(r, 0));
-    expect(ui.cardTags({ ean: "1", tacc: "SI", name: "Fideos" })).toEqual([["ok", "Sin TACC"]]);
-    expect(ui.cardTags({ ean: "1", name: "Fideos" })).toEqual([]);
-    expect(ui.cardTags({ ean: "2", tacc: "SI", name: "Fideos" })).toEqual([]);
+    const unknown = ["unknown", "Alergias: sin dato"];
+    expect(ui.cardTags({ ean: "1", tacc: "SI", name: "Fideos" })).toEqual([unknown, ["ok", "Sin TACC"]]);
+    expect(ui.cardTags({ ean: "1", name: "Fideos" })).toEqual([unknown]);
+    expect(ui.cardTags({ ean: "2", tacc: "SI", name: "Fideos" })).toEqual([unknown, ["ok", "Sin TACC"]]);
+    expect(ui.cardTags({ ean: "9" })).toBeUndefined();
     ui.request("2");
     expect(calls).toEqual(["1", "2"]);
   });
