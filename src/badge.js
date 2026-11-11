@@ -490,7 +490,6 @@ export function installBadges(win, doc, deps = {}) {
       state.markBest = m.markBest !== false;
       state.compare = m.compareStores !== false;
       state.nutrition = m.nutrition !== false;
-      nutrition?.setProfile?.(m.profile ?? null);
       if (!state.compare) {
         io?.disconnect();
         watching = new WeakMap();

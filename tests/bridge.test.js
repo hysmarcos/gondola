@@ -117,19 +117,13 @@ describe("ajuste información nutricional", () => {
 });
 
 describe("perfil personal", () => {
-  it("el puente manda el perfil: apagado por defecto, con lo que haya en storage", async () => {
+  it("el puente NO manda el perfil: la página de Coto puede leer esos mensajes", async () => {
     const win = fakeWin();
-    installBridge(win, fakeStorage(), () => 0);
+    installBridge(win, fakeStorage({ profileCeliac: true, profileAllergens: ["milk"] }), () => 0);
     await tick();
-    expect(win.posted.find((m) => m.type === "settings").profile).toEqual({ celiac: false, sodium: false, sugar: false, allergens: [] });
-    const win2 = fakeWin();
-    const st = fakeStorage({ profileCeliac: true, profileAllergens: ["milk", "peanuts", "x"] });
-    installBridge(win2, st, () => 0);
-    await tick();
-    expect(win2.posted.find((m) => m.type === "settings").profile).toEqual({ celiac: true, sodium: false, sugar: false, allergens: ["milk", "peanuts"] });
-    await st.set({ profileSugar: true });
-    await tick();
-    expect(win2.posted.filter((m) => m.type === "settings").at(-1).profile.sugar).toBe(true);
+    const m = win.posted.find((x) => x.type === "settings");
+    expect(m.profile).toBeUndefined();
+    expect(JSON.stringify(m)).not.toContain("milk");
   });
 
   it("el popup tiene 'Mi perfil' apagado y guarda las alergias elegidas", async () => {

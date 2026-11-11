@@ -6,6 +6,7 @@ import { installCartUi } from "./cart-ui.js";
 import { installPromoUi } from "./promo-ui.js";
 import { logoUrl } from "./logos.js";
 import { createNutritionUi } from "./nutrition-ui.js";
+import { installProfile } from "./profile.js";
 
 // Logos de bancos: los empaquetados salen de la extensión, los nuevos del sitio de Coto.
 const logo = (icono) => logoUrl(icono, (p) => chrome.runtime.getURL(p));
@@ -25,3 +26,8 @@ badges = installBadges(window, document, { logoUrl: logo, compare, nutrition });
 installCartUi(window, document, { logoUrl: logo, compare, nutrition: { request: nutritionRequest } });
 installPromoUi(window, document);
 installBridge(window, chrome.storage.local);
+// Perfil personal: directo de storage, sin pasar por mensajes que la página puede leer.
+installProfile(chrome.storage.local, (profile) => {
+  nutrition.setProfile(profile);
+  badges?.refresh();
+});
