@@ -114,7 +114,9 @@ function injection(badge, styles, kind) {
     const style = document.createElement("style");
     style.id = "gondola-skin-check";
     style.textContent = ${JSON.stringify(styles)};
-    (document.head ?? document.documentElement).append(style);
+    // Primero en la página, como el CSS de una extensión real: el de Coto viene después y
+    // gana los empates. Al final (como estaba) tapaba errores de cascada.
+    (document.head ?? document.documentElement).prepend(style);
     (function (chrome) { ${badge} })(chrome);
   };
   start();

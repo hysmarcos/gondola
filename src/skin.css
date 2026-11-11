@@ -144,3 +144,13 @@
     animation: none !important;
   }
 }
+
+/* ---------- Lo que Góndola oculta, se oculta ---------- */
+
+/* badge.css oculta con [data-coto-unit-hide], pero el CSS de una extensión va antes que el
+   de la página y Bootstrap (.d-block { display: block !important }) le gana el empate: en
+   los productos en oferta "Precio Regular" seguía a la vista y corría el botón 21 px. Con
+   la piel, la regla pesa más que cualquier clase de utilidad de Coto. */
+[data-gondola-skin] [data-coto-unit-hide] {
+  display: none !important;
+}
