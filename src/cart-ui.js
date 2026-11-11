@@ -2,7 +2,7 @@
 // Solo agrega nodos; no toca el carrito de Coto.
 import { compareRows, paintCompare } from "./compare-ui.js";
 import { parseMoney } from "./money.js";
-import { summaryRows, paintSummary, $2 } from "./cart-summary.js";
+import { summaryRows, paintSummary, closeSummaryPop, $2 } from "./cart-summary.js";
 import { isComunidad } from "./banks.js";
 import { cartNutrition, cartNutritionRows } from "./nutrition-cart.js";
 
@@ -12,6 +12,21 @@ const BOX = "coto-unit-cart-box";
 const LINE = "coto-unit-mini-line";
 const CART_LINE = "coto-unit-cart-line";
 const TIP = "coto-unit-tip";
+const LINK = "coto-unit-prod-link";
+// Lo que sí se puede tocar en el mini-carrito de Coto. Un clic en cualquier otro lado
+// no hace nada, y por eso no tiene que cerrar el desplegable.
+const CLICKABLE = 'a, button, input, select, textarea, label, summary, [role="button"], [role="link"], [data-bs-dismiss], [data-dismiss]';
+
+// La página del producto, solo si es de este mismo sitio (nada de otros sitios ni javascript:).
+export function productHref(url, origin) {
+  if (!url || !origin) return null;
+  try {
+    const u = new URL(String(url), origin);
+    return /^https?:$/.test(u.protocol) && u.origin === origin && /\/_\/R-[\w-]+/.test(u.pathname) ? u.href : null;
+  } catch {
+    return null;
+  }
+}
 const CMP = "coto-unit-cmp";
 const HIDE = "data-coto-unit-hide";
 const EAN_ATTR = "data-coto-unit-ean";
@@ -133,11 +148,48 @@ export function installCartUi(win, doc, deps = {}) {
   }
   const onCart = () => String(win.location?.pathname ?? "").startsWith("/carrito");
 
+  // El nombre del producto abre su página en una pestaña nueva. Es un enlace de Góndola
+  // encima del nombre: el nodo de Coto queda como está.
+  function paintLink(title, line) {
+    if (!title) return;
+    const href = productHref(line?.url, win.location?.origin);
+    let a = title.querySelector(":scope > ." + LINK);
+    if (!href) return a?.remove();
+    if (!a) {
+      a = doc.createElement("a");
+      a.className = LINK;
+      a.setAttribute("target", "_blank");
+      a.setAttribute("rel", "noopener");
+      // El clic es de este enlace: ni Coto navega en esta pestaña ni se cierra el desplegable.
+      a.addEventListener("click", (e) => e.stopPropagation());
+      title.append(a);
+    }
+    if (a.getAttribute("href") !== href) a.setAttribute("href", href);
+    const label = `Abrir ${line.name} en una pestaña nueva`;
+    if (a.getAttribute("aria-label") !== label) {
+      a.setAttribute("aria-label", label);
+      a.setAttribute("title", "Abrir en una pestaña nueva");
+    }
+  }
+
+  // Un clic en una zona sin nada para tocar no sale del mini-carrito: Coto no lo cierra.
+  const kept = new WeakSet();
+  function keepOpen(menu) {
+    for (const child of menu.children) {
+      if (kept.has(child)) continue;
+      kept.add(child);
+      child.addEventListener("click", (e) => {
+        if (!e.target.closest?.(CLICKABLE)) e.stopPropagation();
+      });
+    }
+  }
+
   function renderWarnings(a) {
     const byName = new Map(a.lines.map((l) => [normName(l.name), l]));
     for (const card of doc.querySelectorAll("card-product")) {
       const line = byName.get(normName(card.querySelector("a.title")?.textContent));
       const target = card.querySelector(".c__item-detail") ?? card;
+      paintLink(card.querySelector("a.title"), line);
       paintCartLine(target, line);
       paintLine(target, line);
       let warn = target.querySelector(":scope > ." + WARN);
@@ -176,7 +228,7 @@ export function installCartUi(win, doc, deps = {}) {
   }
 
   function clear() {
-    doc.querySelectorAll(`.${WARN}, .${BOX}, .${CART_LINE}, ${CMP_SEL}`).forEach((e) => e.remove());
+    doc.querySelectorAll(`.${WARN}, .${BOX}, .${CART_LINE}, card-product .${LINK}, ${CMP_SEL}`).forEach((e) => e.remove());
     hideTip();
   }
 
@@ -190,14 +242,18 @@ export function installCartUi(win, doc, deps = {}) {
   // Mini-carrito (desplegable del ícono): precio con promo por línea y totales.
   function renderMini(a) {
     const menu = doc.querySelector(".dropdown-carrito");
-    if (!menu) return;
+    if (!menu) return closeSummaryPop(doc);
+    keepOpen(menu);
     // Coto muestra "Total" y el monto en dos h4.roar-total: el monto es el último.
     const amounts = [...menu.querySelectorAll(".roar-total")].map((e) => parseMoney(e.textContent)).filter((n) => n !== null);
     const shownTotal = amounts.at(-1) ?? null;
     const ok = shownTotal === null || Math.abs(shownTotal - a.listTotal) <= 1;
     const byName = new Map(a.lines.map((l) => [normName(l.name), l]));
     for (const item of menu.querySelectorAll("card-product-float")) {
-      const line = ok ? byName.get(normName(item.querySelector(".titulo-producto")?.textContent)) : null;
+      const title = item.querySelector(".titulo-producto");
+      // El enlace no depende de los totales: va aunque el carrito leído esté viejo.
+      paintLink(title, byName.get(normName(title?.textContent)));
+      const line = ok ? byName.get(normName(title?.textContent)) : null;
       paintMiniLine(item, line);
     }
     const totalEl = menu.querySelector(".total-precio");
@@ -213,7 +269,8 @@ export function installCartUi(win, doc, deps = {}) {
       box.className = "coto-unit-mini-total";
       totalEl.after(box);
     }
-    paintSummary(doc, box, summaryRows(a, state.day, new Date().getDay()), logoUrl);
+    // El detalle se abre en un panel flotante: el mini-carrito mantiene su tamaño.
+    paintSummary(doc, box, summaryRows(a, state.day, new Date().getDay()), logoUrl, { float: true, alive: () => menu.isConnected && menu.classList.contains("show") });
   }
 
   // El globo de ayuda: uno solo para toda la página, pegado a la ventana para que el

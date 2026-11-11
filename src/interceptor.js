@@ -211,6 +211,7 @@ export function installInterceptor(win, deps) {
       return {
         id: it?.producto?.id,
         name: it?.producto?.nombre ?? "",
+        url: it?.producto?.urlProducto ?? null,
         qty: Number(it?.cantidad) || 0,
         list: Number(it?.precio?.precioLista) || 0,
         data: plu ? await lookupPlu(plu) : null,

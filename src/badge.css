@@ -1377,6 +1377,72 @@ button.coto-unit-sum-toggle:focus-visible {
   font-weight: 600;
 }
 
+/* Panel flotante con el detalle de "Descuentos Coto" en el mini-carrito. Va pegado a la
+   ventana: el desplegable de Coto no cambia de tamaño. El ancho y el alto los pone
+   cart-summary.js según el lugar que hay. */
+.coto-unit-sum-pop {
+  position: fixed;
+  z-index: 2147482900;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  padding: 10px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #e3e5e8;
+  border-radius: 12px;
+  background: #fff;
+  color: #212529;
+  font: 400 13px/1.35 Poppins, sans-serif;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 10px 28px rgba(20, 40, 75, 0.22);
+}
+
+.coto-unit-sum-pop[hidden] {
+  display: none;
+}
+
+.coto-unit-sum-pop .coto-unit-sum-row--detail {
+  padding-left: 0;
+}
+
+/* Con el panel flotante el botón no empuja nada: la flecha apunta al panel. */
+.coto-unit-sum-toggle[aria-controls="coto-unit-sum-pop"][aria-expanded="false"] .coto-unit-sum-chevron {
+  margin-top: 3px;
+  rotate: -135deg;
+}
+
+.coto-unit-sum-toggle[aria-controls="coto-unit-sum-pop"][aria-expanded="true"] .coto-unit-sum-chevron {
+  margin-top: -3px;
+  rotate: 45deg;
+}
+
+/* Enlace de Góndola encima del nombre del producto: abre su página en otra pestaña. */
+.dropdown-carrito .titulo-producto:has(> .coto-unit-prod-link),
+card-product a.title:has(> .coto-unit-prod-link) {
+  position: relative !important;
+}
+
+.coto-unit-prod-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dropdown-carrito .titulo-producto:has(> .coto-unit-prod-link:hover),
+card-product a.title:has(> .coto-unit-prod-link:hover) {
+  text-decoration: underline !important;
+}
+
+.coto-unit-prod-link:focus-visible {
+  outline: 2px solid #e20025;
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .coto-unit-sum-chevron {
     transition-duration: 0ms;
