@@ -89,7 +89,8 @@ function setup({ total = 250, fetchFails = false, serverBody, settingsWaitMs = 0
         env.searched.push(plu);
         if (env.onSearch) await env.onSearch();
         const r = CART_ROWS.find((row) => String(parseInt(row[0].slice(4), 10)) === plu);
-        return { ok: true, json: async () => apiBody(r ? [{ data: searchData(r) }] : []) };
+        const body = apiBody(r ? [{ data: searchData(r) }] : []);
+        return { ok: true, json: async () => (env.searchBody ? env.searchBody(String(u), body) : body) };
       }
       env.fetched.push(u);
       if (fetchFails) throw new Error("red caída");
@@ -317,6 +318,41 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
     await flush(); await flush();
     const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
     expect(msg.labels["_/R-00299912-00299912-200"]).toMatchObject({ group: "kg", take: 3 });
+  });
+
+  it("página de producto: lee Sin TACC de la faceta de Coto si el único resultado es el producto", async () => {
+    const s = setup();
+    s.env.searchBody = (u, body) => ({ ...body, response: { ...body.response, facets: [{ name: "SIN TACC", options: [{ value: "SI", count: 1 }] }] } });
+    s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
+    await flush(); await flush();
+    const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    expect(msg.labels["_/R-00299912-00299912-200"].tacc).toBe("SI");
+  });
+
+  it("página de producto: con varios resultados busca con el filtro SIN TACC", async () => {
+    const s = setup();
+    const filters = [];
+    s.env.searchBody = (u, body) => {
+      const f = new URL(u).searchParams.get("filters[SIN TACC]");
+      filters.push(f);
+      if (f === "SI") return { ...body, response: { ...body.response, results: [] } };
+      if (f === "NO") return body;
+      return { ...body, response: { ...body.response, results: [...body.response.results, { data: { id: "prod00000001" } }] } };
+    };
+    s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
+    await flush(); await flush(); await flush(); await flush();
+    const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    expect(msg.labels["_/R-00299912-00299912-200"].tacc).toBe("NO");
+    expect(filters).toEqual([null, "SI", "NO"]);
+  });
+
+  it("página de producto: sin faceta, tacc es null y no hay pedidos extra", async () => {
+    const s = setup();
+    s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
+    await flush(); await flush();
+    const msg = s.env.posts.find((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    expect(msg.labels["_/R-00299912-00299912-200"].tacc).toBeNull();
+    expect(s.env.searched).toEqual(["299912"]);
   });
 });
 
