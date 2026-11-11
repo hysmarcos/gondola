@@ -213,7 +213,9 @@ describe("página de producto", () => {
     await tick();
     const box = doc.querySelector(".coto-unit-box--pdp");
     expect(box.parentElement.className).toBe("mt-4");
-    expect(box.previousElementSibling.querySelector(".price")).not.toBeNull();
+    // La caja va después de "Precio regular" y "sin impuestos": esas líneas quedan pegadas al precio.
+    expect(box.previousElementSibling).toBe(doc.querySelector(".mb-5"));
+    expect(doc.querySelector(".mt-2.small").previousElementSibling.querySelector(".price")).not.toBeNull();
     expect(box.querySelector(".coto-unit-cap").textContent).toBe("Precio real para comparar");
     expect(box.querySelector(".coto-unit-value").textContent).toBe("$109 /10 m");
     expect(box.querySelector(".coto-unit-note").textContent).toBe("≈ ancho 10 cm");
@@ -257,6 +259,18 @@ describe("página de producto", () => {
     badges.refresh();
     await tick();
     expect(calls.length).toBeGreaterThan(before);
+  });
+
+  it("si Coto dibuja una línea de precio después de la caja, la caja baja", async () => {
+    const { doc, send } = setup(pdp, `/productos/papel/${key}`);
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m" }) } });
+    await tick();
+    const box = doc.querySelector(".coto-unit-box--pdp");
+    const late = doc.createElement("div");
+    late.textContent = "Precio con tarjeta Coto: $3.000";
+    box.after(late);
+    await tick();
+    expect(doc.querySelector(".coto-unit-box--pdp").previousElementSibling).toBe(late);
   });
 
   it("sin oferta no tacha el precio regular", async () => {

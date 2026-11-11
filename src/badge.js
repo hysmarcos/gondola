@@ -390,6 +390,12 @@ export function installBadges(win, doc, deps = {}) {
     return String(win.location?.pathname ?? "").match(KEY_RE)?.[0] ?? null;
   }
 
+  // Línea corta de precio de Coto, o la caja de Góndola: sin botones ni links, poco texto.
+  function isPriceLine(el) {
+    if (el.classList.contains(BOX)) return true;
+    return !el.querySelector("button, input, a") && el.textContent.length <= 120 && /precio/i.test(el.textContent);
+  }
+
   // Página de producto: la caja va a lo ancho debajo del precio (dentro de .mt-4). El
   // "Precio por 1 …" de Coto (sobre el precio sin oferta) se oculta; lo demás se atenúa.
   function renderPdp() {
@@ -405,7 +411,15 @@ export function installBadges(win, doc, deps = {}) {
       nutrition?.paint(price.parentElement, box ?? price, label, state.nutrition);
       return;
     }
-    const box = paintBox(wrap, block, label, "pdp");
+    // La caja va después de las líneas cortas que siguen al precio ("Precio regular", "sin
+    // impuestos", "Precio por 1 …"): así quedan pegadas al precio. Coto puede dibujarlas
+    // después que la caja, por eso se reubica en cada repintado.
+    let after = block;
+    for (let next = block.nextElementSibling; next && isPriceLine(next); next = next.nextElementSibling) {
+      if (!next.classList.contains(BOX)) after = next;
+    }
+    const box = paintBox(wrap, after, label, "pdp");
+    if (box && box.previousElementSibling !== after) after.after(box);
     // Información nutricional: debajo de la caja (o del precio si no hay caja).
     nutrition?.paint(wrap, box ?? block, label, state.nutrition);
     const onSale = /oferta|%\s*dto/i.test(block.textContent);
