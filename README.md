@@ -157,7 +157,7 @@ Góndola no junta datos personales, no tiene analítica y no tiene publicidad. L
 | `storage` | Guardar tus tarjetas, el día y los ajustes en tu navegador |
 | `www.coto.com.ar` | Agregar el precio real, las promos y el carrito en las páginas de Coto |
 | `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar`, `www.masonline.com.ar` | Buscar el mismo producto por código de barras. Se apaga en Ajustes. |
-| `world.openfoodfacts.org` | Traer la tabla nutricional del producto que abrís. Solo se manda el código de barras, sin cookies. Se apaga en Ajustes. |
+| `world.openfoodfacts.org` | Traer la tabla nutricional del producto que abrís y, con tu perfil cargado, de los productos de la lista que se ven en pantalla. Solo se manda el código de barras, sin cookies. Se apaga en Ajustes. |
 
 ## 6. Cómo está armado
 

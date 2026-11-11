@@ -12,6 +12,7 @@ const MARK = "coto-unit-mark";
 const TAGS = "coto-unit-tags";
 const NOTICE = "coto-unit-notice";
 const CMP = "coto-unit-cmp";
+const FORYOU = "coto-unit-foryou";
 const EAN_ATTR = "data-coto-unit-ean";
 const KEY_RE = /_\/R-[\w-]+/;
 
@@ -136,7 +137,10 @@ export function installBadges(win, doc, deps = {}) {
   // La piel de la PDP (src/skin.js pone el atributo; al cambiarlo llama a refresh()).
   const pdpSkin = () => doc.documentElement.getAttribute("data-gondola-skin") === "pdp";
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
-  let watching = new WeakMap(); // caja -> EAN que espera verse para pedirse
+  const askedCards = new Set(); // EAN pedidos para las etiquetas "para vos" de las tarjetas
+  let watching = new WeakMap(); // nodo -> { ean, go }: lo que espera verse para pedirse
+  // Etiquetas "para vos": solo con la piel de la lista y un perfil que las pide.
+  const listSkin = () => doc.documentElement.getAttribute("data-gondola-skin") === "list";
   let io = null;
   let scheduled = false;
 
@@ -163,22 +167,29 @@ export function installBadges(win, doc, deps = {}) {
     compare.request(ean).then(renderSoon);
   }
 
-  // Pide el EAN la primera vez que la caja entra en pantalla (o enseguida si no se puede saber).
-  function want(box, ean) {
-    if (requested.has(ean)) return;
-    if (!win.IntersectionObserver) return ask(ean);
-    if (watching.get(box) === ean) return;
+  // Llama a go(ean) la primera vez que el nodo entra en pantalla (o enseguida si no se puede
+  // saber). done(): ese EAN ya se pidió. El observador es uno solo, para todos los pedidos.
+  function want(box, ean, go = ask, done = () => requested.has(ean)) {
+    if (done()) return;
+    if (!win.IntersectionObserver) return go(ean);
+    if (watching.get(box)?.ean === ean) return;
     io ??= new win.IntersectionObserver((entries) => {
       for (const e of entries) {
         if (!e.isIntersecting || !watching.has(e.target)) continue;
         io.unobserve(e.target);
         const seen = watching.get(e.target);
         watching.delete(e.target);
-        ask(seen);
+        seen.go(seen.ean);
       }
     });
-    watching.set(box, ean);
+    watching.set(box, { ean, go });
     io.observe(box);
+  }
+
+  function unwant(box) {
+    if (!watching.has(box)) return;
+    watching.delete(box);
+    io?.unobserve(box);
   }
 
   // Filas "en otros súper" como último hijo del bloque de precio (tarjeta, PDP o carrusel),
@@ -329,6 +340,43 @@ export function installBadges(win, doc, deps = {}) {
     order(tags, ["coto-unit-best", "coto-unit-offer", MARK]);
   }
 
+  // Etiquetas "para vos" abajo de la foto: alergias y TACC del perfil, según Open Food Facts.
+  // Se pide el EAN solo cuando la tarjeta se ve. Si la tarjeta pasa a otro producto, la
+  // etiqueta del anterior sale en este mismo repintado.
+  function paintForYou(card, label) {
+    const ean = nutrition && state.nutrition && listSkin() && nutrition.wantsCards?.() && label.nutri && label.ean ? String(label.ean) : null;
+    let box = card.querySelector("." + FORYOU);
+    if (box && box.getAttribute(EAN_ATTR) !== ean) {
+      box.remove();
+      box = null;
+    }
+    if (!ean) return unwant(card);
+    const items = nutrition.cardTags(label);
+    if (items === undefined) {
+      return want(card, ean, (e) => {
+        askedCards.add(e);
+        nutrition.request(e);
+      }, () => askedCards.has(ean));
+    }
+    unwant(card);
+    if (!items.length) return box?.remove();
+    const sig = items.map(([kind, text]) => `${kind}:${text}`).join("|");
+    if (box && box.dataset.sig === sig) return;
+    if (!box) {
+      box = doc.createElement("div");
+      box.className = FORYOU;
+      box.setAttribute(EAN_ATTR, ean);
+      (card.querySelector(".top-imagen-promos") ?? card).append(box);
+    }
+    box.dataset.sig = sig;
+    box.replaceChildren(...items.map(([kind, text]) => {
+      const tag = doc.createElement("span");
+      tag.className = `${FORYOU}-${kind}`;
+      tag.textContent = text;
+      return tag;
+    }));
+  }
+
   // Qué partes de Coto repiten lo que ya muestra el bloque.
   function cotoParts(card, centro) {
     const hide = new Set();
@@ -355,6 +403,8 @@ export function installBadges(win, doc, deps = {}) {
   function restoreCard(card, centro) {
     centro.querySelector(":scope > ." + BLOCK)?.remove();
     card.querySelector("." + TAGS)?.remove();
+    card.querySelector("." + FORYOU)?.remove();
+    unwant(card);
     for (const el of card.querySelectorAll(`[${HIDE}], [${DIM}]`)) {
       el.removeAttribute(HIDE);
       el.removeAttribute(DIM);
@@ -377,6 +427,7 @@ export function installBadges(win, doc, deps = {}) {
         setAttr(card, CARD, true);
         paintCardBlock(centro, centro.querySelector(":scope > .nombre-producto, :scope > h3"), label);
         paintTags(card, label, key);
+        paintForYou(card, label);
         const { hide, dim } = cotoParts(card, centro);
         for (const el of card.querySelectorAll(`[${HIDE}]`)) if (!hide.has(el)) el.removeAttribute(HIDE);
         for (const el of card.querySelectorAll(`[${DIM}]`)) if (!dim.has(el)) el.removeAttribute(DIM);

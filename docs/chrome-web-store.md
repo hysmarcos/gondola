@@ -64,7 +64,7 @@ PRIVACIDAD
 • Sin servidores propios, sin cuentas, sin publicidad y sin analítica.
 • Tus ajustes quedan en tu navegador.
 • Para comparar, solo envía el código de barras de los productos a las búsquedas públicas de Carrefour, Día y Más. Se apaga en Ajustes.
-• Para la información nutricional, solo envía el código de barras del producto de comida que abrís a Open Food Facts. Se apaga en Ajustes.
+• Para la información nutricional, solo envía el código de barras del producto de comida que abrís a Open Food Facts; con tu perfil cargado, también el de los productos de la lista que se ven en pantalla. Se apaga en Ajustes.
 • Tu perfil (celíaco/a, sodio, azúcar, alergias) queda solo en tu navegador.
 
 CÓDIGO ABIERTO
@@ -103,11 +103,11 @@ Mejorar la web de compras de Coto Digital (coto.com.ar) para comparar productos 
 | `storage` | Guarda en el navegador las tarjetas, el día de compra y los ajustes que elige el usuario. |
 | Acceso a `www.coto.com.ar` (content scripts) | Agrega el precio por kilo, el orden por precio por kilo, las promos bancarias y el total real del carrito en las páginas de Coto. |
 | Acceso a `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar` y `www.masonline.com.ar` | Busca el mismo producto por código de barras en la búsqueda pública de cada súper para mostrar su precio. El usuario lo puede apagar. |
-| Acceso a `world.openfoodfacts.org` | Pide la tabla nutricional del producto que el usuario abre, por código de barras, a la base abierta Open Food Facts. El usuario lo puede apagar. |
+| Acceso a `world.openfoodfacts.org` | Pide la tabla nutricional del producto que el usuario abre, por código de barras, a la base abierta Open Food Facts. Con el perfil cargado (celíaco/a o alguna alergia), también la pide para los productos de comida de la lista que se ven en pantalla, para marcarles las alergias. El usuario lo puede apagar. |
 
 **¿Usa código remoto?** No. Todo el código va en el paquete.
 
-**Uso de datos.** Marcá solo **Contenido del sitio web**, con esta explicación: la extensión envía el código de barras (EAN) de los productos que el usuario ve en Coto a las búsquedas públicas de Carrefour, Día y Más, para mostrar el precio del mismo producto, y el del producto de comida que abre a Open Food Facts, para mostrar su tabla nutricional. No envía datos de la persona: ni nombre, ni cuenta, ni carrito, ni tarjetas. Todo lo demás pasa en el navegador.
+**Uso de datos.** Marcá solo **Contenido del sitio web**, con esta explicación: la extensión envía el código de barras (EAN) de los productos que el usuario ve en Coto a las búsquedas públicas de Carrefour, Día y Más, para mostrar el precio del mismo producto, y el del producto de comida que abre a Open Food Facts, para mostrar su tabla nutricional (con el perfil cargado, también el de los productos de la lista que se ven, para marcar las alergias). No envía datos de la persona: ni nombre, ni cuenta, ni carrito, ni tarjetas. Todo lo demás pasa en el navegador.
 
 Marcá las tres certificaciones:
 
@@ -134,7 +134,7 @@ https://hysmarcos.github.io/gondola/privacidad.html
 En "Enviar para revisión" hay un campo de notas. Pegá esto:
 
 ```text
-No hace falta cuenta. Para probar: abrí https://www.coto.com.ar/productos/categorias/catalogo-almac%C3%A9n-aceites-y-condimentos-aceites/catv00001264 . Cada producto muestra el precio por litro y un botón que compara con Carrefour, Día y Más. En "Ordenar por" aparece "Precio por kg/L: menor a mayor". En un producto de comida, por ejemplo https://www.coto.com.ar/productos/x/_/R-00508911-00508911-200 , aparece "Información nutricional" con datos de Open Food Facts (permiso world.openfoodfacts.org: solo se envía el código de barras). En el popup se eligen tarjetas bancarias, el día y, opcionalmente, el perfil (queda en el navegador). Código abierto: https://github.com/hysmarcos/gondola
+No hace falta cuenta. Para probar: abrí https://www.coto.com.ar/productos/categorias/catalogo-almac%C3%A9n-aceites-y-condimentos-aceites/catv00001264 . Cada producto muestra el precio por litro y un botón que compara con Carrefour, Día y Más. En "Ordenar por" aparece "Precio por kg/L: menor a mayor". En un producto de comida, por ejemplo https://www.coto.com.ar/productos/x/_/R-00508911-00508911-200 , aparece "Información nutricional" con datos de Open Food Facts (permiso world.openfoodfacts.org: solo se envía el código de barras; con un perfil cargado, también el de los productos de la lista que se ven). En el popup se eligen tarjetas bancarias, el día y, opcionalmente, el perfil (queda en el navegador). Código abierto: https://github.com/hysmarcos/gondola
 ```
 
 ## 4. Después de publicar

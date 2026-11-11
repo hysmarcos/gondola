@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { renderNutrition, createNutritionUi, packageLine, valueLine, vdPercent, updatedText, tileItems } from "../src/nutrition-ui.js";
+import { renderNutrition, createNutritionUi, packageLine, valueLine, vdPercent, updatedText, tileItems, cardTagItems } from "../src/nutrition-ui.js";
 
 const N = {
   per100: { kcal: 480, carbs: 70.25, sugars: 30, fat: 20, sodiumMg: 250 },
@@ -793,5 +793,82 @@ describe("piel de la PDP: interruptor 100 / porción y números grandes", () => 
       expect(tiles()).toEqual(["380kcal cada 100 g", "8 gproteínas", "20 gazúcares", "400 mgsodio"]);
       expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false"]);
     });
+  });
+});
+
+describe("etiquetas para vos en la tarjeta", () => {
+  const milk = { allergens: ["milk"], traces: ["soybeans"], per100: {} };
+
+  it("cardTagItems: alérgenos, trazas y TACC, como máximo 2 y en ese orden", () => {
+    expect(cardTagItems({ allergens: ["milk", "soybeans"] }, {}, milk)).toEqual([["danger", "Tiene leche"], ["warn", "Puede tener soja"]]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "SI", name: "Leche" }, null)).toEqual([["ok", "Sin TACC"]]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "SI", name: "Avena tradicional" }, null)).toEqual([["warn", "Revisá TACC"]]);
+    expect(cardTagItems({ celiac: true, allergens: ["milk", "soybeans"] }, { tacc: "SI", name: "Leche" }, milk)).toHaveLength(2);
+    expect(cardTagItems({ celiac: false, allergens: [], sodium: true, sugar: true }, {}, milk)).toEqual([]);
+    expect(cardTagItems(null, {}, milk)).toEqual([]);
+  });
+
+  it("cardTagItems: nunca marca como seguro por falta de datos", () => {
+    // Sin tabla y sin dato de TACC: nada. Sin que figure el alérgeno: nada.
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: null, name: "Leche" }, null)).toEqual([]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, {}, null)).toEqual([]);
+    expect(cardTagItems({ allergens: ["eggs"] }, {}, milk)).toEqual([]);
+    expect(cardTagItems({ allergens: ["milk"] }, {}, null)).toEqual([]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "NO", name: "Leche" }, null)).toEqual([]);
+    // Un alérgeno declarado no se repite como traza.
+    expect(cardTagItems({ allergens: ["milk"] }, {}, { allergens: ["milk"], traces: ["milk"] })).toEqual([["danger", "Tiene leche"]]);
+  });
+
+  it("cardTagItems: nombres de ALLERGENS en minúscula", () => {
+    const n = { allergens: ["tree-nuts", "gluten"], traces: [] };
+    expect(cardTagItems({ allergens: ["tree-nuts", "gluten"] }, {}, n)).toEqual([["danger", "Tiene frutos secos"], ["danger", "Tiene gluten (TACC)"]]);
+  });
+
+  it("wantsCards: celíaco o alguna alergia", () => {
+    const ui = createNutritionUi(document, { request: async () => "missing", onUpdate: () => {} });
+    expect(ui.wantsCards()).toBe(false);
+    ui.setProfile({ celiac: false, allergens: [], sodium: true, sugar: true });
+    expect(ui.wantsCards()).toBe(false);
+    ui.setProfile({ celiac: true, allergens: [] });
+    expect(ui.wantsCards()).toBe(true);
+    ui.setProfile({ celiac: false, allergens: ["milk"] });
+    expect(ui.wantsCards()).toBe(true);
+    ui.setProfile(null);
+    expect(ui.wantsCards()).toBe(false);
+  });
+
+  it("request pide una sola vez, avisa al llegar y cardTags sigue al perfil", async () => {
+    const calls = [];
+    let updates = 0;
+    const ui = createNutritionUi(document, { request: async (e) => { calls.push(e); return milk; }, onUpdate: () => updates++ });
+    ui.setProfile({ celiac: false, allergens: ["milk"] });
+    const label = { ean: "1", name: "Leche" };
+    expect(ui.cardTags(label)).toBeUndefined();
+    ui.request("1");
+    ui.request("1");
+    expect(ui.cardTags(label)).toBeUndefined();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(calls).toEqual(["1"]);
+    expect(updates).toBe(1);
+    expect(ui.cardTags(label)).toEqual([["danger", "Tiene leche"]]);
+    ui.setProfile({ celiac: false, allergens: ["soybeans"] });
+    expect(ui.cardTags(label)).toEqual([["warn", "Puede tener soja"]]);
+    ui.setProfile({ celiac: false, allergens: [] });
+    expect(ui.cardTags(label)).toEqual([]);
+  });
+
+  it("missing: solo TACC con el dato de Coto; error: sin etiquetas y sin reintento", async () => {
+    const results = { 1: "missing", 2: "error" };
+    const calls = [];
+    const ui = createNutritionUi(document, { request: async (e) => { calls.push(e); return results[e]; }, onUpdate: () => {} });
+    ui.setProfile({ celiac: true, allergens: ["milk"] });
+    ui.request("1");
+    ui.request("2");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(ui.cardTags({ ean: "1", tacc: "SI", name: "Fideos" })).toEqual([["ok", "Sin TACC"]]);
+    expect(ui.cardTags({ ean: "1", name: "Fideos" })).toEqual([]);
+    expect(ui.cardTags({ ean: "2", tacc: "SI", name: "Fideos" })).toEqual([]);
+    ui.request("2");
+    expect(calls).toEqual(["1", "2"]);
   });
 });

@@ -746,3 +746,161 @@ describe("v7: logos de bancos", () => {
     expect(why.getAttribute("aria-label")).toBe("ICBC");
   });
 });
+
+describe("v8: etiquetas para vos en la tarjeta", () => {
+  const MILK = { allergens: ["milk"], traces: [], per100: {} };
+  // nutrition de prueba: perfil fijo, resultados que llegan cuando el test lo decide.
+  function fakeNutrition(profile, results = {}) {
+    const n = {
+      asked: [],
+      profile,
+      results: { ...results },
+      wantsCards: () => Boolean(n.profile.celiac || n.profile.allergens?.length),
+      request: (ean) => { n.asked.push(ean); },
+      cardTags: (label) => {
+        const r = n.results[label.ean];
+        if (r === undefined) return undefined;
+        if (r === "error") return [];
+        const mine = n.profile.allergens ?? [];
+        return mine.filter((k) => r.allergens?.includes(k)).map(() => ["danger", "Tiene leche"]);
+      },
+      paint: () => {},
+    };
+    return n;
+  }
+  const two = () => offerCard(K(1)) + offerCard(K(2));
+  const food = (ean) => L(5177, { ean, nutri: true });
+  const labels = (a = food(EAN_A), b = food(EAN_B)) => ({ [K(1)]: a, [K(2)]: b });
+  const tagsOf = (doc) => [...doc.querySelectorAll(".coto-unit-foryou")];
+  const skin = (doc, kind) => (kind ? doc.documentElement.setAttribute("data-gondola-skin", kind) : doc.documentElement.removeAttribute("data-gondola-skin"));
+
+  it("perfil vacío: no se pide nada y no hay etiquetas", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: [] });
+    const { doc, send } = setup(two(), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels() });
+    await tick();
+    expect(nutrition.asked).toEqual([]);
+    expect(tagsOf(doc)).toHaveLength(0);
+  });
+
+  it("con alergia a la leche: pide cada EAN una vez y pinta la etiqueta al llegar", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
+    const { doc, send } = setup(two(), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels() });
+    await tick();
+    send({ type: "labels", labels: labels() });
+    await tick();
+    expect(nutrition.asked).toEqual([EAN_A, EAN_B]);
+    expect(tagsOf(doc)).toHaveLength(0);
+    nutrition.results[EAN_A] = MILK;
+    send({ type: "labels", labels: labels() });
+    await tick();
+    const [box] = tagsOf(doc);
+    expect(tagsOf(doc)).toHaveLength(1);
+    expect(box.getAttribute("data-coto-unit-ean")).toBe(EAN_A);
+    expect(box.closest(".top-imagen-promos")).not.toBeNull();
+    expect(box.querySelector(".coto-unit-foryou-danger").textContent).toBe("Tiene leche");
+  });
+
+  it("con IntersectionObserver pide cuando la tarjeta se ve, una sola vez", async () => {
+    const observers = [];
+    class FakeIO {
+      constructor(cb) { this.cb = cb; this.targets = new Set(); observers.push(this); }
+      observe(t) { this.targets.add(t); }
+      unobserve(t) { this.targets.delete(t); }
+      disconnect() { this.targets.clear(); }
+      show(t) { this.cb([{ target: t, isIntersecting: true }], this); }
+    }
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
+    const { doc, send } = setup(two(), undefined, { nutrition, IntersectionObserver: FakeIO });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels() });
+    await tick();
+    expect(nutrition.asked).toEqual([]);
+    const cards = [...doc.querySelectorAll(".card-container")];
+    expect(cards.every((c) => observers[0].targets.has(c))).toBe(true);
+    observers[0].show(cards[0]);
+    observers[0].show(cards[0]);
+    send({ type: "labels", labels: labels() });
+    await tick();
+    expect(nutrition.asked).toEqual([EAN_A]);
+  });
+
+  it("producto que no es comida: no se pide", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
+    const { doc, send } = setup(two(), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels(L(5177, { ean: EAN_A, nutri: false }), food(EAN_B)) });
+    await tick();
+    expect(nutrition.asked).toEqual([EAN_B]);
+  });
+
+  it("sin la piel de la lista: no se pide nada y no hay etiquetas", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK });
+    for (const kind of [null, "pdp"]) {
+      const { doc, send } = setup(two(), undefined, { nutrition });
+      skin(doc, kind);
+      send({ type: "labels", labels: labels() });
+      await tick();
+      expect(tagsOf(doc)).toHaveLength(0);
+    }
+    expect(nutrition.asked).toEqual([]);
+  });
+
+  it("si Open Food Facts falla: sin etiquetas y sin reintentos en los repintados", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
+    const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+    await tick();
+    nutrition.results[EAN_A] = "error";
+    for (let i = 0; i < 3; i++) {
+      send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+      await tick();
+    }
+    expect(tagsOf(doc)).toHaveLength(0);
+    expect(nutrition.asked).toEqual([EAN_A]);
+  });
+
+  it("la tarjeta pasa a otro producto: pierde las etiquetas del anterior en el mismo repintado", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK });
+    const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: { [K(1)]: food(EAN_A), [K(2)]: food(EAN_B) } });
+    await tick();
+    expect(tagsOf(doc)).toHaveLength(1);
+    doc.querySelector('a[href*="_/R-"]').setAttribute("href", `/productos/x/${K(2)}`);
+    await tick();
+    expect(tagsOf(doc)).toHaveLength(0);
+    expect(nutrition.asked).toEqual([EAN_B]);
+  });
+
+  it("apagar la piel y repintar saca las etiquetas; prenderla las vuelve a poner", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK });
+    const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+    await tick();
+    expect(tagsOf(doc)).toHaveLength(1);
+    skin(doc, null);
+    send({ type: "settings", selected: [], day: 1 });
+    expect(tagsOf(doc)).toHaveLength(0);
+    skin(doc, "list");
+    send({ type: "settings", selected: [], day: 1 });
+    expect(tagsOf(doc)).toHaveLength(1);
+  });
+
+  it("el perfil cambia y el repintado saca las etiquetas", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK });
+    const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+    await tick();
+    expect(tagsOf(doc)).toHaveLength(1);
+    nutrition.profile = { celiac: false, allergens: [] };
+    send({ type: "settings", selected: [], day: 1 });
+    expect(tagsOf(doc)).toHaveLength(0);
+  });
+});

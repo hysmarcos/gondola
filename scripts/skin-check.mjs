@@ -7,6 +7,8 @@
 //   mientras corre. CHROME_PATH=ruta a Chrome si Playwright no encuentra el instalado.
 //   SHOTS=<carpeta>: guarda una captura de la lista, arriba de todo, por tamaño.
 //   ONLY=1280x900: mide un solo tamaño.
+//   PROFILE=<JSON>: pone esas claves de perfil en el storage de mentira (por ejemplo
+//   {"profileAllergens":["milk"]}) y cuenta las etiquetas "para vos" de la lista.
 //   URL=<dirección de coto.com.ar>: mide esa página en lugar de las dos de siempre.
 //   INTERACT=1: además, en Leches a 1280 x 900, aplica un filtro, cambia el orden y pasa de
 //   página, para ver que la piel no le quitó nada a Coto.
@@ -494,6 +496,7 @@ async function newContext(size, kind) {
   await context.exposeBinding("__gondolaNutrition", (_src, ean) => nutritionService.get(ean).catch(() => "error"));
   await context.addInitScript({ content: interceptor });
   await context.addInitScript({ content: injection(badge, styles, kind) });
+  if (process.env.PROFILE) await context.addInitScript({ content: `window.__gondolaStorage?.set(${JSON.stringify(JSON.parse(process.env.PROFILE))});` });
   return context;
 }
 
@@ -573,6 +576,7 @@ try {
         await page.waitForTimeout(2500);
         await page.evaluate(() => scrollTo(0, 0));
         await page.waitForTimeout(500);
+        if (process.env.PROFILE) console.log(`  etiquetas para vos: ${await page.evaluate(() => document.querySelectorAll(".coto-unit-foryou > span").length)} en ${await page.evaluate(() => document.querySelectorAll(".coto-unit-foryou").length)} tarjetas`);
         const all = rows(await page.evaluate(measure));
         const unlabelled = all.flat().filter((c) => !c.labelled).length;
         unlabelledSeen += unlabelled;
