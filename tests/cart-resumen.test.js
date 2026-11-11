@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { installCartUi, discountRows } from "../src/cart-ui.js";
-import { summaryRows, paintSummary } from "../src/cart-summary.js";
+import { installCartUi, discountRows, productHref } from "../src/cart-ui.js";
+import { summaryRows, paintSummary, closeSummaryPop } from "../src/cart-summary.js";
 import { analyzeCart } from "../src/cart.js";
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -28,13 +28,20 @@ describe("resumen del carrito: el detalle empieza cerrado", () => {
 
   it("muestra una línea por descuento y esconde el detalle", () => {
     const box = paint(analyzeCart([shampoo, limpiador, papas], [icbc(null)], 1, "200"));
-    expect(visible(box)).toEqual(["Subtotal", "Descuentos Coto", "Reintegro ICBC 30%", "Total final con reintegro"]);
+    expect(visible(box)).toEqual(["Subtotal", "Descuentos Coto", "Reintegro ICBC 30%", "Sin tope de reintegro", "Total final con reintegro"]);
     const group = box.querySelector('[data-group="coto"]');
     expect(group.tagName).toBe("BUTTON");
     expect(group.getAttribute("aria-expanded")).toBe("false");
     // El detalle sigue en la página, cerrado.
     expect(box.querySelector('[data-of="coto"]').hidden).toBe(true);
-    expect(box.querySelector('[data-of="bank"]').textContent).toBe("Sin tope de reintegro");
+  });
+
+  it("el reintegro del banco no se pliega: el tope se ve siempre", () => {
+    const box = paint(analyzeCart([limpiador, papas], [icbc(50000)], 1, "200"));
+    expect(box.querySelector('[data-group="bank"]')).toBeNull();
+    expect(box.querySelector(".coto-unit-sum-row--bank").tagName).toBe("DIV");
+    expect(box.querySelector(".coto-unit-sum-row--cap").hidden).toBe(false);
+    expect(visible(box).some((t) => /^Te quedan .* de tope semanal/.test(t))).toBe(true);
   });
 
   it("al tocar 'Descuentos Coto' abre el detalle, y al tocar de nuevo lo cierra", () => {
@@ -64,11 +71,10 @@ describe("resumen del carrito: el detalle empieza cerrado", () => {
     expect(outside).toBe(0);
   });
 
-  it("Comunidad: 'Descuento Comunidad Coto', con su detalle cerrado", () => {
+  it("Comunidad: 'Descuento Comunidad Coto', con su tope a la vista y sin botón", () => {
     const box = paint(analyzeCart([limpiador, papas], [comunidad], 1, "200"));
-    expect(visible(box)).toEqual(["Subtotal", "Descuento Comunidad Coto 20%", "Total final"]);
-    box.querySelector('[data-group="bank"]').click();
-    expect(visible(box)).toContain("Sin tope de descuento");
+    expect(visible(box)).toEqual(["Subtotal", "Descuento Comunidad Coto 20%", "Sin tope de descuento", "Total final"]);
+    expect(box.querySelector("button")).toBeNull();
   });
 
   it("si llegaste al tope, ese aviso queda siempre a la vista", () => {
@@ -81,6 +87,77 @@ describe("resumen del carrito: el detalle empieza cerrado", () => {
     const box = paint(analyzeCart([limpiador], [], 1, "200"));
     expect(box.querySelector("button")).toBeNull();
     expect(visible(box)).toEqual(["Subtotal", "Total final"]);
+  });
+});
+
+describe("mini-carrito: el detalle se abre en un panel flotante", () => {
+  const paint = (a, alive = () => true) => {
+    closeSummaryPop(document);
+    const box = document.createElement("div");
+    document.body.querySelectorAll("div:not(.coto-unit-sum-pop)").forEach((e) => e.remove());
+    document.body.prepend(box);
+    const again = (b = a) => paintSummary(document, box, summaryRows(b, 1, 1), () => null, { float: true, alive });
+    again();
+    return { box, again };
+  };
+  const pop = () => document.querySelector(".coto-unit-sum-pop");
+  const a2 = analyzeCart([shampoo, limpiador], [], 1, "200");
+
+  it("la caja no cambia: el detalle no está adentro, ni abierto ni cerrado", () => {
+    const { box } = paint(a2);
+    const before = box.children.length;
+    expect(box.querySelector("[data-of]")).toBeNull();
+    const group = box.querySelector('[data-group="coto"]');
+    expect(group.getAttribute("aria-controls")).toBe("coto-unit-sum-pop");
+    group.click();
+    expect(box.children.length).toBe(before);
+    expect(group.getAttribute("aria-expanded")).toBe("true");
+    expect(pop().hidden).toBe(false);
+    expect(pop().parentElement).toBe(document.body);
+    expect(pop().getAttribute("aria-label")).toBe("Descuentos Coto");
+    expect([...pop().children].map((r) => r.querySelector(".coto-unit-sum-name").textContent)).toEqual(["Shampoo TRESEMME"]);
+    group.click();
+    expect(pop().hidden).toBe(true);
+    expect(group.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("se cierra con Escape y con un clic afuera; un clic adentro no lo cierra ni sale", () => {
+    const { box } = paint(a2);
+    const group = box.querySelector('[data-group="coto"]');
+    group.click();
+    let outside = 0;
+    const count = () => outside++;
+    document.addEventListener("click", count);
+    pop().firstElementChild.click();
+    expect(outside).toBe(0);
+    expect(pop().hidden).toBe(false);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(pop().hidden).toBe(true);
+    group.click();
+    document.body.click();
+    expect(pop().hidden).toBe(true);
+    expect(group.getAttribute("aria-expanded")).toBe("false");
+    document.removeEventListener("click", count);
+  });
+
+  it("si el carrito cambia con el panel abierto, muestra los datos nuevos", () => {
+    const { box, again } = paint(a2);
+    box.querySelector('[data-group="coto"]').click();
+    const otro = line("e", "Jabón Dove", 1, 2000, prod("Jabón Dove", 2000, [{ discountText: "25%Dto", takingText: null, discountPrice: "$1500" }]));
+    again(analyzeCart([shampoo, limpiador, otro], [], 1, "200"));
+    expect(pop().hidden).toBe(false);
+    expect(pop().children).toHaveLength(2);
+    expect(box.querySelector('[data-group="coto"]').getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("si el desplegable de Coto se cierra, el panel se cierra", () => {
+    let alive = true;
+    const { box, again } = paint(a2, () => alive);
+    box.querySelector('[data-group="coto"]').click();
+    alive = false;
+    again();
+    expect(pop().hidden).toBe(true);
+    expect(box.querySelector('[data-group="coto"]').getAttribute("aria-expanded")).toBe("false");
   });
 });
 
@@ -117,7 +194,7 @@ describe("la línea de cada producto, igual en el mini-carrito y en /carrito", (
   const today = new Date().getDay();
   function setup(path, html) {
     const win = new EventTarget();
-    win.location = { pathname: path };
+    win.location = { pathname: path, origin: "https://www.cotodigital.com.ar" };
     win.postMessage = () => {};
     win.MutationObserver = window.MutationObserver;
     win.innerHeight = 800;
@@ -183,6 +260,58 @@ describe("la línea de cada producto, igual en el mini-carrito y en /carrito", (
     expect(tip.hidden).toBe(true);
     // Un solo globo para toda la página.
     expect(doc.querySelectorAll(".coto-unit-tip")).toHaveLength(1);
+  });
+
+  it("el nombre de cada producto abre su página en una pestaña nueva", async () => {
+    const withUrl = [
+      { ...shampoo, url: "/productos/shampoo-tresemme/_/R-00111111-00111111-200" },
+      { ...limpiador, url: "https://otro.sitio/productos/x/_/R-00222222-00222222-200" },
+    ];
+    const a = analyzeCart(withUrl, [], today, "200");
+    for (const [path, html, sel] of [["/carrito", cartHtml, "a.title"], ["/productos/x", miniHtml, ".titulo-producto"]]) {
+      const { doc, send } = setup(path, html);
+      send({ type: "cart", analysis: a, seq: 1 });
+      await tick();
+      const title = doc.querySelector(sel);
+      const link = title.querySelector(":scope > a.coto-unit-prod-link");
+      expect(link.getAttribute("href")).toBe("https://www.cotodigital.com.ar/productos/shampoo-tresemme/_/R-00111111-00111111-200");
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toBe("noopener");
+      expect(link.getAttribute("aria-label")).toBe("Abrir Shampoo TRESEMME en una pestaña nueva");
+      // El texto de Coto queda igual, y el clic no llega a Coto.
+      expect(title.textContent.trim()).toBe("Shampoo TRESEMME");
+      let seen = 0;
+      title.addEventListener("click", () => seen++);
+      link.addEventListener("click", (e) => e.preventDefault());
+      link.click();
+      expect(seen).toBe(0);
+      // Una dirección de otro sitio no se enlaza.
+      expect(doc.querySelectorAll(".coto-unit-prod-link")).toHaveLength(1);
+    }
+  });
+
+  it("productHref: solo páginas de producto de este mismo sitio", () => {
+    const o = "https://www.cotodigital.com.ar";
+    expect(productHref("/productos/a/_/R-001-001-200", o)).toBe(o + "/productos/a/_/R-001-001-200");
+    expect(productHref(o + "/productos/a/_/R-001-001-200", o)).toBe(o + "/productos/a/_/R-001-001-200");
+    expect(productHref("javascript:alert(1)//_/R-1", o)).toBeNull();
+    expect(productHref("https://malo.example/_/R-1", o)).toBeNull();
+    expect(productHref("/carrito", o)).toBeNull();
+    expect(productHref(null, o)).toBeNull();
+  });
+
+  it("un clic en una zona sin nada para tocar no sale del mini-carrito; un botón de Coto sí", async () => {
+    const { doc, send } = setup("/productos/x", miniHtml.replace("</card-product-float>", '<button class="quitar">x</button></card-product-float>'));
+    send({ type: "cart", analysis, seq: 1 });
+    await tick();
+    let outside = 0;
+    doc.addEventListener("click", () => outside++);
+    doc.querySelector(".titulo-producto").click();
+    doc.querySelector(".coto-unit-mini-line").click();
+    doc.querySelector(".coto-unit-mini-total .coto-unit-sum-row--total").click();
+    expect(outside).toBe(0);
+    doc.querySelector("button.quitar").click();
+    expect(outside).toBe(1);
   });
 
   it("si el producto pierde el descuento, la línea se va", async () => {

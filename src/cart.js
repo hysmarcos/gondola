@@ -5,8 +5,8 @@ import { compareFields } from "./compare.js";
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
-function analyzeLine({ id, name, qty, list, data }, store, opts = {}) {
-  const core = analyzeCore({ id, name, qty, list, data }, store, opts);
+function analyzeLine({ id, name, qty, list, data, url }, store, opts = {}) {
+  const core = { ...analyzeCore({ id, name, qty, list, data }, store, opts), url: url ?? data?.url ?? null };
   // Cuánto le saca Coto a esta línea y con qué promo (para el detalle del carrito).
   const discount = Math.max(0, round2(core.listTotal - core.total));
   const promoLabel = discount > 0.5 && data ? offerText(data, opts) : null;
@@ -98,9 +98,9 @@ export function analyzeCart(lines, promos, day, store, opts = {}) {
   const used = [today?.promo, best?.promo].filter((p) => p?.capWeekly);
   return {
     lines: analyzed.map((l) => {
-      const { id, name, total, listTotal, missing, saving, promoText, ean, cmp, discount, promoLabel, qty, nutri, amount } = l;
+      const { id, name, url, total, listTotal, missing, saving, promoText, ean, cmp, discount, promoLabel, qty, nutri, amount } = l;
       return {
-        id, name, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText, ean, cmp, qty, nutri, amount,
+        id, name, url, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText, ean, cmp, qty, nutri, amount,
         discount, promoLabel, bankShare: shareOf(l),
       };
     }),
