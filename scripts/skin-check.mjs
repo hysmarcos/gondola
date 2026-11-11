@@ -14,7 +14,8 @@
 // ventana al bajar 600 px, nunca pasa por encima del pie y no hay barra horizontal.
 //   ONLY_PDP=1: mide solo la página de producto. PDP_URL=<dirección>: otra página de producto.
 //   Etiqueta de nutrición: la columna mide 300 px; "Por porción" oculta la columna de cada
-//   100 y cambia el primer número grande; sin barra horizontal.
+//   100 y cambia el primer número grande; con "cada 100" no se ven %VD ni su nota (son de
+//   la porción) y con "Por porción" sí; sin barra horizontal.
 //   Con SHOTS, guarda pdp-top.png (arriba de todo), pdp-600.png (600 px más abajo) y
 //   pdp-detalle.png (nutrición, descripción y características).
 //   Con INTERACT=1, además hace click en "Agregar" y en "Ver planes de cuotas" y cuenta qué
@@ -395,6 +396,9 @@ async function checkNutrition(page) {
       title: width(sec.querySelector(".coto-unit-nutri-title")),
       table: width(sec.querySelector(".coto-unit-nutri-table")),
       per100: shown(sec.querySelector(".coto-unit-nutri-table thead th:nth-child(2)")),
+      // %VD: es de la porción; con "cada 100" no se muestra ni la columna ni la nota.
+      vd: [...sec.querySelectorAll(".coto-unit-nutri-table :is(th, td):nth-child(4)")].some(shown),
+      note: shown(sec.querySelector(".coto-unit-nutri-note")),
       hasSeg: !!sec.querySelector(".coto-unit-nutri-seg"),
       tile: sec.querySelector(".coto-unit-nutri-tiles > *")?.textContent ?? null,
       basis: sec.dataset.basis,
@@ -408,6 +412,8 @@ async function checkNutrition(page) {
     if (w === null || Math.abs(w - LABEL_WIDTH) > 2) problems.push(`etiqueta de nutrición (${name}): mide ${w} px, se esperaban ${LABEL_WIDTH} (más o menos 2)`);
   }
   if (!before.per100) problems.push("etiqueta de nutrición: con \"cada 100\" no se ve esa columna");
+  if (before.vd) problems.push("etiqueta de nutrición: con \"cada 100\" se ve la columna %VD (es de la porción)");
+  if (before.note) problems.push("etiqueta de nutrición: con \"cada 100\" se ve la nota de %VD");
   if (!before.hasSeg) problems.push("etiqueta de nutrición: no está el interruptor \"Por porción\"");
   else {
     await page.locator(".coto-unit-nutri-seg button").nth(1).click();
@@ -415,6 +421,10 @@ async function checkNutrition(page) {
     const after = await state();
     if (after.basis !== "portion") problems.push(`etiqueta de nutrición: tras "Por porción", data-basis es ${after.basis}`);
     if (after.per100) problems.push("etiqueta de nutrición: tras \"Por porción\" se sigue viendo la columna de cada 100");
+    if (!after.vd) problems.push("etiqueta de nutrición: tras \"Por porción\" no se ve la columna %VD");
+    if (!after.note) problems.push("etiqueta de nutrición: tras \"Por porción\" no se ve la nota de %VD");
+    if (after.table !== before.table) problems.push(`etiqueta de nutrición: el ancho cambia de ${before.table} a ${after.table} px con "Por porción"`);
+    if (shots) await shootDetail(page, `${shots}/pdp-detalle-porcion.png`);
     if (after.tile === before.tile) problems.push(`etiqueta de nutrición: tras "Por porción" el primer número grande sigue igual (${after.tile})`);
     else notes.push(`primer número grande: "${before.tile}" → "${after.tile}"`);
     if (after.docWidth > after.innerWidth) problems.push(`barra horizontal tras "Por porción": la página mide ${after.docWidth} px y la ventana ${after.innerWidth}`);
@@ -515,7 +525,7 @@ async function runPdp() {
     } else if (label.notes[0]?.startsWith("sin tabla")) {
       console.log(`${PDP_SIZE.name} nutrición: ${label.notes[0]}`);
     } else {
-      console.log(`${PDP_SIZE.name} nutrición: etiqueta de ${LABEL_WIDTH} px; "Por porción" oculta la columna de cada 100 y cambia los números (${label.notes.join("; ")}); sin barra horizontal`);
+      console.log(`${PDP_SIZE.name} nutrición: etiqueta de ${LABEL_WIDTH} px; con "cada 100" sin %VD ni su nota; "Por porción" oculta la columna de cada 100, muestra %VD y su nota, mismo ancho, y cambia los números (${label.notes.join("; ")}); sin barra horizontal`);
     }
     if (shots) {
       await page.evaluate(() => scrollTo(0, 0));

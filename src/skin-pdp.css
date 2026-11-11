@@ -873,8 +873,11 @@
   border-bottom: 0;
 }
 
-/* Cada 100: sin la columna de la porción. Por porción: sin la de cada 100. %VD, siempre. */
-[data-gondola-skin="pdp"] .coto-unit-nutri-section[data-basis="100"] .coto-unit-nutri-table :is(th, td):nth-child(3),
+/* Columnas de table(): 1 nombre, 2 cada 100, 3 por porción, 4 %VD (3 y 4 solo si hay
+   porción). El %VD es de la porción: con "cada 100" se ocultan la porción, el %VD y su nota.
+   Por porción: sin la columna de cada 100. */
+[data-gondola-skin="pdp"] .coto-unit-nutri-section[data-basis="100"] .coto-unit-nutri-table :is(th, td):nth-child(n + 3),
+[data-gondola-skin="pdp"] .coto-unit-nutri-section[data-basis="100"] > .coto-unit-nutri-note,
 [data-gondola-skin="pdp"] .coto-unit-nutri-section[data-basis="portion"] .coto-unit-nutri-table :is(th, td):nth-child(2) {
   display: none;
 }
@@ -894,8 +897,8 @@
   line-height: 16px;
 }
 
-/* Sin porción no hay nota: la tabla cierra el borde. */
-[data-gondola-skin="pdp"] .coto-unit-nutri-section[data-basis] > .coto-unit-nutri-table:not(:has(~ .coto-unit-nutri-note)) {
+/* Con "cada 100" (con o sin porción) no se ve la nota: la tabla cierra el borde. */
+[data-gondola-skin="pdp"] .coto-unit-nutri-section[data-basis="100"] > .coto-unit-nutri-table {
   padding-bottom: 8px;
   border-bottom: 2px solid var(--g-ink);
   border-radius: 0 0 6px 6px;
