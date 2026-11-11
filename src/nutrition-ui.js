@@ -260,9 +260,11 @@ function renderSummary(doc, n, { ean, liquid, iconUrl }) {
 }
 
 // Sección "Información nutricional" junto a la descripción del producto.
-function renderSection(doc, result, { ean, liquid, iconUrl, label, assetUrl }) {
+function renderSection(doc, result, { ean, liquid, iconUrl, label, assetUrl, taccKey }) {
   const sec = el(doc, "section", `${ROOT}-section`);
   sec.dataset.ean = ean;
+  // Estado Sin TACC con el que se dibujó: si cambia (llega el dato de Coto), se rehace.
+  sec.dataset.tacc = taccKey;
   const h = el(doc, "h4", `${ROOT}-title`);
   if (iconUrl) h.append(icon(doc, iconUrl, "Open Food Facts"));
   h.append("Información nutricional");
@@ -383,6 +385,11 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, asse
       if (!container.querySelector(`:scope > .${ROOT}`)) place(renderNutrition(doc, r, opts), container, anchor);
       return;
     }
+    const status = taccStatus(label.tacc ?? null, label.name, r === "missing" ? null : r);
+    const taccKey = `${status.kind}|${status.text}`;
+    opts.taccKey = taccKey;
+    const oldSection = section.host.querySelector(`:scope > .${ROOT}-section`);
+    if (oldSection && oldSection.dataset.tacc !== taccKey) oldSection.remove();
     if (!section.host.querySelector(`:scope > .${ROOT}-section`)) {
       place(renderSection(doc, r, opts), section.host, section.after);
       section.host.setAttribute(HOST, "");
@@ -392,10 +399,13 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null, asse
       if (sum) place(sum, container, anchor);
     }
     // Marca Sin TACC en la columna: solo si Coto u OFF lo dicen (verde) o hay que revisar (ámbar).
-    const status = taccStatus(label.tacc ?? null, label.name, r === "missing" ? null : r);
+    // Se rehace si cambió el estado.
+    const oldBadge = container.querySelector(`:scope > .${ROOT}-badge`);
+    if (oldBadge && oldBadge.dataset.tacc !== taccKey) oldBadge.remove();
     if ((status.kind === "ok" || status.kind === "warn") && !container.querySelector(`:scope > .${ROOT}-badge`)) {
       const badge = el(doc, "p", `${ROOT}-badge ${ROOT}-badge--${status.kind}`, status.text);
       badge.dataset.ean = ean;
+      badge.dataset.tacc = taccKey;
       place(badge, container, container.querySelector(`:scope > .${ROOT}-sum`) ?? anchor);
     }
     // "Para vos": se rehace si cambió el perfil.

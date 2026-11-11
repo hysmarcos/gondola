@@ -529,7 +529,12 @@ export function installBadges(win, doc, deps = {}) {
     const fresh = typeof m.seq !== "number" || m.seq >= state.seq;
     if (typeof m.seq === "number" && fresh) state.seq = m.seq;
     if (m.type === "labels") {
-      Object.assign(state.labels, m.labels ?? {});
+      // Una etiqueta de lista no trae el Sin TACC ni el nombre de la búsqueda por PLU: si es
+      // el mismo producto, se conservan.
+      for (const [k, l] of Object.entries(m.labels ?? {})) {
+        const prev = state.labels[k];
+        state.labels[k] = prev && l && prev.ean === l.ean && l.tacc === undefined && prev.tacc !== undefined ? { ...l, tacc: prev.tacc, name: prev.name } : l;
+      }
       if ("marks" in m && fresh) {
         state.marks = m.marks ?? {};
         if (!m.marks) doc.querySelector("." + NOTICE)?.remove();

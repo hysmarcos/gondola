@@ -597,3 +597,28 @@ describe("perfil personal: línea 'Para vos'", () => {
     expect(items()).toEqual([["info", "Sodio: 250 mg cada 100 g"]]);
   });
 });
+
+describe("revisión: la etiqueta cambia después del primer dibujo", () => {
+  const N4 = { per100: { kcal: 380, sugars: 1, sodiumMg: 5 }, perServing: null, url: "u", photos: {}, ingredients: null, allergens: [], traces: [], additives: [], nova: null, glutenFreeLabel: true };
+  it("si llega tacc o nombre, la marca y la sección se rehacen", async () => {
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    const container = document.querySelector(".mt-4");
+    const anchor = document.getElementById("a");
+    const desc = document.querySelector(".pdp-description");
+    const section = { host: desc.parentElement, after: desc };
+    const ui = createNutritionUi(document, { request: async () => N4, onUpdate: () => {} });
+    const first = { ean: "1", nutri: true, group: "kg" };
+    ui.paint(container, anchor, first, true, section);
+    await new Promise((r) => setTimeout(r, 0));
+    ui.paint(container, anchor, first, true, section);
+    expect(container.querySelector(".coto-unit-nutri-badge").textContent).toBe("Sin TACC según Open Food Facts");
+    // Llega la etiqueta de la búsqueda por PLU: Coto dice NO y el nombre menciona avena.
+    ui.paint(container, anchor, { ...first, tacc: "NO", name: "Avena Tradicional" }, true, section);
+    expect(container.querySelector(".coto-unit-nutri-badge")).toBeNull();
+    expect(section.host.querySelector(".coto-unit-nutri-tacc").textContent).toContain("No figura como Sin TACC en Coto");
+    // Coto SI pero el nombre menciona avena: advertencia.
+    ui.paint(container, anchor, { ...first, tacc: "SI", name: "Avena Tradicional" }, true, section);
+    expect(container.querySelector(".coto-unit-nutri-badge").classList.contains("coto-unit-nutri-badge--warn")).toBe(true);
+    expect(section.host.querySelector(".coto-unit-nutri-tacc").classList.contains("coto-unit-nutri-tacc--warn")).toBe(true);
+  });
+});

@@ -280,6 +280,21 @@ describe("página de producto", () => {
     expect(profiles.at(-1)).toEqual({ celiac: true, sodium: false, sugar: false, allergens: ["milk"] });
   });
 
+  it("una etiqueta de lista sin tacc ni nombre no borra los de la búsqueda por PLU", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const { send } = setup(pdp, `/productos/papel/${key}`, { nutrition });
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m", ean: "1", nutri: true, tacc: "SI", name: "Leche" }) } });
+    await tick();
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m", ean: "1", nutri: true }) } });
+    await tick();
+    expect(calls.at(-1)[2]).toMatchObject({ tacc: "SI", name: "Leche" });
+    // Otro producto (otro EAN): no hereda nada.
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m", ean: "2", nutri: true }) } });
+    await tick();
+    expect(calls.at(-1)[2].tacc).toBeUndefined();
+  });
+
   it("refresh vuelve a pintar la información nutricional", async () => {
     const calls = [];
     const nutrition = { paint: (...args) => calls.push(args) };
