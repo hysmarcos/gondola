@@ -55,15 +55,23 @@ QUÉ AGREGA
 • Promos 2x1 y 3x2: si agregás 1 de un 2x1, suma el segundo. Se apaga en Ajustes.
 • Carrito real: subtotal, descuentos de Coto, reintegro del banco con su tope y total final.
 • Otros súper: busca el mismo producto por código de barras en Carrefour, Día y Más, con el link.
+• Información nutricional: en cada producto de comida, la tabla de Open Food Facts (cada 100 g, por porción y %VD), lo que rinde por proteína y por calorías, fotos del envase, ingredientes, alérgenos y NOVA.
+• Sin TACC: lo que marca Coto, con un aviso si el producto menciona trigo, avena, cebada o centeno. Verificá siempre el símbolo oficial en el envase.
+• Mi perfil: elegí si sos celíaco/a, si cuidás el sodio o el azúcar, y tus alergias. Cada producto te muestra lo que te importa. No es consejo médico.
+• Nutrición del carrito: kcal, azúcares y sodio de toda tu compra.
 
 PRIVACIDAD
 • Sin servidores propios, sin cuentas, sin publicidad y sin analítica.
 • Tus ajustes quedan en tu navegador.
 • Para comparar, solo envía el código de barras de los productos a las búsquedas públicas de Carrefour, Día y Más. Se apaga en Ajustes.
+• Para la información nutricional, solo envía el código de barras del producto de comida que abrís a Open Food Facts. Se apaga en Ajustes.
+• Tu perfil (celíaco/a, sodio, azúcar, alergias) queda solo en tu navegador.
 
 CÓDIGO ABIERTO
 El código es abierto (licencia MIT): https://github.com/hysmarcos/gondola
 Reportá errores, proponé mejoras o votá ideas desde la pestaña "Colaborá" de la extensión.
+
+Información nutricional: Open Food Facts (ODbL). Íconos de alérgenos: Food Standards Agency del Reino Unido (Open Government Licence v3.0).
 
 Góndola no está afiliada a Coto, Carrefour, Día ni Más. Las marcas son de sus dueños.
 ```
