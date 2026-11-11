@@ -23,9 +23,12 @@
   --g-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* ---------- "Agregar" de Coto (lista y página de producto) ---------- */
+/* ---------- "Agregar" de Coto (lista y página de producto) ----------
+   Solo dentro de la celda de la lista (.producto-card) y de la columna de compra de la
+   página de producto (app-product-detail aside.row): el mini carrito de Coto y el resto del
+   sitio, que también usan product-add-show-remove, quedan como los dibuja Coto. */
 
-[data-gondola-skin] product-add-show-remove .btn-primary {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove .btn-primary {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -45,16 +48,16 @@
   transition: transform 160ms var(--g-out), background-color 150ms ease;
 }
 
-[data-gondola-skin] product-add-show-remove .btn-primary:active {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove .btn-primary:active {
   transform: scale(0.97);
 }
 
-[data-gondola-skin] product-add-show-remove .btn-primary:focus-visible {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove .btn-primary:focus-visible {
   outline: 2px solid var(--g-navy);
   outline-offset: 2px;
 }
 
-[data-gondola-skin] product-add-show-remove .btn-primary:disabled {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove .btn-primary:disabled {
   background-color: var(--g-soft) !important;
   color: var(--g-ink2) !important;
   transform: none;
@@ -64,7 +67,7 @@
    Solo existe con sesión iniciada; el selector sale de src/promo-clicks.js (el campo
    input-prod… entre los dos botones), sin captura de HTML real. */
 
-[data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) {
   display: flex !important;
   align-items: center;
   justify-content: space-between;
@@ -78,7 +81,7 @@
   box-shadow: inset 0 0 0 1.5px var(--g-red) !important;
 }
 
-[data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button {
   display: flex;
   flex: none;
   align-items: center;
@@ -98,16 +101,16 @@
   transition: transform 160ms var(--g-out), background-color 150ms ease;
 }
 
-[data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button:active {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button:active {
   transform: scale(0.92);
 }
 
-[data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button:focus-visible {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button:focus-visible {
   outline: 2px solid var(--g-navy);
   outline-offset: -2px;
 }
 
-[data-gondola-skin] product-add-show-remove input[id^="input-prod"] {
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove input[id^="input-prod"] {
   flex: 1;
   min-width: 0;
   width: auto !important;
@@ -124,19 +127,19 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  [data-gondola-skin] product-add-show-remove .btn-primary:not(:disabled):hover {
+  [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove .btn-primary:not(:disabled):hover {
     background-color: var(--g-red-d) !important;
   }
 
-  [data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button:hover {
+  [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button:hover {
     background-color: #fff3f5 !important;
   }
 }
 
 /* Movimiento reducido: solo cambios de color. */
 @media (prefers-reduced-motion: reduce) {
-  [data-gondola-skin] product-add-show-remove .btn-primary,
-  [data-gondola-skin] product-add-show-remove :has(> input[id^="input-prod"]) > button {
+  [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove .btn-primary,
+  [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button {
     transform: none !important;
     animation: none !important;
   }

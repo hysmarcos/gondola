@@ -1,6 +1,6 @@
 /* Piel Góndola: tarjeta de la lista de productos (spec 4.2).
    Cada parte tiene alto fijo, haya dato o no: foto cuadrada, nombre 36 px, precio 28 px,
-   precio por unidad 20 px, comparador 33 px, acción 40 px y "sin impuestos" 18 px. Así el
+   precio por unidad 20 px, comparador 33 px, acción 40 px y "sin impuestos" 30 px. Así el
    nombre, el precio y el botón quedan a la misma altura en toda la fila.
    Nodos de Coto: div.producto-card (celda) > constructor-result-item > .card-container >
    [.top-imagen-promos (foto y cucardas), .centro-precios (nombre, precios, .bottom-botones)].
@@ -454,24 +454,28 @@
   display: none !important;
 }
 
-/* ---------- 7. "Precio sin impuestos nacionales": 18 px, debajo del botón ----------
+/* ---------- 7. "Precio sin impuestos nacionales": 30 px, debajo del botón ----------
    Es la última <small class="text-center"> de .centro-precios, dentro de un bloque que en
    las tarjetas con etiqueta solo la muestra a ella ("Precio regular" está oculto): ese
-   bloque pasa abajo con order. */
+   bloque pasa abajo con order. Dos líneas de 11 px (15 px de interlineado) en 30 px, grises
+   y centradas. A los anchos medidos (tarjetas de 138 px en adelante) entra sin cortarse:
+   scripts/skin-check.mjs mide que no haya texto fuera de la caja. El bloque suma 4 px de
+   margen: 4 + 30 = 34 px bajo el botón. badge.css pone a esta línea (data-coto-unit-dim) una
+   sola línea con "…": por eso se repite white-space y text-overflow. */
 
 [data-gondola-skin="list"] .card-container .centro-precios small.text-center:last-child {
   display: block !important;
   align-self: stretch;
-  height: 18px;
+  height: 30px;
   margin: 0 !important;
   overflow: hidden;
   color: var(--g-ink2) !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 400 !important;
-  line-height: 18px;
-  text-align: left !important;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 15px;
+  text-align: center !important;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 [data-gondola-skin="list"] .card-container[data-coto-unit-card] .centro-precios > :has(> small.text-center:last-child) {
@@ -483,7 +487,8 @@
 /* ---------- Tarjeta sin etiqueta de Góndola: el precio de Coto ----------
    Mismo borde, foto y nombre; sin altos internos. El botón queda abajo y, como el
    "sin impuestos" de estas tarjetas está arriba del botón, se le reserva el mismo lugar
-   debajo: así queda a la altura del de sus vecinas. */
+   debajo (4 px de margen + 30 px de la línea = 34 px): así queda a la altura del de sus
+   vecinas. */
 
 [data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .centro-precios small {
   margin: 0 !important;
@@ -509,7 +514,366 @@
 }
 
 [data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .bottom-botones {
-  margin-bottom: 22px;
+  margin-bottom: 34px;
+}
+
+/* ---------- 8. Página: columnas, encabezado, filtros y grilla (spec 4.1) ----------
+   La página ya trae dos columnas hermanas dentro de un div.row: #filtrosmenu y la de los
+   productos (el div que le sigue, .contenido-col). Todo se arma con CSS sobre esos nodos,
+   sin moverlos. Debajo de 768 px Coto apila las columnas y esconde los filtros detrás de
+   "Ver/Ocultar Filtros": ahí la página queda como la dibuja Coto. */
+
+@media (min-width: 768px) {
+  [data-gondola-skin="list"] .row:has(> #filtrosmenu) {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+
+  /* Columna de filtros: 184 px y fija al bajar. align-self evita que se estire al alto de
+     la fila (una columna del alto de la fila no tiene por dónde moverse). Ningún
+     ascendiente tiene overflow, así que sticky funciona. El top es el alto del encabezado
+     fijo de Coto (153 px desde 1200 de ancho, 159 hasta 992, 199 por debajo) más 12 px. */
+  [data-gondola-skin="list"] #filtrosmenu {
+    position: sticky;
+    top: 211px;
+    flex: none;
+    align-self: flex-start;
+    width: 184px;
+    max-width: 184px;
+    max-height: calc(100vh - 211px - 12px);
+    overflow: hidden auto;
+    scrollbar-color: #c3c8d2 transparent;
+    scrollbar-width: thin;
+  }
+
+  [data-gondola-skin="list"] #filtrosmenu + div {
+    flex: 1 1 0;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+  }
+
+  /* Grilla: 4 columnas desde 1100 px de ventana y 3 por debajo (spec 4.1). Cada celda
+     estira su tarjeta al alto de la fila. No se usa display: contents en nodos de Coto.
+     Por debajo de 992 px (ventana chica o zoom del navegador de 150 % o más) el contenedor
+     de Coto se achica a 720 px y, con los filtros al lado, 3 tarjetas quedan de 138 px de
+     texto: el precio con el regular tachado no entra. Ahí son 2 (lo midió skin-check). */
+  [data-gondola-skin="list"] .productos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+  }
+
+  [data-gondola-skin="list"] .productos > .producto-card {
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0;
+  }
+}
+
+@media (min-width: 992px) {
+  [data-gondola-skin="list"] #filtrosmenu {
+    top: 171px;
+    max-height: calc(100vh - 171px - 12px);
+  }
+
+  [data-gondola-skin="list"] .productos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  [data-gondola-skin="list"] .productos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  [data-gondola-skin="list"] #filtrosmenu {
+    top: 165px;
+    max-height: calc(100vh - 165px - 12px);
+  }
+}
+
+/* ---------- Encabezado: título y cantidad a la izquierda, orden a la derecha ---------- */
+
+[data-gondola-skin="list"] .plp-header {
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 16px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 0 !important;
+  box-shadow: 0 1px 0 var(--g-line);
+  color: var(--g-ink);
+  font-family: Poppins, system-ui, sans-serif;
+}
+
+[data-gondola-skin="list"] .plp-header__heading {
+  align-items: baseline;
+  gap: 2px 10px;
+}
+
+[data-gondola-skin="list"] .plp-header__title {
+  margin: 0;
+  color: var(--g-ink);
+  font: 600 22px/28px Poppins, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+[data-gondola-skin="list"] .plp-header__count {
+  margin: 0;
+  color: var(--g-ink2);
+  font: 400 12px/18px Poppins, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-gondola-skin="list"] .plp-header__sort {
+  gap: 8px;
+  margin: 0 0 0 auto;
+}
+
+[data-gondola-skin="list"] .plp-header__sort-label {
+  margin: 0;
+  color: var(--g-ink2);
+  font: 400 12px/18px Poppins, system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+/* El selector de orden de Coto, sin su rojo ni su borde: borde fino y texto de tinta. */
+[data-gondola-skin="list"] .plp-header__sort select {
+  width: auto;
+  min-width: 200px;
+  height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+  border: 0 !important;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 0 0 1px var(--g-line);
+  color: var(--g-ink) !important;
+  font: 500 12px/1.4 Poppins, system-ui, sans-serif !important;
+  cursor: pointer;
+  transition: box-shadow 150ms ease;
+}
+
+[data-gondola-skin="list"] .plp-header__sort select:focus-visible {
+  outline: 2px solid var(--g-navy);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-gondola-skin="list"] .plp-header__sort select:hover {
+    box-shadow: 0 0 0 1px #cfd4dc;
+  }
+}
+
+/* Aviso de Góndola (por ejemplo al ordenar por precio por kg/L). badge.js lo pone justo
+   después del orden, o sea dentro del encabezado: ocupa una fila propia debajo de todo. */
+[data-gondola-skin="list"] .coto-unit-notice {
+  flex: 0 0 100%;
+  order: 3;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background-color: var(--g-amber-soft);
+  color: var(--g-amber-ink);
+  font: 400 12px/18px Poppins, system-ui, sans-serif;
+}
+
+[data-gondola-skin="list"] .plp-header > .coto-unit-notice {
+  margin: 4px 0 0;
+}
+
+/* ---------- Filtros: grupos con título, casilla, nombre y cantidad ----------
+   Los links son los de Coto (el clic es de Coto); la casilla es un dibujo (::before). */
+
+[data-gondola-skin="list"] #filtrosmenu {
+  color: var(--g-ink);
+  font-family: Poppins, system-ui, sans-serif;
+}
+
+[data-gondola-skin="list"] #filtrosmenu .filter-block,
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs > div {
+  margin: 0 0 20px !important;
+}
+
+[data-gondola-skin="list"] #filtrosmenu .filter-block > .filter-title,
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs h6 {
+  margin: 0 0 6px;
+  color: var(--g-ink) !important;
+  font: 600 12px/18px Poppins, system-ui, sans-serif !important;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+[data-gondola-skin="list"] #filtrosmenu .filter-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-gondola-skin="list"] #filtrosmenu .filter-list > li {
+  margin: 0;
+  padding: 0;
+}
+
+[data-gondola-skin="list"] #filtrosmenu .filter-list > li > a {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  color: var(--g-ink) !important;
+  font: 400 12px/18px Poppins, system-ui, sans-serif !important;
+  text-decoration: none;
+}
+
+/* Casilla de 14 px: vacía, y llena en el filtro activo (clase active de Coto). */
+[data-gondola-skin="list"] #filtrosmenu .filter-list > li > a::before {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border-radius: 4px;
+  background-color: #fff;
+  box-shadow: inset 0 0 0 1.5px #b9bec8;
+}
+
+[data-gondola-skin="list"] #filtrosmenu .filter-list > li > a.active {
+  font-weight: 600 !important;
+}
+
+[data-gondola-skin="list"] #filtrosmenu .filter-list > li > a.active::before {
+  background-color: var(--g-navy);
+  box-shadow: none;
+}
+
+/* El tilde del activo. */
+[data-gondola-skin="list"] #filtrosmenu .filter-list > li > a.active::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 4.5px;
+  width: 4px;
+  height: 7px;
+  border-right: 1.75px solid #fff;
+  border-bottom: 1.75px solid #fff;
+  transform: rotate(45deg);
+}
+
+/* La cantidad, más callada que el nombre y alineada a la derecha. */
+[data-gondola-skin="list"] #filtrosmenu .filter-list > li > a > span {
+  margin-left: auto;
+  padding-left: 4px;
+  color: var(--g-ink2) !important;
+  font: 400 12px/18px Poppins, system-ui, sans-serif !important;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-gondola-skin="list"] #filtrosmenu .filter-list > li > a:focus-visible,
+[data-gondola-skin="list"] #filtrosmenu .filter-list > a:focus-visible,
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs a:focus-visible {
+  outline: 2px solid var(--g-navy);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-gondola-skin="list"] #filtrosmenu .filter-list > li > a:hover {
+    color: var(--g-navy) !important;
+  }
+
+  [data-gondola-skin="list"] #filtrosmenu .filter-list > li > a:not(.active):hover::before {
+    box-shadow: inset 0 0 0 1.5px var(--g-navy);
+  }
+}
+
+/* "Más": cuelga directo del <ul>, alineado con los nombres (14 px de casilla + 8 de aire). */
+[data-gondola-skin="list"] #filtrosmenu .filter-list > a {
+  display: inline-block;
+  margin: 2px 0 0 22px;
+  padding: 2px 0;
+  color: var(--g-navy) !important;
+  font: 600 12px/18px Poppins, system-ui, sans-serif !important;
+  text-decoration: none;
+}
+
+/* ---------- "Su selección": ruta de categorías (callada) y filtros puestos (chips) ---------- */
+
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul:first-of-type {
+  margin: 0;
+  padding: 0 !important;
+  list-style: none;
+}
+
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul:first-of-type > li {
+  display: inline;
+  color: var(--g-ink2);
+  font: 400 12px/18px Poppins, system-ui, sans-serif;
+}
+
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul:first-of-type > li:not(:last-child)::after {
+  content: "/";
+  margin: 0 5px;
+  color: #b9bec8;
+}
+
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul:first-of-type a {
+  color: var(--g-ink2) !important;
+  font: 400 12px/18px Poppins, system-ui, sans-serif !important;
+  text-decoration: none;
+}
+
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul:first-of-type > li:last-child > span {
+  color: var(--g-ink);
+  font: 600 12px/18px Poppins, system-ui, sans-serif !important;
+}
+
+/* Cada filtro puesto es un chip: el link de Coto, que lo saca al hacer clic (su icono de
+   Coto, una "x", va adelante). */
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul + ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul + ul > li {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul + ul a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: var(--g-navy-soft);
+  color: var(--g-navy) !important;
+  font: 600 12px/18px Poppins, system-ui, sans-serif !important;
+  text-decoration: none;
+}
+
+[data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul + ul a img {
+  width: 14px;
+  height: auto;
+  margin: 0 !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-gondola-skin="list"] #filtrosmenu app-breadcrumbs ul + ul a:hover {
+    background-color: #e1e8f4;
+  }
 }
 
 /* Movimiento reducido: solo cambios de color. */

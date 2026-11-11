@@ -36,6 +36,27 @@ function selectors(css) {
   return out;
 }
 
+// Tamaños de texto en px: los de font-size y el primero de cada font: (el que va antes de
+// la barra del interlineado: "font: 600 13px/1 Poppins").
+function fontSizes(css) {
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const out = [];
+  for (const m of clean.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/g)) out.push(Number(m[1]));
+  for (const m of clean.matchAll(/(?<![\w-])font\s*:\s*([^;}]*)/g)) {
+    const size = m[1].match(/(?:^|\s)(\d+(?:\.\d+)?)px/);
+    if (size) out.push(Number(size[1]));
+  }
+  return out;
+}
+
+describe("fontSizes", () => {
+  it("lee font-size y el tamaño de font:, y no el interlineado", () => {
+    expect(fontSizes("a { font-size: 12px; } b { font: 600 13px/18px Poppins !important; }")).toEqual([12, 13]);
+    expect(fontSizes("a { font: 500 9px/1 Poppins; }")).toEqual([9]);
+    expect(fontSizes("a { font: inherit; line-height: 14px; }")).toEqual([]);
+  });
+});
+
 describe("splitSelectors", () => {
   it("no parte en las comas de :has() ni :is()", () => {
     expect(splitSelectors('[data-gondola-skin] .a:has(.b, .c), [data-gondola-skin] :is(.d, .e) .f')).toEqual([
@@ -60,7 +81,7 @@ describe.each(FILES)("%s", (file) => {
   it("no usa transition: all", () => {
     expect(css).not.toMatch(/transition(-property)?\s*:\s*all/);
   });
-  it("ningún texto baja de 11 px", () => {
-    for (const m of css.matchAll(/font-size\s*:\s*(\d+(?:\.\d+)?)px/g)) expect(Number(m[1])).toBeGreaterThanOrEqual(11);
+  it("ningún texto baja de 11 px (font-size y el tamaño dentro de font:)", () => {
+    for (const size of fontSizes(css)) expect(size).toBeGreaterThanOrEqual(11);
   });
 });
