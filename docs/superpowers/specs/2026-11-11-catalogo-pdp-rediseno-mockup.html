@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Góndola · Estante a fondo</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#16181d; --ink2:#5b616e; --line:#e6e8ec; --soft:#f5f6f8; --red:#e20025; --red-d:#c4001f; --red-soft:#fff3f5; --navy:#14284b; --navy-soft:#eef2f9; --amber:#ffc233; --amber-soft:#fff4d1; --green:#0a7a3d; --green-soft:#e6f4ec; --out:cubic-bezier(.23,1,.32,1); }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#fff; color:var(--ink); font-family:Poppins, system-ui, sans-serif; font-size:13px; line-height:1.4; -webkit-font-smoothing:antialiased; }
+  .num { font-variant-numeric:tabular-nums; }
+  header.bar { position:sticky; top:0; z-index:9; background:#fff; box-shadow:0 1px 0 var(--line); padding:12px 24px; display:flex; align-items:center; gap:16px; }
+  header.bar strong { font-size:15px; font-weight:600; }
+  header.bar nav { display:flex; gap:4px; } header.bar nav a { color:var(--ink2); text-decoration:none; padding:8px 12px; border-radius:8px; font-weight:500; } header.bar nav a:hover { background:var(--soft); color:var(--ink); }
+  main { max-width:1180px; margin:0 auto; padding:8px 24px 64px; }
+  h1 { font-size:20px; font-weight:600; margin:40px 0 4px; padding-top:24px; border-top:1px solid var(--line); scroll-margin-top:72px; } .lead { margin:0 0 14px; color:var(--ink2); font-size:14px; max-width:72ch; }
+  .sheet { padding:8px 0 0; }
+  svg.p { width:100%; height:100%; display:block; }
+  button { font:inherit; color:inherit; }
+
+  .btn { display:flex; width:100%; align-items:center; justify-content:center; height:40px; border:0; border-radius:10px; background:var(--red); color:#fff; font-weight:600; cursor:pointer; transition:transform .16s var(--out), background-color .15s ease; }
+  .btn:active { transform:scale(.97); } .btn[disabled] { background:var(--soft); color:var(--ink2); cursor:default; transform:none; }
+  .step { display:flex; align-items:center; justify-content:space-between; height:40px; border-radius:10px; box-shadow:inset 0 0 0 1.5px var(--red); color:var(--red); font-weight:600; background:#fff; }
+  .step button { width:40px; height:40px; border:0; background:none; color:var(--red); font-size:18px; cursor:pointer; border-radius:10px; transition:transform .16s var(--out), background-color .15s ease; } .step button:active { transform:scale(.92); }
+  .step b { color:var(--ink); font-weight:600; }
+  .act { margin-top:2px; } .act > * { animation:none; } .act.swap > * { animation:swap .2s var(--out); }
+  @keyframes swap { from { opacity:0; transform:scale(.97); filter:blur(2px); } }
+  @media (hover:hover) and (pointer:fine) { .btn:not([disabled]):hover { background:var(--red-d); } .step button:hover { background:var(--red-soft); } .c:hover { box-shadow:0 0 0 1px #cfd4dc, 0 6px 16px -8px rgba(20,40,75,.2); } .c.in:hover { box-shadow:0 0 0 2px var(--red), 0 6px 16px -8px rgba(20,40,75,.2); } }
+  @media (prefers-reduced-motion:reduce) { * { animation-duration:.01ms !important; transition-duration:.01ms !important; } }
+
+  .old { color:var(--ink2); text-decoration:line-through; font-size:12px; }
+  .tag { display:inline-flex; align-items:center; font-weight:600; font-size:11px; padding:5px 10px; border-radius:6px; white-space:nowrap; }
+  .t-red { background:var(--red); color:#fff; } .t-amber { background:var(--amber); color:var(--navy); } .t-ok { background:var(--green-soft); color:var(--green); } .t-warn { background:var(--amber-soft); color:#6b4a00; } .t-navy { background:var(--navy-soft); color:var(--navy); } .t-gray { background:var(--ink); color:#fff; }
+  .unit { color:var(--navy); font-weight:600; min-height:19px; } .why { color:var(--ink2); font-weight:400; font-size:12px; }
+  .bank { display:inline-block; background:var(--navy); color:#fff; font-size:11px; font-weight:600; border-radius:4px; padding:2px 8px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex:none; }
+  .sk { display:inline-block; height:10px; border-radius:5px; background:linear-gradient(90deg,#eceef2 25%,#f6f7f9 50%,#eceef2 75%); background-size:200% 100%; animation:sh 1.2s linear infinite; } @keyframes sh { to { background-position:-200% 0; } }
+
+  /* catálogo */
+  .lay { display:grid; grid-template-columns:184px 1fr; gap:24px; align-items:start; }
+  .side { position:sticky; top:76px; } .side .grp { padding:12px 0; border-bottom:1px solid var(--line); } .side h2 { font-size:12px; font-weight:600; margin:0 0 8px; }
+  .side label { display:flex; justify-content:space-between; padding:4px 0; font-size:12px; } .side label i { font-style:normal; color:var(--ink2); } .side .more { font-size:12px; color:var(--ink2); text-decoration:underline; }
+  .ck { display:inline-block; width:14px; height:14px; border:1.5px solid #b9bec8; border-radius:4px; margin-right:8px; vertical-align:-2px; } .ck.on { background:var(--ink); border-color:var(--ink); }
+  .top { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; } .top h2 { font-size:20px; font-weight:600; margin:0; } .top h2 small { font-size:12px; font-weight:400; color:var(--ink2); margin-left:8px; }
+  .sort { border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:12px; } .sort b { font-weight:600; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; } .chip { border:1px solid var(--line); border-radius:999px; padding:6px 12px; font-size:12px; background:#fff; } .chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .applied { display:flex; gap:6px; align-items:center; margin-bottom:16px; font-size:12px; color:var(--ink2); } .applied .chip { background:var(--soft); border-color:transparent; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .c { position:relative; border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:6px; box-shadow:0 0 0 1px var(--line); background:#fff; transition:box-shadow .15s ease; }
+  .c.in { box-shadow:0 0 0 2px var(--red); }
+  .c .img { position:relative; aspect-ratio:1; background:var(--soft); border-radius:8px; padding:14px; outline:1px solid rgba(0,0,0,.04); outline-offset:-1px; }
+  .c.off .img svg { opacity:.4; }
+  .c .img .tl { position:absolute; top:8px; left:8px; } .c .img .fy { position:absolute; bottom:8px; left:8px; right:8px; display:flex; gap:4px; height:26px; overflow:hidden; } .c .img .fy .tag { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; display:block; }
+  .c .name { height:36px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .c .price { font-size:20px; font-weight:600; } .c .prow1 { height:28px; white-space:nowrap; overflow:hidden; } .c .unit { height:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .c .cap1 { height:36px; overflow:hidden; text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .cmp { display:flex; width:100%; align-items:center; gap:6px; font-size:12px; height:33px; white-space:nowrap; overflow:hidden; border:0; border-top:1px solid var(--line); background:none; padding:8px 0 0; margin-top:2px; text-align:left; cursor:pointer; }
+  .cmp > span:not(.dot):not(.chev):not(.sk), .cmp .txt { min-width:0; overflow:hidden; text-overflow:ellipsis; } .cmp.ok { color:var(--green); font-weight:500; } .cmp b { font-weight:600; } .cmp .chev { margin-left:auto; color:var(--ink2); transition:transform .15s var(--out); } .cmp[aria-expanded=true] .chev { transform:rotate(180deg); } .cmp.none { cursor:default; }
+  .pop { position:absolute; left:8px; right:8px; bottom:60px; z-index:3; background:#fff; border-radius:12px; padding:12px; box-shadow:0 0 0 1px var(--line), 0 12px 32px -8px rgba(20,40,75,.28); transform-origin:bottom left; transition:opacity .15s var(--out), transform .15s var(--out); }
+  .pop[hidden] { display:block; opacity:0; transform:scale(.97); pointer-events:none; }
+  .pop h3 { margin:0 0 6px; font-size:12px; font-weight:600; }
+  .st { display:grid; grid-template-columns:76px 1fr 72px; gap:8px; align-items:center; padding:5px 0; font-size:12px; }
+  .st .barx { height:6px; border-radius:3px; background:#c9d3e6; } .st .barx i { display:block; height:100%; border-radius:3px; background:var(--navy); } .st.win { font-weight:600; } .st.win .barx i { background:var(--green); } .st .r { text-align:right; }
+  .cap { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:6px 0 16px; font-size:12px; color:var(--ink2); } .cap span { padding:0 4px; }
+
+  /* pdp */
+  .pdp { display:grid; grid-template-columns:1fr 380px; gap:32px; align-items:start; }
+  .gal { display:grid; grid-template-columns:56px 1fr; gap:12px; } .gal .th { display:flex; flex-direction:column; gap:8px; } .gal .th i { display:block; aspect-ratio:1; background:var(--soft); border-radius:8px; } .gal .th i.on { box-shadow:0 0 0 2px var(--ink); } .gal .th i.offp { box-shadow:inset 0 0 0 1.5px var(--amber); }
+  .gal .main { aspect-ratio:1.2; background:var(--soft); border-radius:14px; padding:40px; }
+  .buy { position:sticky; top:76px; border-radius:16px; background:#fff; box-shadow:0 0 0 1px var(--line), 0 8px 24px -12px rgba(20,40,75,.18); padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .buy h2 { font-size:20px; font-weight:600; margin:0; line-height:1.25; text-wrap:balance; } .meta { font-size:12px; color:var(--ink2); }
+  .bigp { font-size:32px; font-weight:600; line-height:1; } .prow { display:flex; align-items:baseline; gap:10px; }
+  .box { border-top:1px solid var(--line); padding:12px 0 0; font-size:12px; } .box h3 { margin:0 0 8px; font-size:12px; font-weight:600; color:var(--navy); display:flex; justify-content:space-between; } .box h3 a { font-weight:500; text-decoration:underline; }
+  .link { font-size:12px; color:var(--ink2); text-decoration:underline; }
+  .sec { margin-top:28px; padding-top:24px; border-top:1px solid var(--line); } .sec > h2 { font-size:16px; font-weight:600; margin:0 0 12px; }
+  .foryou { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .nut { display:grid; grid-template-columns:300px 1fr; gap:24px; align-items:start; }
+  .nlabel { border:2px solid var(--ink); border-radius:6px; padding:12px 14px; } .nlabel h3 { margin:0; font-size:18px; font-weight:600; } .nlabel .sub { font-size:12px; padding-bottom:8px; border-bottom:6px solid var(--ink); margin-bottom:4px; }
+  .seg { display:flex; background:var(--soft); border-radius:8px; padding:3px; font-size:12px; margin:8px 0 4px; } .seg button { flex:1; border:0; background:none; padding:8px 12px; border-radius:6px; cursor:pointer; transition:background-color .15s ease; } .seg button[aria-pressed=true] { background:#fff; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.12); }
+  table.nt { width:100%; border-collapse:collapse; font-size:12px; } table.nt td, table.nt th { padding:7px 0; border-bottom:1px solid var(--ink); text-align:right; font-weight:400; } table.nt th { color:var(--ink2); } table.nt td:first-child, table.nt th:first-child { text-align:left; } table.nt tr:last-child td { border-bottom:0; } table.nt .ind td:first-child { padding-left:12px; }
+  .nlabel .foot { font-size:12px; color:var(--ink2); border-top:3px solid var(--ink); padding-top:6px; margin-top:2px; }
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; } .tile { background:var(--soft); border-radius:10px; padding:12px; } .tile b { display:block; font-size:20px; font-weight:600; } .tile span { font-size:12px; color:var(--ink2); }
+  .kv { padding:10px 0; border-bottom:1px solid var(--line); font-size:12px; } .kv b { font-weight:600; display:block; margin-bottom:6px; } .kv .tag + .tag { margin-left:4px; }
+  .src { font-size:12px; color:var(--ink2); margin-top:12px; }
+  .ficha { width:100%; border-collapse:collapse; font-size:12px; border-top:6px solid var(--ink); border-bottom:3px solid var(--ink); } .ficha th, .ficha td { padding:9px 0; text-align:left; border-bottom:1px solid var(--ink); } .ficha tr:last-child > * { border-bottom:0; } .ficha th { font-weight:600; width:150px; }
+  .desc { font-size:14px; max-width:60ch; margin:0 0 16px; text-wrap:pretty; }
+  .states { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; } .states .s { padding:0; } .states h2 { margin:0 0 10px; font-size:12px; font-weight:600; color:var(--ink2); }
+  .empty { border:2px dashed #c3c8d2; border-radius:6px; padding:16px; font-size:12px; } .empty b { display:block; font-size:14px; font-weight:600; margin-bottom:4px; }
+  .specs { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; } .specs div { font-size:12px; color:var(--ink2); } .specs b { display:block; color:var(--ink); font-size:13px; font-weight:600; margin-bottom:2px; }
+  .chips { min-width:0; } .lay > div, .pdp > div, .nut > div { min-width:0; }
+  @media (max-width:1100px) { .grid { grid-template-columns:repeat(3,1fr); } .pdp { grid-template-columns:1fr 340px; gap:24px; } .nut { grid-template-columns:1fr; } }
+  @media (max-width:820px) {
+    header.bar { flex-wrap:wrap; gap:4px 16px; padding:10px 16px; } main { padding:8px 16px 48px; } 
+    .lay, .pdp { grid-template-columns:1fr; } .side, .buy { position:static; } .side { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+    .grid { grid-template-columns:repeat(2,1fr); } .states, .specs { grid-template-columns:1fr; } .tiles { grid-template-columns:repeat(2,1fr); } .buy { order:-1; }
+    .chips { flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; } .chip { flex:none; } .foryou .tag { white-space:normal; }
+    .c .img .tl { max-width:calc(100% - 16px); overflow:hidden; text-overflow:ellipsis; display:block; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bot" viewBox="0 0 100 100"><rect x="40" y="6" width="20" height="10" rx="2" fill="#2a2d33"/><path d="M38 18h24l6 16v50a8 8 0 0 1-8 8H40a8 8 0 0 1-8-8V34z" fill="#fff" stroke="#cfd3da" stroke-width="2"/><rect x="36" y="44" width="28" height="24" rx="3" fill="#2a2d33"/></symbol>
+  <symbol id="car" viewBox="0 0 100 100"><path d="M30 26l20-16 20 16v62a4 4 0 0 1-4 4H34a4 4 0 0 1-4-4z" fill="#fff" stroke="#cfd3da" stroke-width="2"/><rect x="30" y="44" width="40" height="26" fill="#3b73c8"/></symbol>
+  <symbol id="sac" viewBox="0 0 100 100"><rect x="24" y="14" width="52" height="74" rx="10" fill="#fff" stroke="#cfd3da" stroke-width="2"/><rect x="32" y="34" width="36" height="22" rx="3" fill="#2e9d57"/></symbol>
+  <symbol id="lat" viewBox="0 0 100 100"><rect x="26" y="20" width="48" height="66" rx="6" fill="#fff" stroke="#cfd3da" stroke-width="2"/><rect x="26" y="14" width="48" height="10" rx="3" fill="#d8dce3"/><rect x="26" y="42" width="48" height="24" fill="#c8851f"/></symbol>
+</svg>
+
+<header class="bar"><strong>Góndola · Estante a fondo</strong><nav><a href="#cat">Catálogo</a><a href="#pdp">Página de producto</a><a href="#est">Estados</a><a href="#det">Detalles</a></nav></header>
+
+<main>
+  <h1 id="cat">Catálogo</h1>
+  <p class="lead">Se puede tocar: "Agregar" se vuelve selector de cantidad, y la línea del comparador abre los otros súper. Las ocho tarjetas muestran ocho casos distintos.</p>
+  <div class="sheet"><div class="lay">
+    <div class="side">
+      <div class="grp"><h2>Ofertas</h2><label><span><span class="ck"></span>Con descuento</span><i>23</i></label><label><span><span class="ck"></span>2x1</span><i>7</i></label><label><span><span class="ck"></span>2da al 50%</span><i>5</i></label></div>
+      <div class="grp"><h2>Marca</h2><label><span><span class="ck on"></span>La Serenísima</span><i>27</i></label><label><span><span class="ck"></span>Coto</span><i>6</i></label><label><span><span class="ck"></span>Casanto</span><i>3</i></label><span class="more">Ver las 11 marcas</span></div>
+      <div class="grp"><h2>Sin TACC</h2><label><span><span class="ck"></span>Sí</span><i>58</i></label></div>
+      <div class="grp"><h2>Contenido</h2><label><span><span class="ck"></span>1 L</span><i>61</i></label><label><span><span class="ck"></span>Menos de 1 L</span><i>9</i></label></div>
+    </div>
+    <div>
+      <div class="top"><h2>Leches<small>84 productos</small></h2><span class="sort">Ordenar: <b>Precio por litro</b> ▾</span></div>
+      <div class="chips"><span class="chip on">Todas</span><span class="chip">Larga vida</span><span class="chip">Frescas</span><span class="chip">Chocolatadas</span><span class="chip">Infantiles</span><span class="chip">Vegetales</span><span class="chip">En polvo</span></div>
+      <div class="applied">Filtros: <span class="chip">La Serenísima ✕</span><span class="more" style="text-decoration:underline">Borrar todo</span></div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div></div>
+
+  <h1 id="pdp">Página de producto</h1>
+  <p class="lead">Estructura de la variante 1: la caja de compra queda fija a la derecha mientras bajás. La nutrición y la descripción usan el estilo "etiqueta" de la variante 3: tabla como la del envase y ficha con casilleros.</p>
+  <div class="sheet"><div class="pdp">
+    <div>
+      <div class="gal"><div class="th"><i class="on"></i><i></i><i></i><i class="offp" title="Foto del envase, de Open Food Facts"></i></div><div class="main"><svg class="p"><use href="#bot"/></svg></div></div>
+
+      <div class="sec"><h2>Información nutricional</h2>
+        <div class="foryou"><span class="tag t-ok">Para vos: Sin TACC</span><span class="tag t-warn">Para vos: tiene leche</span><span class="tag t-navy">Rinde $4.858 cada 100 g de proteína</span></div>
+        <div class="nut">
+          <div class="nlabel"><h3>Información nutricional</h3><div class="sub">Envase de 1 L · 5 porciones de 200 ml</div>
+            <div class="seg" id="seg"><button aria-pressed="true" data-k="a">Cada 100 ml</button><button aria-pressed="false" data-k="b">Por vaso (200 ml)</button></div>
+            <table class="nt" id="nt"></table>
+            <div class="foot">%VD: con base en una dieta de 2000 kcal</div></div>
+          <div>
+            <div class="tiles" id="tiles"></div>
+            <div style="margin-top:8px">
+              <div class="kv"><b>Alérgenos</b><span class="tag t-warn">Leche</span></div>
+              <div class="kv"><b>Sin TACC</b>Coto lo marca Sin TACC. Verificá el símbolo en el envase.</div>
+              <div class="kv"><b>Procesamiento</b>NOVA 4: ultraprocesado</div>
+              <div class="kv"><b>Ingredientes ▸</b><span class="why">Tocá para ver la lista</span></div>
+            </div>
+            <div class="src">Fuente: Open Food Facts, datos cargados por la comunidad. Actualizado en agosto de 2026 · Ver ficha · Corregir</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec"><h2>Descripción</h2>
+        <p class="desc">Leche Protein La Serenísima 1 L.</p>
+        <table class="ficha"><tr><th scope="row">Marca</th><td>La Serenísima</td></tr><tr><th scope="row">Contenido</th><td>1 L</td></tr><tr><th scope="row">Sin TACC</th><td>Sí</td></tr><tr><th scope="row">PLU · EAN</th><td class="num">508911 · 7790742358608</td></tr></table>
+      </div>
+    </div>
+
+    <div class="buy">
+      <div><h2>Leche Protein La Serenísima 1 L</h2><div class="meta">La Serenísima · 1 L</div></div>
+      <div><span class="tag t-red">25% llevando 2</span></div>
+      <div class="prow"><span class="bigp num">$2.429</span><span class="old num">$3.244</span></div>
+      <div class="unit num">$2.429 /L <span class="why">llevando 2</span></div>
+      <div class="act" data-q="2" data-long="1"></div>
+      <div class="box"><h3>Con tu banco <a>Cambiar</a></h3><div><span class="bank">ICBC</span> hoy jueves: <b class="num">$2.920</b> cada una · tope $15.000</div><div class="why" style="margin-top:4px">Hoy conviene más "llevando 2", que no se suma con el banco.</div></div>
+      <div class="box"><h3>El mismo producto en otros súper</h3>
+        <div class="st win"><span>Más</span><span class="barx"><i style="width:65%"></i></span><span class="r num">$2.112</span></div><div class="st"><span>Coto</span><span class="barx"><i style="width:75%"></i></span><span class="r num">$2.429</span></div><div class="st"><span>Carrefour</span><span class="barx"><i style="width:88%"></i></span><span class="r num">$2.850</span></div><div class="st"><span>Día</span><span class="barx"></span><span class="r why">No lo tiene</span></div>
+        <div class="why" style="margin-top:6px">Precios llevando 2. Click en un súper para abrir su página.</div></div>
+      <span class="link">Ver planes de cuotas</span><span class="link">Agregar una nota o un reemplazo ▸</span>
+      <span class="meta">Precio sin impuestos nacionales: $2.680,99</span>
+    </div>
+  </div></div>
+
+  <h1 id="est">Estados de la página de producto</h1>
+  <p class="lead">Qué se ve cuando falta un dato. La regla es la de siempre: si no hay dato, no se inventa.</p>
+  <div class="sheet"><div class="states">
+    <div class="s"><h2>Sin tabla nutricional</h2><div class="empty"><b>Todavía no hay tabla</b>Open Food Facts no tiene los datos de este producto. Si tenés el envase, podés cargarlos con una foto.<div style="margin-top:8px"><span class="link">Cargar en Open Food Facts</span></div></div></div>
+    <div class="s"><h2>Comparador buscando</h2><div class="box"><h3>El mismo producto en otros súper</h3><div class="st"><span>Carrefour</span><span class="sk" style="width:100%"></span><span class="sk" style="width:100%"></span></div><div class="st"><span>Día</span><span class="sk" style="width:100%"></span><span class="sk" style="width:100%"></span></div><div class="st"><span>Más</span><span class="sk" style="width:100%"></span><span class="sk" style="width:100%"></span></div></div></div>
+    <div class="s"><h2>Sin banco elegido</h2><div class="box"><h3>Con tu banco</h3><div>Elegí tus tarjetas y te muestro el precio con el descuento de cada día.</div><div style="margin-top:8px"><span class="link">Elegir mis tarjetas</span></div></div></div>
+    <div class="s"><h2>Sin stock</h2><button class="btn" disabled>Sin stock</button><div class="why" style="margin-top:8px">El precio y el comparador se siguen viendo.</div></div>
+    <div class="s"><h2>Sin perfil cargado</h2><div class="why">No salen las etiquetas "Para vos". La tabla, los alérgenos y el resto quedan igual.</div></div>
+    <div class="s"><h2>Aviso de TACC</h2><span class="tag t-warn">Revisá el envase</span><div class="why" style="margin-top:8px">Coto lo marca Sin TACC, pero menciona avena.</div></div>
+  </div></div>
+
+  <h1 id="det">Detalles que se sienten</h1>
+  <div class="sheet"><div class="specs">
+    <div><b>Botones</b>Se achican a 0,97 al apretar, en 160 ms. Zona de toque de 40 px.</div>
+    <div><b>Agregar → cantidad</b>Cambio de 200 ms con un leve desenfoque. No mueve el resto de la tarjeta.</div>
+    <div><b>Otros súper</b>Se abre desde la línea, en 150 ms. No se anima al cargar la página.</div>
+    <div><b>Números</b>Todos con ancho fijo: los precios no bailan al cambiar.</div>
+    <div><b>Filas parejas</b>Nombre a 2 líneas y lugares fijos: los botones quedan alineados.</div>
+    <div><b>Menos movimiento</b>Si el sistema pide reducir animaciones, quedan solo los cambios de color.</div>
+  </div></div>
+</main>
+
+<script>
+const P = [
+  { n:"Leche Larga Vida Entera Coto 1 L", img:"car", p:"$1.666", old:"$2.499", u:"$1.666 /L", why:"llevando 2", best:1, fy:[["Sin TACC","ok"]], cmp:"ok", cap:"El más barato por litro" },
+  { n:"Leche Protein La Serenísima 1 L", img:"bot", p:"$2.429", old:"$3.244", u:"$2.429 /L", why:"llevando 2", promo:"25% llevando 2", fy:[["Sin TACC","ok"],["Tiene leche","warn"]], cmp:"less", cap:"Otro súper es más barato" },
+  { n:"Leche Parcialmente Descremada Casanto 1 L", img:"sac", p:"$1.816", old:"$2.018", u:"$1.816 /L", bank:"ICBC", fy:[], cmp:"none", cap:"Con descuento de tu banco" },
+  { n:"Leche Larga Vida Entera Conaprole 1 L", img:"car", p:"$1.999", old:"$2.999", u:"$1.999 /L", why:"llevando 2", promo:"2x1", fy:[["Puede tener soja","warn"]], cmp:"ok", q:2, cap:"Ya está en el carrito" },
+  { n:"Leche en Polvo Entera La Serenísima 800 g", img:"lat", p:"$12.036", u:"$15.045 /kg", fy:[["Sin TACC","ok"]], cmp:"load", cap:"Comparador buscando" },
+  { n:"Leche Chocolatada La Serenísima Clásica Larga Vida Botella 1 L", img:"bot", p:"$3.150", old:"$4.200", u:"$3.150 /L", why:"llevando 2", promo:"2da al 50%", fy:[["Alto en azúcar","warn"]], cmp:"ok", cap:"Nombre largo, 2 líneas" },
+  { n:"Pack Leches Surtidas La Serenísima", img:"car", p:"$8.900", u:"", fy:[], cmp:"none", cap:"Sin dato de tamaño: sin precio por litro" },
+  { n:"Leche Zero Lactosa La Serenísima 1 L", img:"bot", p:"$2.474", u:"$2.474 /L", fy:[["Sin TACC","ok"]], cmp:"ok", off:1, cap:"Sin stock" },
+];
+const tag = (t,k,x="") => `<span class="tag t-${k} ${x}">${t}</span>`;
+const cmpH = p => p.cmp==="ok" ? `<button class="cmp ok" aria-expanded="false"><span class="dot" style="background:var(--green)"></span><span class="txt">Coto es el más barato</span><span class="chev">▾</span></button>`
+  : p.cmp==="less" ? `<button class="cmp" aria-expanded="false"><span class="dot" style="background:var(--amber)"></span><span>En Más: <b class="num">$2.112</b></span><span class="chev">▾</span></button>`
+  : p.cmp==="load" ? `<div class="cmp none"><span class="sk" style="width:60%"></span></div>`
+  : `<div class="cmp none"><span class="why">No está en otros súper</span></div>`;
+const popH = p => p.cmp==="less" ? `<div class="pop" hidden><h3>El mismo producto, llevando 2</h3><div class="st win"><span>Más</span><span class="barx"><i style="width:65%"></i></span><span class="r num">$2.112</span></div><div class="st"><span>Coto</span><span class="barx"><i style="width:75%"></i></span><span class="r num">$2.429</span></div><div class="st"><span>Carrefour</span><span class="barx"><i style="width:88%"></i></span><span class="r num">$2.850</span></div><div class="st"><span>Día</span><span class="barx"></span><span class="r why">No lo tiene</span></div></div>`
+  : p.cmp==="ok" ? `<div class="pop" hidden><h3>El mismo producto</h3><div class="st win"><span>Coto</span><span class="barx"><i style="width:60%"></i></span><span class="r num">${p.p}</span></div><div class="st"><span>Más</span><span class="barx"><i style="width:72%"></i></span><span class="r why">más caro</span></div><div class="st"><span>Carrefour</span><span class="barx"><i style="width:80%"></i></span><span class="r why">más caro</span></div><div class="st"><span>Día</span><span class="barx"></span><span class="r why">No lo tiene</span></div></div>` : "";
+document.getElementById("grid").innerHTML = P.map(p => `<div class="c ${p.q?"in":""} ${p.off?"off":""}">
+  <div class="img">${p.off?tag("Sin stock","gray","tl"):p.best?tag("Más barato por litro","amber","tl"):p.promo?tag(p.promo,"red","tl"):""}<svg class="p"><use href="#${p.img}"/></svg><div class="fy">${p.fy.map(([t,k])=>tag(t,k)).join("")}</div></div>
+  <div class="name">${p.n}</div><div class="prow1"><span class="price num">${p.p}</span> ${p.old?`<span class="old num">${p.old}</span>`:""}</div>
+  <div class="unit num">${p.u} <span class="why">${p.bank?`con <span class="bank">${p.bank}</span> hoy`:p.why||""}</span></div>
+  ${cmpH(p)}${popH(p)}<div class="act" data-q="${p.q||0}" data-long="1" ${p.off?'data-off="1"':""}></div></div>`).join("");
+document.querySelectorAll("#grid .c").forEach((c,i) => { const s = document.createElement("div"); s.className = "why cap1"; s.textContent = "Caso: " + P[i].cap; c.appendChild(s); });
+
+function paint(a, anim) {
+  const q = +a.dataset.q;
+  a.innerHTML = a.dataset.off ? `<button class="btn" disabled>Sin stock</button>` : q ? `<div class="step"><button aria-label="Quitar uno">−</button><b class="num">${q} en el carrito</b><button aria-label="Sumar uno">+</button></div>` : `<button class="btn">Agregar</button>`;
+  a.closest(".c")?.classList.toggle("in", q > 0);
+  if (anim) { a.classList.remove("swap"); void a.offsetWidth; a.classList.add("swap"); }
+}
+document.querySelectorAll(".act").forEach(a => paint(a));
+document.addEventListener("click", e => {
+  const a = e.target.closest(".act"), b = e.target.closest("button");
+  if (a && b && !b.disabled) {
+    const was = +a.dataset.q, now = b.classList.contains("btn") ? 1 : Math.max(0, was + (b.textContent === "+" ? 1 : -1));
+    a.dataset.q = now;
+    if (!was || !now) paint(a, true); else a.querySelector("b").textContent = now + " en el carrito";
+    return;
+  }
+  const c = e.target.closest("button.cmp");
+  document.querySelectorAll(".pop").forEach(p => { if (!c || p !== c.nextElementSibling) { p.hidden = true; p.previousElementSibling.setAttribute("aria-expanded", false); } });
+  if (c) { const p = c.nextElementSibling; p.hidden = !p.hidden; c.setAttribute("aria-expanded", !p.hidden); }
+});
+
+const N = { a:{ rows:[["Valor energético","42 kcal","2%"],["Carbohidratos","4,6 g","2%"],["Azúcares","4,6 g","",1],["Proteínas","5 g","7%"],["Grasas totales","0 g","0%"],["Grasas saturadas","0 g","0%",1],["Sodio","53 mg","2%"]], t:[["42","kcal cada 100 ml"],["5 g","proteínas"],["4,6 g","azúcares"],["53 mg","sodio"]] },
+            b:{ rows:[["Valor energético","83 kcal","4%"],["Carbohidratos","9,2 g","3%"],["Azúcares","9,2 g","",1],["Proteínas","10 g","13%"],["Grasas totales","0 g","0%"],["Grasas saturadas","0 g","0%",1],["Sodio","106 mg","4%"]], t:[["83","kcal por vaso"],["10 g","proteínas"],["9,2 g","azúcares"],["106 mg","sodio"]] } };
+function nut(k) {
+  document.getElementById("nt").innerHTML = `<tr><th></th><th>Cantidad</th><th>%VD</th></tr>` + N[k].rows.map(r => `<tr class="${r[3]?"ind":""}"><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td></tr>`).join("");
+  document.getElementById("tiles").innerHTML = N[k].t.map(t => `<div class="tile"><b class="num">${t[0]}</b><span>${t[1]}</span></div>`).join("");
+  document.querySelectorAll("#seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
+}
+document.getElementById("seg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) nut(b.dataset.k); });
+nut("a");
+</script>
+</body>
+</html>
