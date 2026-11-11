@@ -305,3 +305,121 @@ grande, `img.image` con zoom de Coto) y `div.thumbs-wrap` (miniaturas: `div.item
 - Góndola no cambia la foto de Coto ni sus miniaturas: solo agrega las suyas y el visor.
 - Los links "Fotos del envase" del pie de la sección se mantienen.
 - Licencia de las fotos: CC BY-SA; la franja del visor nombra a Open Food Facts.
+
+## 11. Segunda ola (aprobada el 2026-11-10)
+
+### Lo que se verificó
+
+**Sin TACC de Coto.** La búsqueda de Coto tiene el filtro `filters[SIN TACC]` (SI / NO).
+Medición del 2026-11-10 en 30 rubros de comida (2.413 productos):
+
+- 29 de 29 productos con "sin TACC" o "sin gluten" en el nombre están en SI.
+- Muestra de 60 SI contra Open Food Facts: 21 coinciden, 0 contradicen.
+- 1 SI con cereal con gluten en el nombre: "Avena Tradicional Sturla 350g". El Código
+  Alimentario (art. 1383) excluye la avena de los alimentos libres de gluten.
+- Muestra de 60 NO: 2 que OFF da como libres de gluten. NO significa "no figura", no
+  "contiene gluten".
+- Cerca del 57% de los resultados no tiene el dato.
+
+**Íconos.**
+
+- El símbolo oficial "Sin T.A.C.C." / "Sin gluten" (Res. Conj. 201/2011 y 32/2023) es para
+  envases de productos autorizados. Góndola **no** lo usa: parecería una aprobación oficial.
+- Alérgenos: Argentina no tiene íconos oficiales y no hay norma ISO. Se usan los 14 íconos de
+  la Food Standards Agency del Reino Unido (Open Government Licence v3.0), siempre con el
+  nombre en español al lado. `scripts/allergen-icons.mjs` los recorta de la lámina oficial a
+  `assets/allergens/*.png` (96 px).
+- NOVA no tiene ícono oficial: se muestra en texto.
+
+### Datos nuevos
+
+El pedido a OFF suma `ingredients_text_es`, `ingredients_text`, `allergens_tags`,
+`traces_tags`, `additives_tags`, `nova_group` y `labels_tags`. `parseOff` devuelve además:
+
+- `ingredients`: `{ text, spanish }` (`spanish` false si vino de `ingredients_text`) o null.
+- `allergens`, `traces`: claves de la tabla de alérgenos de abajo, sin repetir. Las etiquetas
+  que no están en la tabla se ignoran.
+- `additives`: códigos en mayúscula ("E330"), sin repetir.
+- `nova`: 1 a 4, o null.
+- `glutenFreeLabel`: true si `labels_tags` tiene `en:no-gluten`, `en:gluten-free` o
+  `es:sin-tacc`.
+
+| Etiqueta de OFF | Clave e ícono | Nombre |
+|---|---|---|
+| en:gluten | gluten | Gluten (TACC) |
+| en:crustaceans | crustaceans | Crustáceos |
+| en:eggs | eggs | Huevo |
+| en:fish | fish | Pescado |
+| en:peanuts | peanuts | Maní |
+| en:soybeans | soybeans | Soja |
+| en:milk | milk | Leche |
+| en:nuts | tree-nuts | Frutos secos |
+| en:celery | celery | Apio |
+| en:mustard | mustard | Mostaza |
+| en:sesame-seeds | sesame | Sésamo |
+| en:sulphur-dioxide-and-sulphites | sulphites | Sulfitos |
+| en:lupin | lupin | Lupino |
+| en:molluscs | molluscs | Moluscos |
+
+La etiqueta de Coto suma `tacc`: "SI", "NO" o null. Sale de la búsqueda por PLU que ya hace
+Góndola: si el único resultado es el producto, se lee la faceta `SIN TACC`; si hay varios
+resultados, se repite la búsqueda con `filters[SIN TACC]=SI` y, si no aparece, con `=NO`.
+
+### Estado Sin TACC
+
+`taccStatus(tacc, name, nutrition)` devuelve `{ kind, text }`. "Riesgo" = el nombre o los
+ingredientes mencionan trigo, avena, cebada, centeno, malta, espelta o kamut (no cuenta
+"trigo sarraceno"), o los alérgenos incluyen gluten.
+
+| Caso | kind | Texto |
+|---|---|---|
+| Coto SI, sin riesgo | ok | "Coto lo marca Sin TACC" |
+| Coto SI, con riesgo | warn | "Coto lo marca Sin TACC, pero menciona avena. Revisá el envase." (la palabra encontrada) |
+| Coto NO | no | "No figura como Sin TACC en Coto" |
+| Sin dato de Coto, OFF dice libre, sin riesgo | ok | "Sin TACC según Open Food Facts" |
+| Sin dato | unknown | "Sin dato de TACC" |
+
+Siempre al lado: "Verificá el símbolo oficial en el envase." Nunca se dice "apto" ni
+"contiene gluten" por un NO.
+
+### Dónde se ve
+
+- **Columna de compra:** si `kind` es ok o warn, una marca: verde (ok) o ámbar (warn), con
+  el texto. Debajo, la línea "Para vos" si hay perfil (ver abajo).
+- **Sección, debajo de la tabla:**
+  - "Sin TACC": el texto del estado + "Verificá el símbolo oficial en el envase."
+  - "Alérgenos": "Declara:" con un chip por alérgeno (ícono FSA + nombre) y "Puede contener:"
+    con las trazas. Sin datos: "Sin datos de alérgenos." Debajo: "Revisá el envase: los datos
+    los carga la comunidad."
+  - "Ingredientes": desplegable (`<details>`) con el texto; si no está en español, "(en otro
+    idioma)". Debajo, "Aditivos: E330, E471" si hay.
+  - "NOVA": "NOVA 1: sin procesar o mínimamente procesado", "NOVA 2: ingrediente culinario
+    procesado", "NOVA 3: procesado" o "NOVA 4: ultraprocesado".
+  - En el pie: "Íconos de alérgenos: Food Standards Agency (Reino Unido), Open Government
+    Licence v3.0."
+- Sin tabla (`"missing"`) no cambia.
+
+### Perfil personal
+
+En Ajustes del popup, un grupo "Mi perfil" (todo apagado por defecto, queda en el navegador):
+"Soy celíaco/a" (`profileCeliac`), "Cuido el sodio" (`profileSodium`), "Cuido el azúcar"
+(`profileSugar`) y "Mis alergias" (`profileAllergens`: lista de claves de la tabla). Texto:
+"Destaca lo que te importa en la página de cada producto. No es consejo médico."
+
+Línea "Para vos" en la columna de compra, debajo del resumen, solo con perfil y tabla o
+"missing":
+
+- Celíaco/a: el estado Sin TACC.
+- Por cada alergia del perfil: "Declara leche" (rojo) si está en `allergens`; "Puede
+  contener maní" (ámbar) si está en `traces`. Si hay alergias en el perfil y OFF no tiene
+  alérgenos: "Sin datos de alérgenos: revisá el envase" (gris).
+- Sodio: "Sodio: 250 mg cada 100 g". Azúcar: "Azúcares: 30 g cada 100 g". Sin juicio de
+  alto o bajo.
+
+### Resumen nutricional del carrito
+
+En el resumen del carrito de Góndola, una línea: "Tu compra: 18.500 kcal · 950 g de azúcares
+· 12 g de sodio". Total de cada producto = valor cada 100 × tamaño del envase (kg o L × 10) ×
+cantidad. Cuenta solo productos con `nutri`, tamaño de envase y tabla. Debajo: "3 de 20
+productos sin datos" si falta alguno. Sin ningún producto con datos, no hay línea. Los pedidos
+usan el mismo servicio y memoria de 7 días, de a 4 a la vez.

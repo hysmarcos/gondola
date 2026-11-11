@@ -447,3 +447,179 @@ describe("galería: paint pasa las fotos a la galería de Coto", () => {
     expect(gallery.thumbs.querySelectorAll(".coto-unit-offthumb")).toHaveLength(0);
   });
 });
+
+describe("segunda ola: Sin TACC, alérgenos, ingredientes y NOVA", () => {
+  const ASSET = (p) => `chrome-extension://x/${p}`;
+  const N2 = {
+    per100: { kcal: 42, carbs: 4.6, sugars: 4.6, proteins: 5.2 }, perServing: null, url: "https://world.openfoodfacts.org/product/7790742358608",
+    photos: {}, ingredients: { text: "Leche parcialmente descremada, proteína de leche.", spanish: true },
+    allergens: ["milk"], traces: ["soybeans"], additives: ["E330", "E471"], nova: 4, glutenFreeLabel: true,
+  };
+  let host, desc, container, anchor;
+  beforeEach(() => {
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    container = document.querySelector(".mt-4"); anchor = document.getElementById("a");
+    desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+  });
+  async function draw(result, label) {
+    const ui = createNutritionUi(document, { request: async () => result, onUpdate: () => {}, assetUrl: ASSET });
+    const section = { host, after: desc };
+    ui.paint(container, anchor, label, true, section);
+    await new Promise((r) => setTimeout(r, 0));
+    ui.paint(container, anchor, label, true, section);
+    return ui;
+  }
+  const label = (extra = {}) => ({ ean: "7790742358608", nutri: true, group: "L", tacc: "SI", name: "Leche Protein La Serenisima 1L", ...extra });
+  const sec = () => host.querySelector(".coto-unit-nutri-section");
+
+  it("Sin TACC con el texto del estado y el aviso del símbolo oficial", async () => {
+    await draw(N2, label());
+    const t = sec().querySelector(".coto-unit-nutri-tacc");
+    expect(t.classList.contains("coto-unit-nutri-tacc--ok")).toBe(true);
+    expect(t.textContent).toBe("Sin TACC: Coto lo marca Sin TACC. Verificá el símbolo oficial en el envase.");
+  });
+
+  it("alérgenos con ícono de la FSA y nombre en español; trazas aparte", async () => {
+    await draw(N2, label());
+    const a = sec().querySelector(".coto-unit-nutri-allergens");
+    const chips = [...a.querySelectorAll(".coto-unit-nutri-chip")];
+    expect(chips.map((c) => c.textContent)).toEqual(["Leche", "Soja"]);
+    expect(chips[0].querySelector("img").getAttribute("src")).toBe("chrome-extension://x/assets/allergens/milk.png");
+    expect(a.textContent).toContain("Declara:");
+    expect(a.textContent).toContain("Puede contener:");
+    expect(a.textContent).toContain("Revisá el envase: los datos los carga la comunidad.");
+    expect(sec().textContent).toContain("Íconos de alérgenos: Food Standards Agency (Reino Unido), Open Government Licence v3.0.");
+  });
+
+  it("sin alérgenos: lo dice y no nombra a la FSA", async () => {
+    await draw({ ...N2, allergens: [], traces: [] }, label());
+    expect(sec().querySelector(".coto-unit-nutri-allergens").textContent).toContain("Sin datos de alérgenos.");
+    expect(sec().textContent).not.toContain("Food Standards Agency");
+  });
+
+  it("ingredientes desplegables, aditivos y NOVA", async () => {
+    await draw(N2, label());
+    const ing = sec().querySelector("details.coto-unit-nutri-ingredients");
+    expect(ing.querySelector("summary").textContent).toBe("Ingredientes");
+    expect(ing.textContent).toContain("Leche parcialmente descremada");
+    expect(sec().querySelector(".coto-unit-nutri-additives").textContent).toBe("Aditivos: E330, E471");
+    expect(sec().querySelector(".coto-unit-nutri-nova").textContent).toBe("NOVA 4: ultraprocesado");
+  });
+
+  it("ingredientes en otro idioma lo aclaran; sin ingredientes, aditivos ni NOVA no hay esas partes", async () => {
+    await draw({ ...N2, ingredients: { text: "Milk", spanish: false } }, label());
+    expect(sec().querySelector(".coto-unit-nutri-ingredients").textContent).toContain("(en otro idioma)");
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    container = document.querySelector(".mt-4"); anchor = document.getElementById("a"); desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+    await draw({ ...N2, ingredients: null, additives: [], nova: null }, label());
+    expect(sec().querySelector(".coto-unit-nutri-ingredients")).toBeNull();
+    expect(sec().querySelector(".coto-unit-nutri-additives")).toBeNull();
+    expect(sec().querySelector(".coto-unit-nutri-nova")).toBeNull();
+  });
+
+  it("columna de compra: marca Sin TACC si es ok o advertencia; no si es NO o sin dato", async () => {
+    await draw(N2, label());
+    let b = container.querySelector(".coto-unit-nutri-badge");
+    expect(b.textContent).toBe("Coto lo marca Sin TACC");
+    expect(b.classList.contains("coto-unit-nutri-badge--ok")).toBe(true);
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    container = document.querySelector(".mt-4"); anchor = document.getElementById("a"); desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+    await draw(N2, label({ name: "Avena Tradicional Sturla 350g" }));
+    b = container.querySelector(".coto-unit-nutri-badge");
+    expect(b.classList.contains("coto-unit-nutri-badge--warn")).toBe(true);
+    expect(b.textContent).toContain("menciona avena");
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    container = document.querySelector(".mt-4"); anchor = document.getElementById("a"); desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+    await draw(N2, label({ tacc: "NO" }));
+    expect(container.querySelector(".coto-unit-nutri-badge")).toBeNull();
+  });
+});
+
+describe("perfil personal: línea 'Para vos'", () => {
+  const N3 = {
+    per100: { kcal: 480, sugars: 30, sodiumMg: 250, fat: 20 }, perServing: null, url: "u", photos: {},
+    ingredients: null, allergens: ["milk"], traces: ["peanuts"], additives: [], nova: null, glutenFreeLabel: false,
+  };
+  let container, anchor, host, desc;
+  beforeEach(() => {
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    container = document.querySelector(".mt-4"); anchor = document.getElementById("a");
+    desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+  });
+  async function draw(result, profile, label = { ean: "1", nutri: true, group: "kg", tacc: null, name: "Galletitas" }) {
+    const ui = createNutritionUi(document, { request: async () => result, onUpdate: () => {} });
+    ui.setProfile(profile);
+    const section = { host, after: desc };
+    ui.paint(container, anchor, label, true, section);
+    await new Promise((r) => setTimeout(r, 0));
+    ui.paint(container, anchor, label, true, section);
+    return ui;
+  }
+  const items = () => [...container.querySelectorAll(".coto-unit-nutri-foryou li")].map((li) => [li.className.replace("coto-unit-nutri-foryou-", ""), li.textContent]);
+  const P = (extra) => ({ celiac: false, sodium: false, sugar: false, allergens: [], ...extra });
+
+  it("sin perfil no hay línea", async () => {
+    await draw(N3, P());
+    expect(container.querySelector(".coto-unit-nutri-foryou")).toBeNull();
+  });
+
+  it("alergias: declara (rojo), puede contener (ámbar); sodio y azúcar resaltados; celíaco con el estado", async () => {
+    await draw(N3, P({ celiac: true, sodium: true, sugar: true, allergens: ["milk", "peanuts", "eggs"] }));
+    const box = container.querySelector(".coto-unit-nutri-foryou");
+    expect(box.querySelector(".coto-unit-nutri-foryou-title").textContent).toBe("Para vos");
+    expect(items()).toEqual([
+      ["unknown", "Sin dato de TACC. Verificá el símbolo oficial en el envase."],
+      ["danger", "Declara leche"],
+      ["warn", "Puede contener maní"],
+      ["unknown", "Huevo: no figura (datos de la comunidad, revisá el envase)"],
+      ["info", "Sodio: 250 mg cada 100 g"],
+      ["info", "Azúcares: 30 g cada 100 g"],
+    ]);
+  });
+
+  it("alergias sin datos de alérgenos: aviso gris", async () => {
+    await draw({ ...N3, allergens: [], traces: [] }, P({ allergens: ["milk"] }));
+    expect(items()).toEqual([["unknown", "Sin datos de alérgenos: revisá el envase"]]);
+  });
+
+  it("sin tabla (missing): solo celíaco y alergias", async () => {
+    await draw("missing", P({ celiac: true, sugar: true, allergens: ["milk"] }), { ean: "1", nutri: true, group: "kg", tacc: "SI", name: "Leche" });
+    expect(items()).toEqual([
+      ["ok", "Coto lo marca Sin TACC. Verificá el símbolo oficial en el envase."],
+      ["unknown", "Sin datos de alérgenos: revisá el envase"],
+    ]);
+  });
+
+  it("cambiar el perfil actualiza la línea", async () => {
+    const ui = await draw(N3, P({ sugar: true }));
+    expect(items()).toEqual([["info", "Azúcares: 30 g cada 100 g"]]);
+    ui.setProfile(P({ sodium: true }));
+    ui.paint(container, anchor, { ean: "1", nutri: true, group: "kg", tacc: null, name: "Galletitas" }, true, { host, after: desc });
+    expect(items()).toEqual([["info", "Sodio: 250 mg cada 100 g"]]);
+  });
+});
+
+describe("revisión: la etiqueta cambia después del primer dibujo", () => {
+  const N4 = { per100: { kcal: 380, sugars: 1, sodiumMg: 5 }, perServing: null, url: "u", photos: {}, ingredients: null, allergens: [], traces: [], additives: [], nova: null, glutenFreeLabel: true };
+  it("si llega tacc o nombre, la marca y la sección se rehacen", async () => {
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    const container = document.querySelector(".mt-4");
+    const anchor = document.getElementById("a");
+    const desc = document.querySelector(".pdp-description");
+    const section = { host: desc.parentElement, after: desc };
+    const ui = createNutritionUi(document, { request: async () => N4, onUpdate: () => {} });
+    const first = { ean: "1", nutri: true, group: "kg" };
+    ui.paint(container, anchor, first, true, section);
+    await new Promise((r) => setTimeout(r, 0));
+    ui.paint(container, anchor, first, true, section);
+    expect(container.querySelector(".coto-unit-nutri-badge").textContent).toBe("Sin TACC según Open Food Facts");
+    // Llega la etiqueta de la búsqueda por PLU: Coto dice NO y el nombre menciona avena.
+    ui.paint(container, anchor, { ...first, tacc: "NO", name: "Avena Tradicional" }, true, section);
+    expect(container.querySelector(".coto-unit-nutri-badge")).toBeNull();
+    expect(section.host.querySelector(".coto-unit-nutri-tacc").textContent).toContain("No figura como Sin TACC en Coto");
+    // Coto SI pero el nombre menciona avena: advertencia.
+    ui.paint(container, anchor, { ...first, tacc: "SI", name: "Avena Tradicional" }, true, section);
+    expect(container.querySelector(".coto-unit-nutri-badge").classList.contains("coto-unit-nutri-badge--warn")).toBe(true);
+    expect(section.host.querySelector(".coto-unit-nutri-tacc").classList.contains("coto-unit-nutri-tacc--warn")).toBe(true);
+  });
+});

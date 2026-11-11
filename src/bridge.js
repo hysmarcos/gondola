@@ -1,6 +1,7 @@
 // Puente entre chrome.storage (mundo aislado) y el intermediario de la página.
 const SOURCE = "coto-unit";
 const KEYS = ["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition"];
+// El perfil personal (información de salud) no pasa por acá: ver profile.js.
 
 export function resolveDay(day) {
   return typeof day === "number" && day >= 0 && day <= 6 ? day : new Date().getDay();

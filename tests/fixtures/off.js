@@ -7,9 +7,17 @@ export const OFF = {
  "7790895000997": {
   "code": "7790895000997",
   "product": {
+   "additives_tags": [],
+   "allergens_tags": [
+    "es:Cafeína",
+    "es:Edulcorante"
+   ],
    "image_front_url": "https://images.openfoodfacts.org/images/products/779/089/500/0997/front_en.43.400.jpg",
    "image_ingredients_url": "https://images.openfoodfacts.org/images/products/779/089/500/0997/ingredients_en.5.400.jpg",
    "image_nutrition_url": "https://images.openfoodfacts.org/images/products/779/089/500/0997/nutrition_es.23.400.jpg",
+   "ingredients_text": "origin flavor\r\ns col 150 ,aro,ac 38, contains cafena,nutritional information: serving 20\r\nndteloitals a uca is 22g, sodium 12 mg (0%vd), does not provide significant amounts of prote\r\nt t t20 al",
+   "ingredients_text_es": "Agua carbonatada, azúcar o JMAF, COL 150 d, ACI 338, ARO, EDU sucralosa (4,3 mg/100 ml).",
+   "labels_tags": [],
    "last_modified_t": 1792068673,
    "nutriments": {
     "added-sugars": 0,
@@ -81,7 +89,8 @@ export const OFF = {
    "nutrition_data_prepared_per": "100g",
    "product_name": "coca cola",
    "serving_quantity": 200,
-   "serving_size": "200ml"
+   "serving_size": "200ml",
+   "traces_tags": []
   },
   "status": 1,
   "status_verbose": "product found"
@@ -89,10 +98,33 @@ export const OFF = {
  "7790040613706": {
   "code": "7790040613706",
   "product": {
+   "additives_tags": [
+    "en:e282",
+    "en:e322",
+    "en:e322i",
+    "en:e471",
+    "en:e500",
+    "en:e500ii",
+    "en:e503",
+    "en:e503ii"
+   ],
+   "allergens_tags": [
+    "en:gluten",
+    "en:milk",
+    "en:peanuts",
+    "en:soybeans"
+   ],
    "image_front_url": "https://images.openfoodfacts.org/images/products/779/004/061/3706/front_es.67.400.jpg",
    "image_ingredients_url": "https://images.openfoodfacts.org/images/products/779/004/061/3706/ingredients_en.15.400.jpg",
    "image_nutrition_url": "https://images.openfoodfacts.org/images/products/779/004/061/3706/nutrition_en.20.400.jpg",
+   "ingredients_text": "HARINA DE TRIGO ENRIQUECIDA (HIERRO 0.0030%, ÁCIDO FÓLICO 0.00022%, TIAMINA 0.00063%, RIBOFLAVINA 0.00013%, NIACINA 0.0013%), CHOCOLATE CON LECHE 23% (AZÚCAR, MANTECA DE CACAO, LECHE ENTERA EN POLVO, MASA DE CACAO, LECHE DESNATADA EN POLVO, SAL, EMULSIONANTES (LECITINA DE SOJA (SIN322i), ÉSTERES POLIGLICÉRIDOS DE ÁCIDO, TRIESTEARATO DE SORBITAN), AROMATIZANTES, CACAO 36%), AZÚCAR, MANÍ TOSTADO, ACEITE DE GIRASOL ALTO OLEICO, ACEITES VEGETALES (ACEITE DE PALMA INTERESTERIFICADO Y FRACCIONADO, ACEITE DE GIRASOL ALTO OLEICO, ACEITE DE SOJA HIDROGENADO), LECHE ENTERA EN POLVO, JARABE DE MAÍZ DE ALTA FRUCTOSA, CACAO EN POLVO, ALMIDÓN, SAL, LEUDANTES QUÍMICOS (BICARBONATO DE SODIO, BICARBONATO DE AMONIO), EMULSIONANTES (LECITINA DE SOJA, MONO Y DIGLICÉRIDOS DE ÁCIDOS GRASOS, POLIGLICEROL POLIRRICINOLEATO), CONSERVADOR (PROPIONATO DE CALCIO), AROMATIZANTES ARTIFICIALES (VAINILLINA, AROMA AVELLANA, AROMA NARANJA).",
+   "ingredients_text_es": "HARINA DE TRIGO ENRIQUECIDA (HIERRO 0.0030%, ÁCIDO FÓLICO 0.00022%, TIAMINA 0.00063%, RIBOFLAVINA 0.00013%, NIACINA 0.0013%), CHOCOLATE CON LECHE 23% (AZÚCAR, MANTECA DE CACAO, LECHE ENTERA EN POLVO, MASA DE CACAO, LECHE DESNATADA EN POLVO, SAL, EMULSIONANTES (LECITINA DE SOJA (SIN322i), ÉSTERES POLIGLICÉRIDOS DE ÁCIDO, TRIESTEARATO DE SORBITAN), AROMATIZANTES, CACAO 36%), AZÚCAR, MANÍ TOSTADO, ACEITE DE GIRASOL ALTO OLEICO, ACEITES VEGETALES (ACEITE DE PALMA INTERESTERIFICADO Y FRACCIONADO, ACEITE DE GIRASOL ALTO OLEICO, ACEITE DE SOJA HIDROGENADO), LECHE ENTERA EN POLVO, JARABE DE MAÍZ DE ALTA FRUCTOSA, CACAO EN POLVO, ALMIDÓN, SAL, LEUDANTES QUÍMICOS (BICARBONATO DE SODIO, BICARBONATO DE AMONIO), EMULSIONANTES (LECITINA DE SOJA, MONO Y DIGLICÉRIDOS DE ÁCIDOS GRASOS, POLIGLICEROL POLIRRICINOLEATO), CONSERVADOR (PROPIONATO DE CALCIO), AROMATIZANTES ARTIFICIALES (VAINILLINA, AROMA AVELLANA, AROMA NARANJA).",
+   "labels_tags": [
+    "es:sistema-de-etiquetado-frontal-de-alimentos-y-bebidas",
+    "es:exceso-grasas-totales"
+   ],
    "last_modified_t": 1790183807,
+   "nova_group": 4,
    "nutriments": {
     "added-sugars": 0,
     "added-sugars_100g": 0,
@@ -238,7 +270,11 @@ export const OFF = {
    "nutrition_data_prepared_per": "100g",
    "product_name": "Alfajor bon o bon",
    "serving_quantity": 40,
-   "serving_size": "1 alfajor (40 g)"
+   "serving_size": "1 alfajor (40 g)",
+   "traces_tags": [
+    "en:eggs",
+    "en:nuts"
+   ]
   },
   "status": 1,
   "status_verbose": "product found"
@@ -246,11 +282,13 @@ export const OFF = {
  "7790040143524": {
   "code": "7790040143524",
   "product": {
+   "allergens_tags": [],
    "image_front_url": "https://images.openfoodfacts.org/images/products/779/004/014/3524/front_es.3.400.jpg",
    "image_ingredients_url": "https://images.openfoodfacts.org/images/products/779/004/014/3524/ingredients_es.13.400.jpg",
    "image_nutrition_url": "https://images.openfoodfacts.org/images/products/779/004/014/3524/nutrition_es.11.400.jpg",
    "last_modified_t": 1787761399,
-   "product_name": "7790040143524"
+   "product_name": "7790040143524",
+   "traces_tags": []
   },
   "status": 1,
   "status_verbose": "product found"

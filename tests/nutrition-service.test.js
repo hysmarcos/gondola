@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createNutritionService } from "../src/nutrition-service.js";
+import { createNutritionService, NUTRI_CACHE_KEY } from "../src/nutrition-service.js";
 import { offApiUrl } from "../src/nutrition.js";
 import { OFF } from "./fixtures/off.js";
 
@@ -88,4 +88,28 @@ describe("createNutritionService", () => {
     const r = await createNutritionService({ fetch: fakeFetch(), cache: broken }).get(EAN);
     expect(r.per100.kcal).toBeGreaterThan(0);
   });
+});
+
+describe("límite de pedidos a la vez", () => {
+  it("con muchos EAN distintos, nunca más de 4 pedidos al mismo tiempo", async () => {
+    let active = 0;
+    let max = 0;
+    const fetch = async () => {
+      active++;
+      max = Math.max(max, active);
+      await new Promise((r) => setTimeout(r, 5));
+      active--;
+      return { ok: true, status: 200, json: async () => ({ status: 0 }) };
+    };
+    const service = createNutritionService({ fetch, cache: fakeCache() });
+    const eans = ["7790000000011", "7790000000028", "7790000000035", "7790000000042", "7790000000059", "7790000000066", "7790000000073"];
+    const out = await Promise.all(eans.map((e) => service.get(e)));
+    expect(out.every((r) => r === "missing")).toBe(true);
+    expect(max).toBeLessThanOrEqual(4);
+  });
+});
+
+it("la memoria usa una clave nueva: lo guardado por la primera ola no tiene alérgenos ni ingredientes", () => {
+  expect(NUTRI_CACHE_KEY).not.toBe("nutriCache");
+  expect(NUTRI_CACHE_KEY).toMatch(/^nutriCache/);
 });

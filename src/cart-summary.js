@@ -59,6 +59,10 @@ function logoImg(doc, promo, logoUrl) {
 function rowNode(doc, r, logoUrl) {
   const row = doc.createElement("div");
   row.className = `coto-unit-sum-row coto-unit-sum-row--${r.kind}`;
+  if (r.kind === "nutri" || r.kind === "nutri-note") {
+    row.textContent = r.text;
+    return row;
+  }
   if (r.kind === "cap") {
     row.classList.add(`coto-unit-sum-cap--${r.state}`);
     row.textContent = r.text;

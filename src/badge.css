@@ -338,7 +338,10 @@
   height: 20px;
 }
 
+/* Coto le da a todo button "display: flex; height: 45px": "Ver tabla" es un link de texto. */
 .coto-unit-nutri-more {
+  display: inline;
+  height: auto;
   align-self: center;
   margin: 0;
   padding: 0;
@@ -475,6 +478,114 @@
   color: #0c447c;
   font-weight: 600;
   text-decoration: underline;
+}
+
+/* Sin TACC en la columna de compra: verde si Coto u OFF lo dicen, ámbar si hay que revisar. */
+.coto-unit-nutri-badge {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.coto-unit-nutri-badge--ok {
+  background: #eaf3de;
+  color: #27500a;
+}
+
+.coto-unit-nutri-badge--warn {
+  background: #faeeda;
+  color: #633806;
+}
+
+/* "Para vos": lo que importa según el perfil del popup. */
+.coto-unit-nutri-foryou {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid #d6e4f2;
+  border-radius: 8px;
+  background: #f4f8fc;
+  font-size: 13px;
+}
+
+.coto-unit-nutri-foryou-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: #0c447c;
+}
+
+.coto-unit-nutri-foryou ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coto-unit-nutri-foryou li {
+  margin: 2px 0;
+}
+
+.coto-unit-nutri-foryou-danger { color: #a32d2d; font-weight: 600; }
+.coto-unit-nutri-foryou-warn { color: #633806; font-weight: 600; }
+.coto-unit-nutri-foryou-ok { color: #27500a; }
+.coto-unit-nutri-foryou-unknown,
+.coto-unit-nutri-foryou-no { color: #6b7177; }
+.coto-unit-nutri-foryou-info { color: #212529; font-variant-numeric: tabular-nums; }
+
+/* Sección: Sin TACC, alérgenos, ingredientes, aditivos y NOVA, debajo de la tabla. */
+.coto-unit-nutri-tacc,
+.coto-unit-nutri-allergens,
+.coto-unit-nutri-ingredients,
+.coto-unit-nutri-additives,
+.coto-unit-nutri-nova {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.coto-unit-nutri-tacc--ok strong { color: #27500a; }
+.coto-unit-nutri-tacc--warn strong { color: #633806; }
+
+.coto-unit-nutri-allergens p {
+  margin: 4px 0 0;
+}
+
+.coto-unit-nutri-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.coto-unit-nutri-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 2px;
+  border: 1px solid #e3e6e8;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.coto-unit-nutri-chip-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.coto-unit-nutri-hint {
+  font-size: 12px;
+  color: #6b7177;
+}
+
+.coto-unit-nutri-ingredients summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.coto-unit-nutri-ingredients p {
+  margin: 4px 0 0;
+  color: #51585e;
 }
 
 /* Sin datos: QR para cargarla desde el celular. */
@@ -726,6 +837,23 @@
   margin-top: 4px;
   font-size: 12px;
   color: #51585e;
+}
+
+/* Información nutricional de la compra (Open Food Facts). */
+.coto-unit-sum-row--nutri {
+  justify-content: flex-start;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e3e6e8;
+  font-size: 13px;
+  color: #0c447c;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-sum-row--nutri-note {
+  justify-content: flex-start;
+  font-size: 12px;
+  color: #6b7177;
 }
 
 /* Precio de Coto tachado en el mini-carrito: gris, para que no parezca el que se paga. */

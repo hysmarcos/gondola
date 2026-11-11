@@ -3,6 +3,7 @@
 import { compareRows, paintCompare } from "./compare-ui.js";
 import { parseMoney } from "./money.js";
 import { summaryRows, paintSummary, $2 } from "./cart-summary.js";
+import { cartNutrition, cartNutritionRows } from "./nutrition-cart.js";
 
 const SOURCE = "coto-unit";
 const WARN = "coto-unit-cart-warn";
@@ -30,8 +31,44 @@ export function normName(text) {
 export function installCartUi(win, doc, deps = {}) {
   const logoUrl = deps.logoUrl ?? (() => null);
   const compare = deps.compare ?? null;
+  // Información nutricional de la compra: { request(ean) → Promise<Nutrition | "missing" | "error"> }.
+  const nutrition = deps.nutrition ?? null;
+  const nutriResults = new Map(); // ean -> resultado
+  const nutriAsked = new Set();
+  let nutriScheduled = false;
 
-  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true };
+  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true, nutrition: true };
+
+  // Las respuestas de Open Food Facts llegan de a una: un solo repintado por cuadro.
+  function nutriSoon() {
+    if (nutriScheduled) return;
+    nutriScheduled = true;
+    const run = () => {
+      nutriScheduled = false;
+      render();
+    };
+    if (typeof win.requestAnimationFrame === "function") win.requestAnimationFrame(run);
+    else queueMicrotask(run);
+  }
+
+  // Pide la tabla de cada producto de comida del carrito (una vez por EAN) y devuelve las
+  // filas "Tu compra: …" para la caja.
+  function nutritionRows(a) {
+    if (!nutrition || !state.nutrition) return [];
+    for (const l of a.lines) {
+      const ean = l.nutri && l.ean ? String(l.ean) : null;
+      if (!ean || nutriAsked.has(ean)) continue;
+      nutriAsked.add(ean);
+      Promise.resolve()
+        .then(() => nutrition.request(ean))
+        .catch(() => "error")
+        .then((r) => {
+          nutriResults.set(ean, r ?? "error");
+          nutriSoon();
+        });
+    }
+    return cartNutritionRows(cartNutrition(a.lines, nutriResults));
+  }
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
   let scheduled = false;
 
@@ -102,7 +139,7 @@ export function installCartUi(win, doc, deps = {}) {
       box.className = BOX;
       total.after(box);
     }
-    paintSummary(doc, box, summaryRows(a, state.day, new Date().getDay(), { hints: true }), logoUrl);
+    paintSummary(doc, box, [...summaryRows(a, state.day, new Date().getDay(), { hints: true }), ...nutritionRows(a)], logoUrl);
   }
 
   // Si el total de la página no coincide con el carrito que leímos (cambió una cantidad
@@ -234,6 +271,7 @@ export function installCartUi(win, doc, deps = {}) {
     if (m.type === "settings") {
       state.day = Number(m.day) || 0;
       state.compare = m.compareStores !== false;
+      state.nutrition = m.nutrition !== false;
       if (!state.compare) doc.querySelectorAll(CMP_SEL).forEach((e) => e.remove());
     } else if (m.type === "cart" && m.analysis) {
       if (typeof m.seq === "number") {

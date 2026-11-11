@@ -4,6 +4,7 @@
 import { sortByUnitPrice, labelsFor, lookupLabels } from "./sort.js";
 import { parsePromos } from "./banks.js";
 import { analyzeCart } from "./cart.js";
+import { taccFromSearch, withTaccFilter } from "./tacc.js";
 import { parseNxM, adjustQty, promoNotice } from "./promo.js";
 import {
   isProductsUrl, isRecommendationsUrl, isCartUrl, isUnitSort, toNativeSort, cacheKey, pageUrl,
@@ -154,12 +155,16 @@ export function installInterceptor(win, deps) {
     }
   }
 
+  const pluJson = new Map(); // plu → { url, json } de la última búsqueda (para Sin TACC)
+
   // Busca un producto por PLU (caché 5 min). Devuelve su `data` o null.
   function lookupPlu(plu) {
     const hit = pluCache.get(plu);
     if (hit && deps.now() - hit.at < TTL) return hit.promise;
-    const promise = fetchJson(searchUrl(plu, lastProductsUrl))
+    const url = searchUrl(plu, lastProductsUrl);
+    const promise = fetchJson(url)
       .then((json) => {
+        pluJson.set(plu, { url, json });
         const id = "prod" + plu.padStart(8, "0");
         const data = (json?.response?.results ?? []).find((r) => r?.data?.id === id)?.data ?? null;
         if (data) byProd.set(id, data);
@@ -222,12 +227,33 @@ export function installInterceptor(win, deps) {
     post({ type: "labels", labels: labelsFor(body.response.results, store(), settings.selected, settings.day, opts()) });
   }
 
+  // Sin TACC según Coto: la faceta de la búsqueda por PLU; si hay varios resultados, la
+  // misma búsqueda con el filtro SI y después NO. "SI", "NO" o null.
+  async function lookupTacc(plu) {
+    const id = "prod" + plu.padStart(8, "0");
+    const seen = pluJson.get(plu);
+    const tacc = taccFromSearch(seen?.json, id);
+    if (tacc !== undefined) return tacc;
+    for (const value of ["SI", "NO"]) {
+      const json = await fetchJson(withTaccFilter(seen.url, value)).catch(() => null);
+      if ((json?.response?.results ?? []).some((r) => r?.data?.id === id)) return value;
+    }
+    return null;
+  }
+
   async function onLookup({ plu, key }) {
     const data = await lookupPlu(String(plu));
     await ready;
     if (!data) return;
     const labels = lookupLabels(data, key, store(), settings.selected, settings.day, opts());
-    if (labels[key]) post({ type: "labels", labels });
+    if (!labels[key]) return;
+    const unique = new Set(Object.values(labels));
+    for (const label of unique) label.name = data.sku_display_name ?? null;
+    // El precio primero: la búsqueda de Sin TACC puede tardar o no responder.
+    post({ type: "labels", labels });
+    const tacc = await lookupTacc(String(plu)).catch(() => null);
+    for (const label of unique) label.tacc = tacc;
+    post({ type: "labels", labels });
   }
 
   deps.listen?.((msg) => {

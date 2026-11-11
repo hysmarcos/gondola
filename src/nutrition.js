@@ -23,7 +23,33 @@ const FOOD_ROOTS = new Set(["catv00001254", "catv00001255", "catv00001256", "cat
 const MIN_NUTRIENTS = 3;
 
 export const offProductUrl = (ean) => `${OFF}/product/${ean}`;
-const FIELDS = "product_name,nutriments,serving_size,serving_quantity,last_modified_t,image_front_url,image_nutrition_url,image_ingredients_url";
+const FIELDS = "product_name,nutriments,serving_size,serving_quantity,last_modified_t,image_front_url,image_nutrition_url,image_ingredients_url," +
+  "ingredients_text_es,ingredients_text,allergens_tags,traces_tags,additives_tags,nova_group,labels_tags";
+
+// Alérgenos: clave (= ícono en assets/allergens/) y nombre en español.
+export const ALLERGENS = {
+  gluten: "Gluten (TACC)", crustaceans: "Crustáceos", eggs: "Huevo", fish: "Pescado", peanuts: "Maní",
+  soybeans: "Soja", milk: "Leche", "tree-nuts": "Frutos secos", celery: "Apio", mustard: "Mostaza",
+  sesame: "Sésamo", sulphites: "Sulfitos", lupin: "Lupino", molluscs: "Moluscos",
+};
+const OFF_ALLERGEN = {
+  "en:gluten": "gluten", "en:crustaceans": "crustaceans", "en:eggs": "eggs", "en:fish": "fish", "en:peanuts": "peanuts",
+  "en:soybeans": "soybeans", "en:milk": "milk", "en:nuts": "tree-nuts", "en:celery": "celery", "en:mustard": "mustard",
+  "en:sesame-seeds": "sesame", "en:sulphur-dioxide-and-sulphites": "sulphites", "en:lupin": "lupin", "en:molluscs": "molluscs",
+};
+const GLUTEN_FREE_LABELS = new Set(["en:no-gluten", "en:gluten-free", "es:sin-tacc"]);
+
+const uniq = (list) => [...new Set(list)];
+const allergenKeys = (tags) => uniq((Array.isArray(tags) ? tags : []).map((t) => OFF_ALLERGEN[t]).filter(Boolean));
+const additiveCodes = (tags) =>
+  uniq((Array.isArray(tags) ? tags : []).map((t) => String(t).match(/^en:(e\d+[a-z]?)$/i)?.[1]?.toUpperCase()).filter(Boolean));
+
+function ingredientsOf(product) {
+  const es = typeof product.ingredients_text_es === "string" ? product.ingredients_text_es.trim() : "";
+  if (es) return { text: es, spanish: true };
+  const any = typeof product.ingredients_text === "string" ? product.ingredients_text.trim() : "";
+  return any ? { text: any, spanish: false } : null;
+}
 export const offApiUrl = (ean) => `${OFF}/api/v2/product/${ean}?fields=${FIELDS}`;
 
 // Fotos del envase: solo https de los servidores de imágenes de Open Food Facts.
@@ -80,6 +106,12 @@ export function parseOff(json, ean) {
     servingQty: value(product.serving_quantity, "g", false) || null,
     updatedAt: Number(product.last_modified_t) > 0 ? Number(product.last_modified_t) * 1000 : null,
     photos: { front: photo(product.image_front_url), nutrition: photo(product.image_nutrition_url), ingredients: photo(product.image_ingredients_url) },
+    ingredients: ingredientsOf(product),
+    allergens: allergenKeys(product.allergens_tags),
+    traces: allergenKeys(product.traces_tags),
+    additives: additiveCodes(product.additives_tags),
+    nova: [1, 2, 3, 4].includes(Number(product.nova_group)) ? Number(product.nova_group) : null,
+    glutenFreeLabel: (Array.isArray(product.labels_tags) ? product.labels_tags : []).some((t) => GLUTEN_FREE_LABELS.has(t)),
     url: offProductUrl(ean),
   };
 }

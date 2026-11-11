@@ -1,6 +1,7 @@
 // Ventana de la extensión: pestañas Tarjetas, Ajustes, Colaborá y Ayuda.
 // Para sumar un menú: una entrada en TABS y su función en VIEWS.
 import { dayName } from "./banks.js";
+import { ALLERGENS } from "./nutrition.js";
 import { feedbackLinks, REPO } from "./feedback.js";
 
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
@@ -28,6 +29,8 @@ const HELP = [
   ["Banco no aplica", "El producto ya está en oferta o Coto lo excluye de las promos bancarias."],
   ["Ordenar por precio por kg/L", "Nueva opción en \"Ordenar por\" de cada categoría y búsqueda."],
   ["Información nutricional", "Tabla de Open Food Facts por código de barras, cargada por la comunidad. Si falta, podés cargarla vos."],
+  ["Sin TACC", "Lo que marca Coto. Si el producto menciona trigo, avena, cebada o centeno, te avisa. Verificá siempre el símbolo oficial en el envase."],
+  ["Mi perfil", "En Ajustes. Destaca lo que te importa en cada producto. Queda solo en tu navegador. No es consejo médico."],
   ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
 ];
 
@@ -160,15 +163,43 @@ function cardsView(doc, s, storage, meta = {}) {
   return view;
 }
 
-function settingsView(doc, s, storage) {
-  return SETTINGS.map(({ key, title, text }) => {
-    const box = switchInput(doc, { name: key, checked: s[key] !== false });
-    box.addEventListener("change", () => storage.set({ [key]: box.checked }));
-    return el(doc, "label", { className: "setting" }, [
-      el(doc, "span", { className: "setting-text" }, [el(doc, "span", { className: "setting-title", textContent: title }), el(doc, "span", { className: "setting-desc", textContent: text })]),
-      box,
-    ]);
+const PROFILE = [
+  { key: "profileCeliac", title: "Soy celíaco/a", text: "Muestra si Coto o Open Food Facts lo marcan Sin TACC." },
+  { key: "profileSodium", title: "Cuido el sodio", text: "Destaca el sodio cada 100 g o 100 ml." },
+  { key: "profileSugar", title: "Cuido el azúcar", text: "Destaca los azúcares cada 100 g o 100 ml." },
+];
+
+function settingRow(doc, { key, title, text }, checked, storage) {
+  const box = switchInput(doc, { name: key, checked });
+  box.addEventListener("change", () => storage.set({ [key]: box.checked }));
+  return el(doc, "label", { className: "setting" }, [
+    el(doc, "span", { className: "setting-text" }, [el(doc, "span", { className: "setting-title", textContent: title }), el(doc, "span", { className: "setting-desc", textContent: text })]),
+    box,
+  ]);
+}
+
+// Mi perfil: apagado por defecto. Queda en el navegador.
+function profileView(doc, s, storage) {
+  const chosen = new Set(Array.isArray(s.profileAllergens) ? s.profileAllergens : []);
+  const boxes = Object.entries(ALLERGENS).map(([key, name]) => {
+    const box = el(doc, "input", { type: "checkbox", name: "profileAllergens", value: key, checked: chosen.has(key) });
+    box.addEventListener("change", () => {
+      if (box.checked) chosen.add(key);
+      else chosen.delete(key);
+      storage.set({ profileAllergens: Object.keys(ALLERGENS).filter((k) => chosen.has(k)) });
+    });
+    return el(doc, "label", { className: "profile-allergen" }, [box, ` ${name}`]);
   });
+  return [
+    el(doc, "h2", { className: "profile-title", textContent: "Mi perfil" }),
+    el(doc, "p", { className: "profile-desc", textContent: "Destaca lo que te importa en la página de cada producto. No es consejo médico." }),
+    ...PROFILE.map((item) => settingRow(doc, item, s[item.key] === true, storage)),
+    el(doc, "fieldset", { className: "profile-allergens" }, [el(doc, "legend", { textContent: "Mis alergias" }), ...boxes]),
+  ];
+}
+
+function settingsView(doc, s, storage) {
+  return [...SETTINGS.map((item) => settingRow(doc, item, s[item.key] !== false, storage)), ...profileView(doc, s, storage)];
 }
 
 function helpView(doc, meta) {
@@ -211,7 +242,7 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 
 // storage: misma interfaz que en bridge.js. meta: { version }.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "popupTab"]);
+  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
   let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
 
   const header = el(doc, "header", { className: "top" }, [

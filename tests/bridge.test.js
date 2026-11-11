@@ -116,6 +116,38 @@ describe("ajuste información nutricional", () => {
   });
 });
 
+describe("perfil personal", () => {
+  it("el puente NO manda el perfil: la página de Coto puede leer esos mensajes", async () => {
+    const win = fakeWin();
+    installBridge(win, fakeStorage({ profileCeliac: true, profileAllergens: ["milk"] }), () => 0);
+    await tick();
+    const m = win.posted.find((x) => x.type === "settings");
+    expect(m.profile).toBeUndefined();
+    expect(JSON.stringify(m)).not.toContain("milk");
+  });
+
+  it("el popup tiene 'Mi perfil' apagado y guarda las alergias elegidas", async () => {
+    const st = fakeStorage();
+    await renderPopup(document, st, { version: "1" });
+    expect(document.body.textContent).toContain("Mi perfil");
+    expect(document.body.textContent).toContain("No es consejo médico.");
+    const celiac = document.querySelector('input[name="profileCeliac"]');
+    expect(celiac.checked).toBe(false);
+    celiac.click();
+    await tick();
+    expect(st.data.profileCeliac).toBe(true);
+    const milk = document.querySelector('input[name="profileAllergens"][value="milk"]');
+    expect(milk.closest("label").textContent).toContain("Leche");
+    milk.click();
+    await tick();
+    document.querySelector('input[name="profileAllergens"][value="peanuts"]').click();
+    await tick();
+    // En el orden de la tabla de alérgenos (Maní antes que Leche).
+    expect(st.data.profileAllergens).toEqual(["peanuts", "milk"]);
+    expect(document.querySelectorAll('input[name="profileAllergens"]')).toHaveLength(14);
+  });
+});
+
 describe("popup", () => {
   const open = async (st, meta = { version: "0.4.0" }) => {
     document.body.innerHTML = "";

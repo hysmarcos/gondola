@@ -13,6 +13,7 @@ const REPO = [
   "assets/icon/icon.svg", "assets/icon/icon-16.svg", "assets/icon/icon-16.png", "assets/icon/icon-32.png", "assets/icon/icon-48.png", "assets/icon/icon-128.png",
   "assets/banks/logo_icbc_1.png", "assets/banks/logo_galicia.png",
   "assets/off/off-logo-icon-light.svg",
+  "assets/allergens/milk.png",
   "assets/fonts/OFL.txt", "assets/fonts/poppins-latin-400-normal.woff2",
   "tests/package.test.js", "scripts/dev-server.mjs", "dist-dev/demo.min.js", "docs/img/readme/gondola-demo.gif", "site/index.html",
 ];
@@ -31,7 +32,7 @@ describe("paquete para la Chrome Web Store", () => {
     expect(files).toEqual(expect.arrayContaining([
       "manifest.json", "popup.html", "LICENSE", "dist/badge.js", "dist/popup.js", "src/badge.css", "src/popup.css",
       "assets/icon/icon.svg", "assets/icon/icon-128.png", "assets/banks/logo_icbc_1.png", "assets/fonts/poppins-latin-400-normal.woff2",
-      "assets/off/off-logo-icon-light.svg",
+      "assets/off/off-logo-icon-light.svg", "assets/allergens/milk.png",
     ]));
     for (const f of ["src/popup.js", "src/badge.js", "tests/package.test.js", "scripts/dev-server.mjs", "dist-dev/demo.min.js", "docs/img/readme/gondola-demo.gif", "site/index.html", "package.json", "README.md", "assets/icon/icon-16.svg"]) {
       expect(files).not.toContain(f);

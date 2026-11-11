@@ -15,7 +15,7 @@
   <a href="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest_V3-2a78d6?logo=googlechrome&logoColor=white">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-2a78d6?logo=node.js&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-412-2a78d6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-460-2a78d6">
   <a href="https://hysmarcos.github.io/gondola/privacidad.html"><img alt="No servers" src="https://img.shields.io/badge/servers-0-2a78d6"></a>
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2a78d6">
   <a href="CONTRIBUTING.md"><img alt="Contributions welcome" src="https://img.shields.io/badge/contributions-welcome-2a78d6"></a>
@@ -45,7 +45,7 @@ The question: which of these products is really the best deal, with my card, tod
 | Unit price | Kilo, liter, unit or 10 meters (toilet paper and rolls) |
 | Personal data sent | None. Settings stay in your browser. |
 | Own servers | None |
-| Tests | 412, with real responses from the Coto, Carrefour, Día, Más and Open Food Facts APIs |
+| Tests | 460, with real responses from the Coto, Carrefour, Día, Más and Open Food Facts APIs |
 | Language of the UI | Spanish (Argentina) |
 
 ## Before and after
@@ -69,7 +69,9 @@ The same Coto page, without and with Góndola. Real captures from November 9, 20
 | Multi-buy deals | If you add 1 of a 2x1, it adds the second one. On a 3x2 it tells you how many are missing. Can be turned off. |
 | Real cart | Subtotal, Coto discounts, bank refund with its cap, and final total. |
 | Other stores | Finds the same product by barcode at Carrefour, Día and Más. A button says "Mejor precio" (best price) or "Más barato en Día" (cheaper at Día), with links. |
-| Nutrition facts | On a food or drink product page, the nutrition table from [Open Food Facts](https://world.openfoodfacts.org), if it exists. If it is missing, a link to add it. Can be turned off. |
+| Nutrition facts | On a food or drink product page, the nutrition table from [Open Food Facts](https://world.openfoodfacts.org), if it exists. If it is missing, a link to add it. Adds gluten-free status (Coto's data, with a warning if it mentions wheat, oats, barley or rye), allergens, ingredients, additives and NOVA. Can be turned off. |
+| My profile | In Settings you choose if you are celiac, watch sodium or sugar, and your allergies. Each product page shows "Para vos" (for you). It stays in your browser. It is not medical advice. |
+| Cart nutrition | In the cart, the total kcal, sugars and sodium of your purchase. |
 
 Everything on Coto keeps working: add to cart, quantities, cart and checkout. The extension only adds elements. It never removes any.
 
@@ -103,7 +105,7 @@ flowchart LR
 
 | | Test | Question | Result |
 |:---:|---|---|---|
-| ✅ | Tests with real data | Are price, size and order right? | 412 tests with saved responses from Coto, Carrefour, Día, Más and Open Food Facts |
+| ✅ | Tests with real data | Are price, size and order right? | 460 tests with saved responses from Coto, Carrefour, Día, Más and Open Food Facts |
 | ✅ | Coto keeps working | Do add, quantities and cart behave the same? | Yes. The extension adds elements and hides parts with an attribute. It removes nothing from Coto. |
 | ✅ | Bank promos | Does it show a discount Coto does not apply? | No. It follows the days, caps and exclusions of Coto's API. |
 | ⚠️ | Other stores | Is it the price at your branch? | Not always. It uses each site's default area and leaves out bank discounts. |
@@ -168,6 +170,6 @@ Everyone who contributes code, bug reports or ideas that ship is credited in the
 
 Góndola is not affiliated with Coto, Carrefour, Día or Más. Trademarks and logos belong to their owners. The extension uses data those sites already publish.
 
-Nutrition facts come from [Open Food Facts](https://world.openfoodfacts.org), under the [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
+Nutrition facts come from [Open Food Facts](https://world.openfoodfacts.org), under the [ODbL](https://opendatacommons.org/licenses/odbl/1-0/). Allergen icons are from the UK [Food Standards Agency](https://www.gov.uk/government/publications/download-your-allergen-icons-and-posters), under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Góndola does not use the official Argentine "Sin TACC" symbol: it is only for packaging of approved products.
 
 The code is MIT licensed. The Poppins font uses the [SIL Open Font License](assets/fonts/OFL.txt).
