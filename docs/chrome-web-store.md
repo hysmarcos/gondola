@@ -31,13 +31,13 @@ En el panel: **Elemento nuevo** (New item) → subí el ZIP. Los nombres de las 
 **Nombre** (sale del manifest, máximo 75 caracteres):
 
 ```text
-Góndola para Coto: precio por kilo, promos y comparador
+Góndola para Coto: diseño claro, precio por kilo, nutrición y comparador
 ```
 
 **Resumen** (sale del manifest, máximo 132 caracteres):
 
 ```text
-Ordená Coto Digital por precio final por kilo o litro, con tu banco, el total real del carrito y el precio en Carrefour, Día y Más.
+Mejora Coto Digital: diseño más claro, precio real por kilo o litro, tu banco, otros súper, información nutricional y alergias.
 ```
 
 **Descripción** (copiar tal cual):
@@ -45,7 +45,9 @@ Ordená Coto Digital por precio final por kilo o litro, con tu banco, el total r
 ```text
 Góndola mejora la web de tu supermercado. Empieza por Coto Digital.
 
-En Coto, un paquete de 500 g y uno de 1 kg no se comparan a simple vista, las ofertas tienen muchas formas y no sabés si tu banco aplica. Góndola agrega lo que falta para comprar barato, sin romper nada de Coto.
+Hace tres cosas: ordena la página con un diseño más claro, te muestra el precio real de cada producto y te dice qué tiene adentro.
+
+En Coto, un paquete de 500 g y uno de 1 kg no se comparan a simple vista, las ofertas tienen muchas formas, no sabés si tu banco aplica y no hay tabla nutricional. Góndola agrega lo que falta para elegir bien, sin romper nada de Coto: agregar al carrito, las cantidades y el pago siguen igual.
 
 QUÉ AGREGA
 • Diseño Góndola: un diseño nuevo para la lista de productos y la página de producto. Se apaga en el popup y vuelve el de Coto.
@@ -83,7 +85,7 @@ Góndola no está afiliada a Coto, Carrefour, Día ni Más. Las marcas son de su
 | Categoría | Compras |
 | Idioma | Español (Latinoamérica) |
 | Ícono de la tienda (128x128) | `assets/icon/icon-128.png` |
-| Capturas (1280x800) | `docs/store/captura-1-orden.png`, `captura-2-tarjeta.png`, `captura-3-comparar.png`, `captura-4-tarjetas.png` |
+| Capturas (1280x800) | `docs/store/captura-1-lista.png`, `captura-2-producto.png`, `captura-3-nutricion.png`, `captura-4-comparar.png`, `captura-5-tarjetas.png` |
 | Mosaico promocional chico (440x280) | `docs/store/mosaico-chico-440x280.png` |
 | Mosaico de marquesina (1400x560, opcional) | `docs/store/marquesina-1400x560.png` |
 | Video de YouTube (opcional) | Subí `docs/img/readme/gondola-demo.mp4` a YouTube y pegá el link |
@@ -95,7 +97,7 @@ Góndola no está afiliada a Coto, Carrefour, Día ni Más. Las marcas son de su
 **Propósito único:**
 
 ```text
-Mejorar la web de compras de Coto Digital (coto.com.ar) para comparar productos antes de comprar: precio por kilo o litro, promos bancarias, total real del carrito, el precio del mismo producto en otros supermercados y su información nutricional.
+Mejorar la web de compras de Coto Digital (coto.com.ar) para comparar productos antes de comprar: un diseño más claro de la lista y de la página de producto, precio por kilo o litro, promos bancarias, total real del carrito, el precio del mismo producto en otros supermercados y su información nutricional.
 ```
 
 **Justificación de permisos:**
@@ -157,4 +159,4 @@ node scripts/capture-readme.mjs
 node scripts/store-media.mjs
 ```
 
-El primero abre Chrome y captura Coto sin y con Góndola: no toques la ventana mientras corre. El segundo necesita el servidor local (`node scripts/dev-server.mjs`) para la captura del popup.
+Antes corré `npm run build`. El primero abre Chrome dos veces, sin Góndola y con la extensión real, y captura Coto: no toques la ventana mientras corre. El segundo arma las imágenes de la tienda con esas capturas. La animación del README la arma `node scripts/readme-media.mjs` (necesita ffmpeg).
