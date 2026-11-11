@@ -1,6 +1,6 @@
 // Detalle de totales del carrito: Subtotal, descuentos de Coto (uno por promo activa),
 // reintegro del banco con su tope, y total final. Lo usan el mini-carrito y /carrito.
-import { dayName } from "./banks.js";
+import { dayName, isComunidad } from "./banks.js";
 
 const money0 = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const money2 = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -20,16 +20,19 @@ export function summaryRows(a, day, today, { hints = false } = {}) {
   }
 
   const t = a.today;
+  const direct = t ? isComunidad(t.promo) : false;
   if (t) {
     const when = day === today ? "hoy" : dayName(day).toLowerCase();
-    rows.push({ kind: "bank", label: `Reintegro ${t.promo.bank} ${t.promo.percent}%`, sub: when, value: minus(t.refund), promo: t.promo });
+    // Comunidad descuenta en la caja: no es un reintegro del banco.
+    const word = direct ? "Descuento" : "Reintegro";
+    rows.push({ kind: "bank", label: `${word} ${t.promo.bank} ${t.promo.percent}%`, sub: when, value: minus(t.refund), promo: t.promo });
     const weekly = t.promo.capWeekly ? " semanal" : "";
-    if (t.cap == null) rows.push({ kind: "cap", state: "none", text: "Sin tope de reintegro" });
+    if (t.cap == null) rows.push({ kind: "cap", state: "none", text: direct ? "Sin tope de descuento" : "Sin tope de reintegro" });
     else if (t.capReached) rows.push({ kind: "cap", state: "reached", text: `Llegaste al tope${weekly} de ${$0(t.cap)}` });
     else rows.push({ kind: "cap", state: "left", text: `Te quedan ${$0(t.capLeft)} de tope${weekly} (${$0(t.cap)})` });
   }
 
-  rows.push({ kind: "total", label: t ? "Total final con reintegro" : "Total final", value: $2(t ? t.total : a.total) });
+  rows.push({ kind: "total", label: t && !direct ? "Total final con reintegro" : "Total final", value: $2(t ? t.total : a.total) });
 
   if (hints && a.best && a.best.day !== day) {
     rows.push({ kind: "hint", text: `Mejor día: ${dayName(a.best.day).toLowerCase()} con ${a.best.promo.bank}, ${$2(a.best.total)}`, promo: a.best.promo });

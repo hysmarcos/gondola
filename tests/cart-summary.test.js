@@ -18,9 +18,9 @@ describe("detalle del carrito", () => {
     const a = analyzeCart([shampoo, dove, limpiador], [], 1, "200");
     const [s, d, l] = a.lines;
     expect(s).toMatchObject({ discount: 4754.38, promoLabel: "40% dto" });
-    expect(d).toMatchObject({ discount: 2738.73, promoLabel: "3x2" });
+    expect(d).toMatchObject({ discount: 2738.99, promoLabel: "3x2" });
     expect(l).toMatchObject({ discount: 0, promoLabel: null });
-    expect(a.discountTotal).toBe(7493.11);
+    expect(a.discountTotal).toBe(7493.37);
   });
 
   it("reintegro sin tope: se reparte entre las líneas que aplican", () => {

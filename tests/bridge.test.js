@@ -50,7 +50,7 @@ describe("installBridge", () => {
   });
 
   it("manda la configuración al arrancar y cuando cambia", async () => {
-    const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["457"], day: 1 });
+    const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["457"], day: 1, comunidad: false });
     const win = fakeWin();
     installBridge(win, st, () => 0);
     await tick();
@@ -61,6 +61,23 @@ describe("installBridge", () => {
     await tick();
     const last = win.posted.filter((m) => m.type === "settings").at(-1);
     expect(last.selected.map((p) => p.id)).toEqual(["457", "449"]);
+  });
+  it("la promo de Comunidad sale del ajuste, no de las tarjetas elegidas", async () => {
+    // Elegida a mano pero con el ajuste apagado: no va. Sin elegir y con el ajuste prendido: va.
+    const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["468"], comunidad: false });
+    const win = fakeWin();
+    installBridge(win, st, () => 0);
+    await tick();
+    expect(win.posted.find((m) => m.type === "settings").selected).toEqual([]);
+    await st.set({ comunidad: true, selectedPromoIds: [] });
+    await tick();
+    expect(win.posted.filter((m) => m.type === "settings").at(-1).selected.map((p) => p.id)).toEqual(["468"]);
+  });
+  it("el popup no lista Comunidad en Tarjetas", async () => {
+    await renderPopup(document, fakeStorage({ promos: PROMOS }), {});
+    const banks = [...document.querySelectorAll('[data-view="tarjetas"] .bank-name')].map((e) => e.textContent);
+    expect(banks.length).toBeGreaterThan(0);
+    expect(banks).not.toContain("Comunidad Coto");
   });
   it("manda los ajustes del popup: encendidos salvo que se apaguen", async () => {
     const st = fakeStorage({ autoPromo: false });

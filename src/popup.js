@@ -1,6 +1,6 @@
 // Ventana de la extensión: pestañas Tarjetas, Ajustes, Colaborá y Ayuda.
 // Para sumar un menú: una entrada en TABS y su función en VIEWS.
-import { dayName } from "./banks.js";
+import { dayName, isComunidad } from "./banks.js";
 import { ALLERGENS } from "./nutrition.js";
 import { feedbackLinks, REPO } from "./feedback.js";
 
@@ -16,7 +16,7 @@ const TABS = [
 
 const SETTINGS = [
   { key: "skin", title: "Diseño Góndola", text: "Diseño nuevo en la lista de productos y en la página de producto. Apagalo para ver el de Coto." },
-  { key: "comunidad", title: "Tengo Comunidad Coto", text: "Usa el precio Comunidad (+5%, +15%…) cuando el producto lo tiene." },
+  { key: "comunidad", title: "Tengo Comunidad Coto", text: "Usa el precio Comunidad (+5%, +15%…) y el descuento Comunidad del día (por ejemplo, 20% los miércoles)." },
   { key: "autoPromo", title: "Completar promos 2x1, 3x2", text: "En un 2x1, al agregar 1 suma el gratis. En un 3x2, al llegar a 2 suma el tercero." },
   { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
   { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato de la categoría\" en el producto que más conviene por kg, litro o unidad." },
@@ -84,7 +84,8 @@ function bankLogo(doc, items, logoUrl) {
 function cardsView(doc, s, storage, meta = {}) {
   const logoUrl = meta.logoUrl ?? (() => null);
   const view = [];
-  const promos = s.promos ?? [];
+  // Comunidad Coto no va acá: se prende en Ajustes ("Tengo Comunidad Coto").
+  const promos = (s.promos ?? []).filter((p) => !isComunidad(p));
   if (!promos.length) {
     view.push(el(doc, "div", { className: "empty" }, [
       el(doc, "p", { className: "empty-title", textContent: "Todavía no hay promos" }),
@@ -105,7 +106,7 @@ function cardsView(doc, s, storage, meta = {}) {
   }
   view.push(days);
 
-  const selected = new Set(s.selectedPromoIds ?? []);
+  const selected = new Set((s.selectedPromoIds ?? []).filter((id) => promos.some((p) => p.id === id)));
   const summary = el(doc, "p", { className: "summary", attrs: { "aria-live": "polite" } });
   const updateSummary = () => {
     summary.textContent = selected.size ? plural(selected.size, "promo elegida", "promos elegidas") : "Marcá las promos de tus tarjetas";
