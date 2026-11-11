@@ -23,16 +23,22 @@ export function withTaccFilter(url, value) {
   return u.toString();
 }
 
-// Trigo (salvo "trigo sarraceno", que no tiene gluten), avena, cebada, centeno, malta,
-// espelta o kamut, en el nombre o en los ingredientes.
-const CEREAL = /\b(trigo(?!\s+sarraceno)|avena|cebada|centeno|malta|espelta|kamut)\b/;
+// Cereales con gluten y derivados, en el nombre o los ingredientes (también en inglés y
+// portugués: OFF a veces solo tiene ingredientes en otro idioma). "Trigo sarraceno" no
+// tiene gluten. "gluten" y "tacc" sueltos cuentan; "sin gluten", "libre de gluten",
+// "gluten free" y "sin TACC" se sacan antes de buscar.
+const CEREAL =
+  /\b(trigos?(?!\s+sarraceno)|avenas?|cebadas?|centenos?|maltas?|malteados?|malteadas?|espeltas?|kamut|triticale|burgol|bulgur|cus ?cus|cous ?cous|cuscus|semolas?|seitan|wheat|oats?|barley|rye|malt|aveia|cevada|centeio|gluten|tacc)\b/;
+const FREE = /\b(sin|libres? de)\s+(gluten|t\.?\s*a\.?\s*c\.?\s*c\.?)|\bgluten[\s-]+free\b/g;
 
 const fold = (s) => String(s ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 function risk(name, n) {
-  const hit = (fold(name) + " " + fold(n?.ingredients?.text)).match(CEREAL);
+  const text = (fold(name) + " " + fold(n?.ingredients?.text)).replace(FREE, " ");
+  const hit = text.match(CEREAL);
   if (hit) return `menciona ${hit[1]}`;
   if (n?.allergens?.includes("gluten")) return "declara gluten";
+  if (n?.traces?.includes("gluten")) return "puede contener gluten";
   return null;
 }
 

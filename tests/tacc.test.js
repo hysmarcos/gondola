@@ -56,3 +56,24 @@ describe("taccStatus", () => {
     expect(taccStatus(null, "Arroz Gallo", null)).toEqual({ kind: "unknown", text: "Sin dato de TACC" });
   });
 });
+
+describe("revisión: trazas de gluten y más palabras de cereales", () => {
+  const n = (extra = {}) => ({ ingredients: null, allergens: [], traces: [], glutenFreeLabel: false, ...extra });
+
+  it("puede contener gluten (trazas) no da verde", () => {
+    expect(taccStatus("SI", "Galletitas", n({ traces: ["gluten"] }))).toEqual({ kind: "warn", text: "Coto lo marca Sin TACC, pero puede contener gluten. Revisá el envase." });
+    expect(taccStatus(null, "Arroz", n({ glutenFreeLabel: true, traces: ["gluten"] })).kind).toBe("unknown");
+  });
+
+  it("plurales, derivados y otros idiomas cuentan como riesgo", () => {
+    for (const word of ["Trigos", "cebadas", "leche malteada", "Burgol", "Cous cous", "Triticale", "sémola", "Contiene gluten", "wheat flour", "farinha de aveia", "seitan", "oats", "barley malt"]) {
+      expect(taccStatus("SI", "Producto", n({ ingredients: { text: word, spanish: true } })).kind, word).toBe("warn");
+    }
+  });
+
+  it("'sin TACC', 'sin gluten', 'libre de gluten', 'gluten free', trigo sarraceno y maltodextrina no son riesgo", () => {
+    for (const name of ["Galletitas Sin TACC", "Pan sin gluten", "Libre de gluten", "Gluten free crackers", "Harina de trigo sarraceno", "Maltodextrina"]) {
+      expect(taccStatus("SI", name, n()).kind, name).toBe("ok");
+    }
+  });
+});
