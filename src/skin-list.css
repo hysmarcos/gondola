@@ -502,11 +502,6 @@
   padding: 0;
 }
 
-/* "Ver planes de cuotas" no va en la tarjeta: sigue en la página de producto. */
-[data-gondola-skin="list"] .card-container .bottom-botones > a {
-  display: none !important;
-}
-
 /* ---------- 7. "Precio sin impuestos nacionales": 30 px, debajo del botón ----------
    Es la última <small class="text-center"> de .centro-precios, dentro de un bloque que en
    las tarjetas con etiqueta solo la muestra a ella ("Precio regular" está oculto): ese
@@ -568,6 +563,25 @@
 
 [data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .bottom-botones {
   margin-bottom: 34px;
+}
+
+/* "Ver planes de cuotas" se ve en estas tarjetas (en las que tienen etiqueta badge.js lo
+   oculta con data-coto-unit-hide). Coto le da 12 px de relleno (41 px de alto): acá ocupa
+   justo el lugar reservado debajo del botón, 4 px de margen + 30 px, y el bloque no suma
+   margen. Así el botón sigue a la altura del de sus vecinas. */
+[data-gondola-skin="list"] .producto-card .card-container:not([data-coto-unit-card]) .bottom-botones > a {
+  display: block;
+  height: 30px;
+  margin: 4px 0 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  line-height: 30px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-gondola-skin="list"] .producto-card .card-container:not([data-coto-unit-card]) .bottom-botones:has(> a:not([data-coto-unit-hide])) {
+  margin-bottom: 0;
 }
 
 /* ---------- 8. Página: columnas, encabezado, filtros y grilla (spec 4.1) ----------

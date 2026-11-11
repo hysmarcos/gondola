@@ -89,6 +89,15 @@ it("etiquetas para vos de la tarjeta: cada una se puede achicar, así dos compar
   expect(body).toMatch(/text-overflow:\s*ellipsis/);
 });
 
+it("ninguna regla oculta todos los links de .bottom-botones (cuotas va con data-coto-unit-hide)", () => {
+  const clean = readFileSync("src/skin-list.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const hiding = [...clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter((m) => /display\s*:\s*none/.test(m[2]))
+    .flatMap((m) => splitSelectors(m[1].trim()))
+    .filter((s) => /\.bottom-botones\s*>\s*a\s*$/.test(s));
+  expect(hiding).toEqual([]);
+});
+
 describe.each(FILES)("%s", (file) => {
   const css = readFileSync(file, "utf8");
   it("toda regla cuelga de data-gondola-skin", () => {

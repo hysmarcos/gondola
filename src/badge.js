@@ -399,6 +399,11 @@ export function installBadges(win, doc, deps = {}) {
       if (t.length > 80 || /sin impuestos/i.test(t)) continue;
       if (/precio por \d/i.test(t) || /con\s*comunidad\s*pagas/i.test(t)) hide.add(child);
     }
+    // Con la piel de la lista, "Ver planes de cuotas" no va en la tarjeta (sigue en la página
+    // de producto). Solo ese link: los demás de .bottom-botones quedan.
+    if (listSkin()) {
+      for (const a of card.querySelectorAll(".bottom-botones > a")) if (/planes de cuotas/i.test(a.textContent)) hide.add(a);
+    }
     return { hide, dim };
   }
 

@@ -40,9 +40,9 @@ function setup(html, path = "/productos/categorias/x", opts) {
   const doc = document.implementation.createHTMLDocument("x");
   doc.body.innerHTML = html;
   if (opts?.IntersectionObserver) win.IntersectionObserver = opts.IntersectionObserver;
-  installBadges(win, doc, opts);
+  const badges = installBadges(win, doc, opts);
   const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
-  return { win, doc, send };
+  return { win, doc, send, badges };
 }
 
 const hidden = (el) => el.hasAttribute("data-coto-unit-hide");
@@ -99,6 +99,27 @@ describe("tarjeta unificada", () => {
     expect(hidden(tax)).toBe(false);
     expect(tax.hasAttribute("data-coto-unit-dim")).toBe(true);
     expect(hidden(doc.querySelector(".bottom-botones"))).toBe(false);
+  });
+
+  it("con la piel de la lista oculta solo 'Ver planes de cuotas' (con el atributo); al apagarla vuelve", async () => {
+    // Un segundo link directo en .bottom-botones, con otro texto, no se toca.
+    const html = offerCard(K(1)).replace("Ver planes de cuotas</a>", 'Ver planes de cuotas</a><a href="/otra">Otra cosa</a>');
+    const { doc, send, badges } = setup(html);
+    const [cuotas, other] = doc.querySelectorAll(".bottom-botones > a");
+    send({ type: "labels", labels: { [K(1)]: L(733.33, { group: "L" }) } });
+    await tick();
+    // Sin la piel, como en la 0.12.0: el link se ve.
+    expect(hidden(cuotas)).toBe(false);
+    doc.documentElement.setAttribute("data-gondola-skin", "list");
+    badges.refresh();
+    await tick();
+    expect(hidden(cuotas)).toBe(true);
+    expect(hidden(other)).toBe(false);
+    doc.documentElement.removeAttribute("data-gondola-skin");
+    badges.refresh();
+    await tick();
+    expect(hidden(cuotas)).toBe(false);
+    expect(doc.querySelectorAll(".bottom-botones [data-coto-unit-hide]")).toHaveLength(0);
   });
 
   it("Comunidad: una sola oferta, un solo precio, sin el banner repetido", async () => {
