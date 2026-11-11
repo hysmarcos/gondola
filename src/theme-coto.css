@@ -240,9 +240,11 @@
   color: var(--g-ink2);
 }
 
-/* Galería: la foto grande y las miniaturas sobre la placa clara (la piel ya les da el radio). */
+/* Galería: la foto grande y las miniaturas sobre la placa clara, con bordes redondos (la piel
+   les da un radio propio, más específico, que gana). */
 [data-gondola-theme="dark"] app-product-detail .gallery-wrap :is(.img-big-wrap, .item-thumb) {
   border-color: var(--g-line) !important;
+  border-radius: 8px;
   background-color: var(--g-plate) !important;
 }
 
@@ -277,6 +279,7 @@
 }
 
 [data-gondola-theme="dark"] mini-product-card .mini-product-card__img-wrap {
+  border-radius: 8px;
   background: var(--g-plate);
 }
 
