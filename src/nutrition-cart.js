@@ -4,7 +4,8 @@ const int = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const one = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 1 });
 
 // lines: líneas del análisis del carrito ({ ean, nutri, qty, amount }). results: Map ean →
-// Nutrition | "missing" | "error". Cuenta solo comida con tamaño de envase y tabla.
+// Nutrition | "missing" | "error". Cuenta solo comida con tamaño de envase y con kcal, azúcares
+// y sodio: si falta uno, sumarlo como 0 achicaría el total sin avisar.
 // { kcal, sugars, sodiumMg, counted, total } o null si ningún producto tiene datos.
 export function cartNutrition(lines, results) {
   const food = (lines ?? []).filter((l) => l.nutri && l.ean);
@@ -12,9 +13,10 @@ export function cartNutrition(lines, results) {
   for (const l of food) {
     const n = results.get(String(l.ean));
     if (!n?.per100 || !(l.amount > 0) || !(l.qty > 0)) continue;
+    if (["kcal", "sugars", "sodiumMg"].some((k) => n.per100[k] === undefined)) continue;
     // Envase en kg o L × 10 = cuántas veces 100 g o 100 ml.
     const times = l.amount * 10 * l.qty;
-    for (const k of ["kcal", "sugars", "sodiumMg"]) if (n.per100[k] !== undefined) sum[k] += n.per100[k] * times;
+    for (const k of ["kcal", "sugars", "sodiumMg"]) sum[k] += n.per100[k] * times;
     sum.counted++;
   }
   if (!sum.counted) return null;

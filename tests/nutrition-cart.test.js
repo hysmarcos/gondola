@@ -41,3 +41,9 @@ describe("cartNutritionRows", () => {
     expect(cartNutritionRows(null)).toEqual([]);
   });
 });
+
+it("un producto al que le falta azúcar o sodio no se suma: cuenta como sin datos", () => {
+  const lines = [{ ean: "1", nutri: true, qty: 1, amount: 1 }, { ean: "6", nutri: true, qty: 1, amount: 1 }];
+  const results = new Map([["1", N({ kcal: 100, sugars: 1, sodiumMg: 10 })], ["6", N({ kcal: 500 })]]);
+  expect(cartNutrition(lines, results)).toEqual({ kcal: 1000, sugars: 10, sodiumMg: 100, counted: 1, total: 2 });
+});
