@@ -322,7 +322,7 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
 
   it("página de producto: lee Sin TACC de la faceta de Coto si el único resultado es el producto", async () => {
     const s = setup();
-    s.env.searchBody = (u, body) => ({ ...body, response: { ...body.response, facets: [{ name: "SIN TACC", options: [{ value: "SI", count: 1 }] }] } });
+    s.env.searchBody = (u, body) => asFood({ ...body, response: { ...body.response, facets: [{ name: "SIN TACC", options: [{ value: "SI", count: 1 }] }] } });
     s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
     await flush(); await flush();
     const msg = s.env.posts.filter((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]).at(-1);
@@ -338,8 +338,8 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
       const f = new URL(u).searchParams.get("filters[SIN TACC]");
       filters.push(f);
       if (f === "SI") return { ...body, response: { ...body.response, results: [] } };
-      if (f === "NO") return body;
-      return { ...body, response: { ...body.response, results: [...body.response.results, { data: { id: "prod00000001" } }] } };
+      if (f === "NO") return asFood(body);
+      return asFood({ ...body, response: { ...body.response, results: [...body.response.results, { data: { id: "prod00000001" } }] } });
     };
     s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
     await flush(); await flush(); await flush(); await flush();
@@ -360,14 +360,36 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
     expect(msg.labels["_/R-00299912-00299912-200"]).toMatchObject({ group: "kg", take: 3 });
   });
 
+  it("página de producto: algo que no es comida no busca Sin TACC", async () => {
+    const s = setup();
+    const filters = [];
+    s.env.searchBody = (u, body) => {
+      filters.push(new URL(u).searchParams.get("filters[SIN TACC]"));
+      return { ...body, response: { ...body.response, results: [...body.response.results, { data: { id: "prod00000001" } }] } };
+    };
+    s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
+    await flush(); await flush(); await flush(); await flush();
+    expect(filters).toEqual([null]);
+    const msgs = s.env.posts.filter((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].labels["_/R-00299912-00299912-200"].tacc).toBeUndefined();
+  });
+
   it("página de producto: sin faceta, tacc es null y no hay pedidos extra", async () => {
     const s = setup();
+    s.env.searchBody = (u, body) => asFood(body);
     s.send({ type: "lookup", plu: "299912", key: "_/R-00299912-00299912-200" });
     await flush(); await flush();
     const msg = s.env.posts.filter((m) => m.type === "labels" && m.labels["_/R-00299912-00299912-200"]).at(-1);
     expect(msg.labels["_/R-00299912-00299912-200"].tacc).toBeNull();
     expect(s.env.searched).toEqual(["299912"]);
   });
+});
+
+// El producto del fixture (299912) es un jabón: para Sin TACC se lo marca como comida.
+const asFood = (body) => ({
+  ...body,
+  response: { ...body.response, results: body.response.results.map((r) => (r.data?.id === "prod00299912" ? { ...r, data: { ...r.data, groups: [{ group_id: "catv00001254" }] } } : r)) },
 });
 
 describe("fix: revisión final", () => {
