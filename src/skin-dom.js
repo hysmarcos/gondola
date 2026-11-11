@@ -48,6 +48,9 @@ export const DOM = {
     // En la PDP el título es un h1.title; .titulo-producto es el del mini carrito, no de esta página.
     title: "app-product-detail aside.row h1.title",
     price: "app-product-detail .price",
+    // Bloque del precio dentro de la columna de compra: precio, líneas de precio y la caja de
+    // Góndola. Es el selector que usa src/skin-pdp.css.
+    priceBlock: "app-product-detail aside.row article > div > .mt-4",
     addButton: "app-product-detail aside.row product-add-show-remove .btn-primary",
     // Solo con sesión iniciada, como en la lista.
     stepper: 'app-product-detail aside.row product-add-show-remove input[id^="input-prod"]',
@@ -62,6 +65,6 @@ export const DOM = {
 
 // Sin estas claves la piel no se prende: la página queda como en la 0.12.0.
 export const REQUIRED = {
-  list: ["grid", "card", "centro", "buttons"],
-  pdp: ["price", "buy"],
+  list: ["grid", "cell", "card", "centro", "buttons"],
+  pdp: ["price", "buy", "priceBlock"],
 };

@@ -65,6 +65,25 @@ describe("piel Góndola", () => {
     await tick();
     expect(attr(t.doc)).toBeNull();
   });
+  it("lista dibujada sin las celdas de la grilla (.producto-card): la piel se apaga", async () => {
+    const t = setup(html("lista"), "/x");
+    for (const cell of t.doc.querySelectorAll(DOM.list.cell)) cell.classList.remove("producto-card");
+    expect(t.doc.querySelector(DOM.list.card)).not.toBeNull();
+    expect(t.doc.querySelector(DOM.list.cell)).toBeNull();
+    installSkin(t.win, t.doc, t.storage);
+    await tick();
+    expect(attr(t.doc)).toBeNull();
+  });
+  it("PDP dibujada sin el bloque del precio (.mt-4 de la columna de compra): la piel se apaga", async () => {
+    const t = setup(html("pdp"), "/p/_/R-00508911-00508911-200");
+    t.doc.querySelector(DOM.pdp.priceBlock).classList.remove("mt-4");
+    expect(t.doc.querySelector(DOM.pdp.price)).not.toBeNull();
+    expect(t.doc.querySelector(DOM.pdp.buy)).not.toBeNull();
+    expect(t.doc.querySelector(DOM.pdp.priceBlock)).toBeNull();
+    installSkin(t.win, t.doc, t.storage);
+    await tick();
+    expect(attr(t.doc)).toBeNull();
+  });
   it("página que no es lista ni PDP: sin atributo", async () => {
     const t = setup("<main>inicio</main>", "/");
     installSkin(t.win, t.doc, t.storage);
