@@ -105,6 +105,7 @@ La web de Coto sirve para comprar, pero no para comparar:
 
 | Función | Qué hace |
 |---|---|
+| Modo oscuro | Todo el sitio de Coto en oscuro, con el logo en negro. Se elige en Ajustes → Apariencia (Claro, Oscuro o Automático, el del sistema). Es solo de colores: no cambia ni borra nada de Coto. |
 | Diseño Góndola | Diseño nuevo de la lista de productos y de la página de producto. Se apaga en el popup ("Diseño Góndola") y vuelve el de Coto. |
 | Ordenar por precio por kg/L | Agrega "Precio por kg/L: menor a mayor" al menú "Ordenar por", en categorías y búsquedas. |
 | Precio real en cada producto | Muestra el precio final con la mejor oferta y el original tachado, y el precio por kilo, litro o unidad. |

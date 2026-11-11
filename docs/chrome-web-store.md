@@ -50,6 +50,7 @@ Hace tres cosas: ordena la página con un diseño más claro, te muestra el prec
 En Coto, un paquete de 500 g y uno de 1 kg no se comparan a simple vista, las ofertas tienen muchas formas, no sabés si tu banco aplica y no hay tabla nutricional. Góndola agrega lo que falta para elegir bien, sin romper nada de Coto: agregar al carrito, las cantidades y el pago siguen igual.
 
 QUÉ AGREGA
+• Modo oscuro: todo el sitio de Coto en oscuro. Lo elegís en Ajustes (claro, oscuro o el del sistema).
 • Diseño Góndola: un diseño nuevo para la lista de productos y la página de producto. Se apaga en el popup y vuelve el de Coto.
 • Ordenar por precio por kg/L: una opción nueva en "Ordenar por", en categorías y búsquedas.
 • Precio real en cada producto: el precio final con la mejor oferta, el original tachado y el precio por kilo, litro o unidad.

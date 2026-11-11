@@ -45,7 +45,7 @@
 | `src/popup.js`, `src/popup.css` | Fila "Tema" con tres botones; línea de ayuda. |
 | `src/badge.css`, `src/skin.css`, `src/skin-list.css`, `src/skin-pdp.css`, `src/nutrition-ui.js` | Colores a tokens. |
 | `manifest.json` | Suma los dos CSS nuevos. |
-| `scripts/capture-chrome.mjs` (nuevo) | Captura encabezado, pie, inicio y carrito vacío, sin sesión. |
+| `scripts/capture-chrome.mjs` (nuevo) | Captura encabezado, pie, inicio y la página de ingreso (adonde redirige `/carrito` sin sesión), sin sesión. |
 | `scripts/theme-check.mjs` (nuevo) | Busca bloques claros en modo oscuro en el sitio real. |
 | `tests/theme.test.js`, `tests/theme-contrast.test.js`, `tests/theme-tokens.test.js`, `tests/theme-css-dom.test.js` (nuevos) | Pruebas. |
 
@@ -354,7 +354,7 @@ git commit -m "refactor: los colores de Góndola usan tokens y cambian con el te
 ### Task 5: Capturas del resto del sitio
 
 **Files:**
-- Create: `scripts/capture-chrome.mjs`, `tests/fixtures/dom/header.html`, `footer.html`, `home.html`, `carrito.html`
+- Create: `scripts/capture-chrome.mjs`, `tests/fixtures/dom/header.html`, `footer.html`, `home.html`, `ingresar.html`
 - Modify: `package.json` (script `fixtures:chrome`)
 
 **Interfaces:**
@@ -365,7 +365,7 @@ git commit -m "refactor: los colores de Góndola usan tokens y cambian con el te
 Mismo método y mismas advertencias de cabecera que `scripts/capture-dom.mjs` (Chrome visible, `CHROME_PATH`, limpieza de `img`/`source`). Diferencias:
 - Siempre sin sesión y con un contexto nuevo de Playwright, sin cookies: así el encabezado no trae nombre ni dirección. Si en `app-header` aparece el texto "Hola" seguido de un nombre o un domicilio, el script falla y no escribe nada.
 - Abre el inicio (`https://www.coto.com.ar/`) y `/carrito`.
-- Guarda: `header.html` (`app-header` entero, con el menú de categorías abierto si se abre con un clic), `footer.html` (`footer-section`), `home.html` (el `body` sin encabezado ni pie, hasta 8 tarjetas por carrusel) y `carrito.html` (el `body` de `/carrito` vacío, sin encabezado ni pie).
+- Guarda: `header.html` (`app-header` entero, con el menú de categorías abierto si se abre con un clic), `footer.html` (`footer-section`), `home.html` (el `body` sin encabezado ni pie, hasta 8 tarjetas por carrusel) y `ingresar.html` (el `body` de la página de ingreso, sin encabezado ni pie: sin sesión, `/carrito` redirige ahí).
 - `DROP` igual al de `capture-dom.mjs`, sin `app-header` ni `footer-section`.
 - Conserva el `<img>` del logo de Coto con su `src`, `class` y `alt`: Task 6 lo necesita.
 

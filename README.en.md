@@ -62,6 +62,7 @@ The same Coto page, without and with Góndola. Real captures from November 9, 20
 
 | Feature | What it does |
 |---|---|
+| Dark mode | The whole Coto site in dark, with the logo in black. Pick it in Settings → Appearance (Light, Dark or Automatic, which follows the system). Colors only: it changes and removes nothing from Coto. |
 | Góndola design | New look for the product list and the product page. Turn it off in the popup ("Diseño Góndola") to get Coto's own look back. |
 | Sort by price per kg/L | Adds "Precio por kg/L: menor a mayor" to the sort menu, in categories and search. |
 | Real price on every product | Shows the final price with the best deal, the original price struck through, and the price per kilo, liter or unit. |
