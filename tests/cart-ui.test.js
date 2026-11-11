@@ -134,7 +134,7 @@ describe("mini-carrito", () => {
     send({ type: "cart", analysis: analyzeCart(CART_LINES, pick("457"), 1, "200"), seq: 1 });
     await tick();
     const dove = [...doc.querySelectorAll("card-product-float")].find((c) => c.textContent.includes("DOVE"));
-    expect(dove.querySelector(".coto-unit-mini-final").textContent).toBe("$5.478,24");
+    expect(dove.querySelector(".coto-unit-mini-final").textContent).toBe("$5.477,98");
     expect(dove.querySelector(".coto-unit-sum-tag").textContent).toBe("3x2");
     expect(dove.querySelector(".precio-final").hasAttribute("data-coto-unit-strike")).toBe(true);
     // El total de Coto queda como Subtotal de nuestro detalle.

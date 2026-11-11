@@ -239,7 +239,7 @@ export function installCartUi(win, doc, deps = {}) {
           img.setAttribute("alt", promoBank.bank);
           row.append(img);
         }
-        row.append(doc.createTextNode(`${$2(line.total - line.bankShare)} con reintegro`));
+        row.append(doc.createTextNode(`${$2(line.total - line.bankShare)} ${/comunidad/i.test(promoBank?.logo ?? "") ? "con Comunidad" : "con reintegro"}`));
         parts.push(row);
       }
       el.replaceChildren(...parts);

@@ -23,6 +23,12 @@ function bankName(icono) {
   return BANK_NAMES[key] ?? key.toUpperCase();
 }
 
+// La promo de Comunidad Coto viene en la lista de los bancos, pero no es de una tarjeta:
+// es un descuento en la caja para los socios. Se activa con el ajuste "Tengo Comunidad Coto".
+export function isComunidad(p) {
+  return /comunidad/i.test(String(p?.logo ?? "")) || p?.bank === BANK_NAMES.comunidad;
+}
+
 // Primer monto "$ 20.000" del texto, o null si no tiene tope.
 function parseCap(text) {
   if (/sin\s+(tope|l[ií]mite)/i.test(text) || !/tope/i.test(text)) return null;

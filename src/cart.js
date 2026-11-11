@@ -30,10 +30,14 @@ function analyzeCore({ id, name, qty, list, data }, store, opts = {}) {
   const full = Math.floor(qty / take) * take;
   const rest = qty - full;
   const promo = (data.discounts ?? []).find((d) => /Llevando/i.test(d.takingText ?? ""));
+  // En un NxM ("3x2") Coto regala unidades enteras. Su precio por unidad viene redondeado,
+  // así que se cuenta por unidades pagas para llegar al mismo total que la caja.
+  const nxm = String(promo?.discountText ?? "").trim().match(/^(\d+)\s*x\s*(\d+)$/i);
+  const paid = nxm && Number(nxm[1]) === take && Number(nxm[2]) < take ? (full / take) * Number(nxm[2]) * list : full * price;
   return {
     id,
     name,
-    total: full * price + rest * list,
+    total: paid + rest * list,
     listTotal,
     bankEligible,
     missing: rest ? take - rest : 0,

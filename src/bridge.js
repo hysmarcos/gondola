@@ -1,4 +1,6 @@
 // Puente entre chrome.storage (mundo aislado) y el intermediario de la página.
+import { isComunidad } from "./banks.js";
+
 const SOURCE = "coto-unit";
 const KEYS = ["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition"];
 // El perfil personal (información de salud) no pasa por acá: ver profile.js.
@@ -13,7 +15,9 @@ export function installBridge(win, storage, now = Date.now) {
     try {
       const s = await storage.get(KEYS);
       const ids = new Set(s.selectedPromoIds ?? []);
-      const selected = (s.promos ?? []).filter((p) => ids.has(p.id));
+      // Comunidad no se elige en Tarjetas: la prende el ajuste "Tengo Comunidad Coto".
+      const comunidad = s.comunidad !== false;
+      const selected = (s.promos ?? []).filter((p) => (isComunidad(p) ? comunidad : ids.has(p.id)));
       win.postMessage({
         source: SOURCE, type: "settings", selected, day: resolveDay(s.day),
         // Ajustes del popup: encendidos salvo que el usuario los apague.

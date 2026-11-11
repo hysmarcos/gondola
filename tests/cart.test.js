@@ -11,7 +11,7 @@ const MON = 1, TUE = 2;
 describe("analyzeCart", () => {
   it("total real con las promos de Coto", () => {
     const a = analyzeCart(CART_LINES, [], MON, "200");
-    expect(a.total).toBeCloseTo(37453.81, 2);
+    expect(a.total).toBeCloseTo(37453.55, 2);
     expect(a.lines.every((l) => l.missing === 0)).toBe(true);
     expect(a.today).toBeNull();
     expect(a.best).toBeNull();
@@ -23,21 +23,21 @@ describe("analyzeCart", () => {
     const dove = a.lines.find((l) => l.id === "prod00299912");
     expect(dove).toMatchObject({ missing: 2, promoText: "3x2" });
     expect(dove.saving).toBeCloseTo(3 * (2738.99 - 1826.08), 2);
-    expect(a.total).toBeCloseTo(37453.81 + 2738.99, 2);
+    expect(a.total).toBeCloseTo(37453.55 + 2738.99, 2);
     const two = analyzeCart(CART_LINES.map((l) => (l.id === "prod00299912" ? { ...l, qty: 2 } : l)), [], MON, "200");
     expect(two.lines.find((l) => l.id === "prod00299912").missing).toBe(1);
   });
 
   it("producto sin datos de búsqueda: precio de lista", () => {
     const lines = CART_LINES.map((l) => (l.id === "prod00608118" ? { ...l, data: null } : l));
-    expect(analyzeCart(lines, [], MON, "200").total).toBeCloseTo(37453.81 - 7128.61 + 11882.99, 2);
+    expect(analyzeCart(lines, [], MON, "200").total).toBeCloseTo(37453.55 - 7128.61 + 11882.99, 2);
   });
 
   it("reintegro del banco con tope", () => {
     const a = analyzeCart(CART_LINES, pick("457"), MON, "200");
     expect(a.today.promo.id).toBe("457");
     expect(a.today.refund).toBeCloseTo(5554.79, 2);
-    expect(a.today.total).toBeCloseTo(37453.81 - 5554.79, 2);
+    expect(a.today.total).toBeCloseTo(37453.55 - 5554.79, 2);
     const capped = analyzeCart(CART_LINES, pick("456"), MON, "200");
     expect(capped.today.refund).toBe(3703.19);
     const naranja = analyzeCart(CART_LINES, pick("473"), TUE, "200");

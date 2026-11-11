@@ -307,7 +307,7 @@ describe("v2: ofertas, carruseles, bancos, carrito y producto", () => {
     expect(x.responseText).toBe(JSON.stringify(CARRITO_BODY));
     await flush(); await flush();
     const msg = s.env.posts.find((m) => m.type === "cart");
-    expect(msg.analysis.total).toBeCloseTo(37453.81, 2);
+    expect(msg.analysis.total).toBeCloseTo(37453.55, 2);
     expect(msg.analysis.today.refund).toBeCloseTo(5554.79, 2);
     expect(s.env.searched).toHaveLength(6);
   });
@@ -416,7 +416,7 @@ describe("fix: revisión final", () => {
     s.win.location = { pathname: "/carrito" };
     s.send({ type: "cartRequest" });
     await flush(); await flush(); await flush();
-    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.81, 2);
+    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.55, 2);
   });
 
   it("busca como mucho 4 productos a la vez", async () => {
@@ -442,7 +442,7 @@ describe("v3: mini-carrito", () => {
     expect(s.env.posts.find((m) => m.type === "cart")).toBeUndefined();
     s.send({ type: "cartRequest" });
     for (let i = 0; i < 4; i++) await flush();
-    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.81, 2);
+    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.55, 2);
   });
 
   it("sin carrito guardado: no hace nada", async () => {
@@ -460,7 +460,7 @@ describe("revisión final: mini-carrito", () => {
     s.send({ type: "cartRequest" });
     await request(s.win, "https://www.coto.com.ar/rest/model/atg/actors/cCarritoActor/getCarrito?grp=0");
     for (let i = 0; i < 4; i++) await flush();
-    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.81, 2);
+    expect(s.env.posts.find((m) => m.type === "cart").analysis.total).toBeCloseTo(37453.55, 2);
   });
 });
 
