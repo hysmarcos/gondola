@@ -29,6 +29,8 @@ const HELP = [
   ["Banco no aplica", "El producto ya está en oferta o Coto lo excluye de las promos bancarias."],
   ["Ordenar por precio por kg/L", "Nueva opción en \"Ordenar por\" de cada categoría y búsqueda."],
   ["Información nutricional", "Tabla de Open Food Facts por código de barras, cargada por la comunidad. Si falta, podés cargarla vos."],
+  ["Sin TACC", "Lo que marca Coto. Si el producto menciona trigo, avena, cebada o centeno, te avisa. Verificá siempre el símbolo oficial en el envase."],
+  ["Mi perfil", "En Ajustes. Destaca lo que te importa en cada producto. Queda solo en tu navegador. No es consejo médico."],
   ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
 ];
 

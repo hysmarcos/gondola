@@ -15,7 +15,7 @@
   <a href="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest_V3-2a78d6?logo=googlechrome&logoColor=white">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-2a78d6?logo=node.js&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-412-2a78d6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-451-2a78d6">
   <a href="https://hysmarcos.github.io/gondola/privacidad.html"><img alt="Sin servidores" src="https://img.shields.io/badge/servidores-0-2a78d6"></a>
   <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-2a78d6">
   <a href="CONTRIBUTING.md"><img alt="Colaboraciones bienvenidas" src="https://img.shields.io/badge/colaboraciones-bienvenidas-2a78d6"></a>
@@ -45,7 +45,7 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 | Precio por unidad | Kilo, litro, unidad o 10 metros (papel higiénico y rollos) |
 | Datos personales enviados | Ninguno. Los ajustes quedan en tu navegador. |
 | Servidores propios | Ninguno |
-| Tests | 412, con respuestas reales de las APIs de Coto, Carrefour, Día, Más y Open Food Facts |
+| Tests | 451, con respuestas reales de las APIs de Coto, Carrefour, Día, Más y Open Food Facts |
 
 ## Qué vas a encontrar
 
@@ -100,7 +100,9 @@ La web de Coto sirve para comprar, pero no para comparar:
 | Promos NxM | Si agregás 1 de un 2x1, agrega el segundo solo. En un 3x2 te avisa cuántos faltan. Se apaga en Ajustes. |
 | Carrito real | Subtotal, descuentos de Coto, reintegro del banco con su tope y total final. |
 | Otros súper | Busca el mismo producto por código de barras en Carrefour, Día y Más. Un botón dice "Mejor precio" o "Más barato en Día", con los links. |
-| Información nutricional | En la página de un producto de comida o bebida, la tabla nutricional de [Open Food Facts](https://world.openfoodfacts.org), si existe. Si falta, un link para cargarla. Se apaga en Ajustes. |
+| Información nutricional | En la página de un producto de comida o bebida, la tabla nutricional de [Open Food Facts](https://world.openfoodfacts.org), si existe. Si falta, un link para cargarla. Suma Sin TACC (dato de Coto, con aviso si menciona trigo, avena, cebada o centeno), alérgenos, ingredientes, aditivos y NOVA. Se apaga en Ajustes. |
+| Mi perfil | En Ajustes elegís si sos celíaco/a, si cuidás el sodio o el azúcar, y tus alergias. La página de cada producto te muestra "Para vos". Queda solo en tu navegador. No es consejo médico. |
+| Nutrición del carrito | En el carrito, el total de kcal, azúcares y sodio de tu compra. |
 
 Todo lo de Coto sigue funcionando: agregar, cantidades, carrito y pago. La extensión solo agrega elementos. No borra ninguno.
 
@@ -140,7 +142,7 @@ Estas pruebas buscan dónde falla la extensión:
 
 | | Prueba | Pregunta | Resultado |
 |:---:|---|---|---|
-| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 412 tests con respuestas guardadas de Coto, Carrefour, Día, Más y Open Food Facts |
+| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 451 tests con respuestas guardadas de Coto, Carrefour, Día, Más y Open Food Facts |
 | ✅ | Coto sigue funcionando | ¿Agregar, cantidades y carrito andan igual? | Sí. La extensión agrega elementos y oculta partes con un atributo. No borra nada de Coto. |
 | ✅ | Promos bancarias | ¿Muestra un descuento que Coto no aplica? | No. Respeta los días, los topes y las exclusiones de la API de Coto. |
 | ⚠️ | Otros súper | ¿El precio es el de tu sucursal? | No siempre. Usa la zona por defecto de cada web y no incluye descuentos bancarios. |
@@ -255,6 +257,6 @@ Toda persona que aporta código, reporta un error o propone una idea que se hace
 
 Góndola no está afiliada a Coto, Carrefour, Día ni Más. Las marcas y los logos son de sus dueños. La extensión usa los datos que esas webs ya publican.
 
-La información nutricional viene de [Open Food Facts](https://world.openfoodfacts.org), con licencia [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
+La información nutricional viene de [Open Food Facts](https://world.openfoodfacts.org), con licencia [ODbL](https://opendatacommons.org/licenses/odbl/1-0/). Los íconos de alérgenos son de la [Food Standards Agency](https://www.gov.uk/government/publications/download-your-allergen-icons-and-posters) del Reino Unido, con licencia [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Góndola no usa el símbolo oficial "Sin TACC": es solo para envases de productos autorizados.
 
 El código tiene licencia MIT. La fuente Poppins tiene licencia [SIL Open Font License](assets/fonts/OFL.txt).
