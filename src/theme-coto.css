@@ -575,3 +575,78 @@
 [data-gondola-theme="dark"] .atencion-button:hover {
   background-color: var(--g-soft) !important;
 }
+
+/* ---------- Pie ----------
+   Las dos franjas grises de Coto (suscripción y legales) pasan a superficie; lo del medio queda
+   sobre el fondo de la página. Los sellos de defensa del consumidor (logos oscuros sobre
+   transparente) van sobre la placa clara. */
+
+/* El fondo blanco de abajo de las páginas armadas (inicio, ingreso): el de la página. */
+[data-gondola-theme="dark"] .landing-footer {
+  background-color: var(--g-bg) !important;
+}
+
+[data-gondola-theme="dark"] footer .recibir-ofertas {
+  background-color: var(--g-surface) !important;
+}
+
+[data-gondola-theme="dark"] footer-suscription .suscription-footer {
+  color: var(--g-red-text) !important;
+}
+
+/* El campo del correo es un campo como los demás; "Suscribirme", el rojo de compra. */
+[data-gondola-theme="dark"] footer-suscription .input-texto {
+  border-color: var(--g-line-2) !important;
+  background-color: var(--g-bg) !important;
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] footer-suscription .input-texto::placeholder {
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] footer-suscription .suscription-button {
+  border-color: var(--g-red) !important;
+  background-color: var(--g-red) !important;
+}
+
+/* Títulos de columna claros; links en texto secundario y, al pasar el mouse, el rojo de texto
+   (el link "Comunidad" tiene su color propio y queda). */
+[data-gondola-theme="dark"] footer .links-footer h4 {
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] footer .links-footer a:not(#comunidad) {
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] footer .links-footer a:not(#comunidad):hover {
+  color: var(--g-red-text) !important;
+}
+
+/* "Libro de Quejas Online" y los otros dos: botones secundarios claros de Coto. */
+[data-gondola-theme="dark"] footer-menu-item .btn-secondary {
+  border-color: var(--g-line-2) !important;
+  background-color: var(--g-surface) !important;
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] footer .legales {
+  background-color: var(--g-surface) !important;
+}
+
+/* Derechos, datos de la empresa y número de versión: texto secundario. */
+[data-gondola-theme="dark"] footer .caption {
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] footer .detalles-coto a {
+  color: var(--g-red-text) !important;
+}
+
+/* Sellos de defensa del consumidor: cada imagen sobre la placa clara (se ve detrás de lo
+   transparente), con bordes redondos. */
+[data-gondola-theme="dark"] footer .carteles-legales img {
+  border-radius: 8px;
+  background-color: var(--g-plate) !important;
+}
