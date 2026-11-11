@@ -3,11 +3,15 @@
 import { compareRows, paintCompare } from "./compare-ui.js";
 import { parseMoney } from "./money.js";
 import { summaryRows, paintSummary, $2 } from "./cart-summary.js";
+import { isComunidad } from "./banks.js";
 import { cartNutrition, cartNutritionRows } from "./nutrition-cart.js";
 
 const SOURCE = "coto-unit";
 const WARN = "coto-unit-cart-warn";
 const BOX = "coto-unit-cart-box";
+const LINE = "coto-unit-mini-line";
+const CART_LINE = "coto-unit-cart-line";
+const TIP = "coto-unit-tip";
 const CMP = "coto-unit-cmp";
 const HIDE = "data-coto-unit-hide";
 const EAN_ATTR = "data-coto-unit-ean";
@@ -16,6 +20,26 @@ const EAN_ATTR = "data-coto-unit-ean";
 const CMP_SEL = `card-product .c__item-detail > .${CMP}, card-product > .${CMP}`;
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const $ = (n) => "$" + money.format(n);
+
+// Qué descuentos tiene una línea del carrito, para el globo de ayuda y los lectores de pantalla.
+// promo: la promo del banco (o Comunidad) que se aplica hoy, o null.
+export function discountRows(line, promo) {
+  if (!line) return [];
+  const rows = [];
+  const hasPromo = line.discount > 0;
+  const hasBank = line.bankShare > 0 && promo;
+  if (!hasPromo && !hasBank) return rows;
+  const units = line.qty > 1 ? ` (${line.qty} u.)` : "";
+  rows.push({ label: `Precio de lista${units}`, value: $2(line.listTotal) });
+  if (hasPromo) rows.push({ label: line.promoLabel ? `Promo de Coto: ${line.promoLabel}` : "Promo de Coto", value: "−" + $2(line.discount) });
+  if (hasBank) {
+    const direct = isComunidad(promo);
+    rows.push({ label: `${direct ? "Descuento" : "Reintegro"} ${promo.bank} ${promo.percent}%`, value: "−" + $2(line.bankShare) });
+  }
+  const direct = hasBank && isComunidad(promo);
+  rows.push({ label: hasBank && !direct ? "Te queda en" : "Pagás", value: $2(line.total - (hasBank ? line.bankShare : 0)), total: true });
+  return rows;
+}
 
 export function normName(text) {
   return String(text ?? "")
@@ -114,6 +138,7 @@ export function installCartUi(win, doc, deps = {}) {
     for (const card of doc.querySelectorAll("card-product")) {
       const line = byName.get(normName(card.querySelector("a.title")?.textContent));
       const target = card.querySelector(".c__item-detail") ?? card;
+      paintCartLine(target, line);
       paintLine(target, line);
       let warn = target.querySelector(":scope > ." + WARN);
       if (!line || !line.missing) {
@@ -151,7 +176,8 @@ export function installCartUi(win, doc, deps = {}) {
   }
 
   function clear() {
-    doc.querySelectorAll(`.${WARN}, .${BOX}, ${CMP_SEL}`).forEach((e) => e.remove());
+    doc.querySelectorAll(`.${WARN}, .${BOX}, .${CART_LINE}, ${CMP_SEL}`).forEach((e) => e.remove());
+    hideTip();
   }
 
   function checkPath() {
@@ -190,12 +216,110 @@ export function installCartUi(win, doc, deps = {}) {
     paintSummary(doc, box, summaryRows(a, state.day, new Date().getDay()), logoUrl);
   }
 
+  // El globo de ayuda: uno solo para toda la página, pegado a la ventana para que el
+  // desplegable del carrito no lo corte.
+  let tip = null;
+  function hideTip() {
+    if (tip) tip.hidden = true;
+  }
+  function showTip(el) {
+    const rows = el.__cotoTip;
+    if (!rows?.length) return;
+    if (!tip) {
+      tip = doc.createElement("div");
+      tip.className = TIP;
+      tip.id = TIP;
+      tip.setAttribute("role", "tooltip");
+      doc.body.append(tip);
+    }
+    tip.replaceChildren(...rows.map((r) => {
+      const row = doc.createElement("div");
+      row.className = `${TIP}-row` + (r.total ? ` ${TIP}-row--total` : "");
+      const label = doc.createElement("span");
+      label.textContent = r.label;
+      const value = doc.createElement("span");
+      value.textContent = r.value;
+      row.append(label, value);
+      return row;
+    }));
+    tip.hidden = false;
+    const at = el.getBoundingClientRect();
+    const size = tip.getBoundingClientRect();
+    const vw = doc.documentElement.clientWidth || win.innerWidth || 0;
+    const below = at.bottom + 6 + size.height <= (win.innerHeight || Infinity);
+    tip.style.left = Math.max(8, Math.min(at.left, vw - size.width - 8)) + "px";
+    tip.style.top = (below ? at.bottom + 6 : Math.max(8, at.top - size.height - 6)) + "px";
+  }
+  doc.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTip(); });
+  win.addEventListener("scroll", hideTip, true);
+
+  // Arma (o actualiza) el bloque de una línea: precio de lista tachado (solo donde Coto
+  // no lo muestra), precio con la promo y su etiqueta, y lo que queda con el banco.
+  function fillLine(el, line, { list = false } = {}) {
+    const promo = line.discount > 0;
+    const bank = line.bankShare > 0;
+    const promoBank = state.analysis?.today?.promo ?? null;
+    const sig = [list, promo, line.total, line.listTotal, line.promoLabel, bank, line.bankShare, promoBank?.logo, promoBank?.percent, line.qty].join("|");
+    if (el.dataset.sum === sig) return;
+    el.dataset.sum = sig;
+    const parts = [];
+    if (promo) {
+      const row = doc.createElement("div");
+      row.className = "coto-unit-mini-promo";
+      if (list) {
+        const old = doc.createElement("s");
+        old.className = "coto-unit-mini-list";
+        old.textContent = $2(line.listTotal);
+        row.append(old);
+      }
+      const final = doc.createElement("span");
+      final.className = "coto-unit-mini-final";
+      final.textContent = $2(line.total);
+      row.append(final);
+      if (line.promoLabel) {
+        const tag = doc.createElement("span");
+        tag.className = "coto-unit-sum-tag";
+        tag.textContent = line.promoLabel;
+        row.append(tag);
+      }
+      parts.push(row);
+    }
+    if (bank) {
+      const row = doc.createElement("div");
+      row.className = "coto-unit-mini-bank";
+      const src = promoBank ? logoUrl(promoBank.logo) : null;
+      if (src) {
+        const img = doc.createElement("img");
+        img.className = "coto-unit-logo";
+        img.setAttribute("src", src);
+        img.setAttribute("alt", promoBank.bank);
+        row.append(img);
+      }
+      row.append(doc.createTextNode(`${$2(line.total - line.bankShare)} ${/comunidad/i.test(promoBank?.logo ?? "") ? "con Comunidad" : "con reintegro"}`));
+      parts.push(row);
+    }
+    el.replaceChildren(...parts);
+    // El detalle de los descuentos: al pasar el mouse o al llegar con el teclado.
+    const rows = discountRows(line, promoBank);
+    el.__cotoTip = rows;
+    el.setAttribute("aria-label", rows.map((r) => `${r.label}: ${r.value}`).join(". "));
+    if (el.dataset.tip) return;
+    el.dataset.tip = "1";
+    el.tabIndex = 0;
+    el.setAttribute("role", "note");
+    el.setAttribute("aria-describedby", TIP);
+    el.addEventListener("mouseenter", () => showTip(el));
+    el.addEventListener("focus", () => showTip(el));
+    el.addEventListener("mouseleave", hideTip);
+    el.addEventListener("blur", hideTip);
+  }
+
   // Una línea del mini-carrito: precio de Coto tachado si hay promo, precio final con la
   // promo, y si aplica el banco, lo que queda con el reintegro.
   function paintMiniLine(item, line) {
     const precio = item.querySelector("p.precio");
     const coto = precio?.querySelector(".precio-final");
-    let el = item.querySelector(".coto-unit-mini-line");
+    let el = item.querySelector("." + LINE);
     const promo = line && line.discount > 0;
     const bank = line && line.bankShare > 0;
     if (!precio || (!promo && !bank)) {
@@ -205,48 +329,28 @@ export function installCartUi(win, doc, deps = {}) {
     }
     if (!el) {
       el = doc.createElement("div");
-      el.className = "coto-unit-mini-line";
+      el.className = LINE;
       precio.after(el);
     }
-    const sig = [promo, line.total, line.promoLabel, bank, line.bankShare, state.analysis?.today?.promo?.logo].join("|");
-    if (el.dataset.sum !== sig) {
-      el.dataset.sum = sig;
-      const parts = [];
-      if (promo) {
-        const row = doc.createElement("div");
-        row.className = "coto-unit-mini-promo";
-        const final = doc.createElement("span");
-        final.className = "coto-unit-mini-final";
-        final.textContent = $2(line.total);
-        row.append(final);
-        if (line.promoLabel) {
-          const tag = doc.createElement("span");
-          tag.className = "coto-unit-sum-tag";
-          tag.textContent = line.promoLabel;
-          row.append(tag);
-        }
-        parts.push(row);
-      }
-      if (bank) {
-        const promoBank = state.analysis?.today?.promo;
-        const row = doc.createElement("div");
-        row.className = "coto-unit-mini-bank";
-        const src = promoBank ? logoUrl(promoBank.logo) : null;
-        if (src) {
-          const img = doc.createElement("img");
-          img.className = "coto-unit-logo";
-          img.setAttribute("src", src);
-          img.setAttribute("alt", promoBank.bank);
-          row.append(img);
-        }
-        row.append(doc.createTextNode(`${$2(line.total - line.bankShare)} ${/comunidad/i.test(promoBank?.logo ?? "") ? "con Comunidad" : "con reintegro"}`));
-        parts.push(row);
-      }
-      el.replaceChildren(...parts);
-    }
+    fillLine(el, line);
     const strike = promo;
     if (strike && !coto?.hasAttribute("data-coto-unit-strike")) coto?.setAttribute("data-coto-unit-strike", "");
     if (!strike && coto?.hasAttribute("data-coto-unit-strike")) coto.removeAttribute("data-coto-unit-strike");
+  }
+
+  // La misma línea en /carrito, dentro del detalle del producto. Acá no se toca el precio
+  // de Coto: el de lista va tachado en el bloque de Góndola.
+  function paintCartLine(target, line) {
+    let el = target.querySelector(`:scope > .${CART_LINE}`);
+    if (!line || !(line.discount > 0 || line.bankShare > 0)) return el?.remove();
+    if (!el) {
+      el = doc.createElement("div");
+      el.className = `${LINE} ${CART_LINE}`;
+      const before = target.querySelector(`:scope > .${CMP}, :scope > .${WARN}`);
+      if (before) target.insertBefore(el, before);
+      else target.appendChild(el);
+    }
+    fillLine(el, line, { list: true });
   }
 
   function checkMini() {

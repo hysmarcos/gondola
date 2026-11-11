@@ -359,7 +359,7 @@ describe("v5: comparar con otros súper en el carrito", () => {
     mo.disconnect();
     expect(records).toHaveLength(0);
     expect(order()).toEqual(before);
-    expect(order()).toEqual(["title", "coto-unit-cart-warn", "coto-unit-cmp"]);
+    expect(order()).toEqual(["title", "coto-unit-mini-line coto-unit-cart-line", "coto-unit-cart-warn", "coto-unit-cmp"]);
   });
 });
 
