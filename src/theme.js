@@ -25,6 +25,10 @@ export function installTheme(win, doc, storage) {
   const root = doc.documentElement;
   let setting = "light";
   let lastWave = null; // la última transición lanzada: solo ella saca la clase de la onda
+  // El último tema pedido. No se mira el atributo: con View Transitions de verdad, la función que
+  // lo cambia corre después, y dos cambios en la misma tarea lo leerían viejo.
+  let requested = "light";
+  let loads = 0; // número de la última lectura del storage: una vieja que llega tarde no pisa
 
   const systemDark = () => {
     try { return Boolean(win.matchMedia(DARK_QUERY).matches); } catch { return false; }
@@ -40,7 +44,8 @@ export function installTheme(win, doc, storage) {
 
   const apply = (theme, animate) => {
     try { win.localStorage.setItem(THEME_CACHE_KEY, theme); } catch {}
-    if ((root.getAttribute(THEME_ATTR) === "dark") === (theme === "dark")) return;
+    if (requested === theme) return;
+    requested = theme;
     if (!(animate && waveAllowed())) return setAttr(theme);
     root.classList.add(WAVE_CLASS);
     const transition = doc.startViewTransition(() => setAttr(theme));
@@ -53,13 +58,19 @@ export function installTheme(win, doc, storage) {
   };
 
   // Lo que quedó guardado se aplica ya, de forma síncrona; después se lee el ajuste real.
-  try { setAttr(win.localStorage.getItem(THEME_CACHE_KEY) === "dark" ? "dark" : "light"); } catch {}
+  try {
+    requested = win.localStorage.getItem(THEME_CACHE_KEY) === "dark" ? "dark" : "light";
+    setAttr(requested);
+  } catch {}
 
-  const load = (animate) =>
-    storage.get(["theme"]).then((s) => {
+  const load = (animate) => {
+    const n = ++loads;
+    return storage.get(["theme"]).then((s) => {
+      if (n !== loads) return;
       setting = normalizeTheme(s?.theme);
       apply(resolveTheme(setting, systemDark()), animate);
     }).catch(() => {});
+  };
 
   storage.onChanged.addListener((changes) => {
     if ("theme" in changes) load(true);

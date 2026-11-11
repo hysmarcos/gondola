@@ -4,7 +4,7 @@ import { JSDOM } from "jsdom";
 import { installTheme, resolveTheme, normalizeTheme } from "../src/theme.js";
 import { renderPopup } from "../src/popup.js";
 
-function setup(stored = {}, { systemDark = false, cache, reducedMotion = false, hidden = false, viewTransitions = false, brokenLocalStorage = false, slowFinish = false } = {}) {
+function setup(stored = {}, { systemDark = false, cache, reducedMotion = false, hidden = false, viewTransitions = false, brokenLocalStorage = false, slowFinish = false, asyncUpdate = false } = {}) {
   const dom = new JSDOM("<body></body>", { url: "https://www.coto.com.ar/" });
   const win = dom.window;
   const doc = win.document;
@@ -19,6 +19,8 @@ function setup(stored = {}, { systemDark = false, cache, reducedMotion = false, 
   const finishers = [];
   if (viewTransitions) {
     doc.startViewTransition = vi.fn((cb) => {
+      // Como en Chrome: con asyncUpdate, la función que cambia el DOM corre después, en otra tarea.
+      if (asyncUpdate) return { finished: new Promise((r) => setTimeout(() => { cb(); r(); }, 0)) };
       cb();
       if (!slowFinish) return { finished: Promise.resolve() };
       return { finished: new Promise((r) => finishers.push(r)) };
@@ -156,12 +158,41 @@ describe("installTheme", () => {
     t.change({ theme: { newValue: "light" } });
     await tick();
     expect(t.finishers).toHaveLength(2);
-    t.finishers[1]();
-    await tick();
+    // La primera onda termina antes: no saca la clase, porque la segunda sigue en curso.
     t.finishers[0]();
+    await tick();
+    expect(wave(t.doc)).toBe(true);
+    t.finishers[1]();
     await tick();
     expect(attr(t.doc)).toBeNull();
     expect(wave(t.doc)).toBe(false);
+  });
+  it("dos cambios en la misma tarea con la transición asíncrona: queda claro", async () => {
+    const t = setup({}, { viewTransitions: true, asyncUpdate: true });
+    installTheme(t.win, t.doc, t.storage);
+    await tick();
+    t.storage.get.mockImplementation(async () => ({ theme: "dark" }));
+    t.change({ theme: { newValue: "dark" } });
+    t.storage.get.mockImplementation(async () => ({ theme: "light" }));
+    t.change({ theme: { newValue: "light" } });
+    await tick();
+    expect(attr(t.doc)).toBeNull();
+    expect(wave(t.doc)).toBe(false);
+  });
+  it("dos lecturas del storage que vuelven al revés: gana la más nueva", async () => {
+    const t = setup({});
+    installTheme(t.win, t.doc, t.storage);
+    await tick();
+    let soltarVieja;
+    t.storage.get.mockImplementationOnce(() => new Promise((r) => { soltarVieja = () => r({ theme: "dark" }); }));
+    t.change({ theme: { newValue: "dark" } });
+    t.storage.get.mockImplementationOnce(async () => ({ theme: "light" }));
+    t.change({ theme: { newValue: "light" } });
+    await tick();
+    soltarVieja();
+    await tick();
+    expect(attr(t.doc)).toBeNull();
+    expect(t.win.localStorage.getItem("gondola-theme")).toBe("light");
   });
   it("localStorage roto: no tira y aplica el ajuste", async () => {
     const t = setup({ theme: "dark" }, { brokenLocalStorage: true });
