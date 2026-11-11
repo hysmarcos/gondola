@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 // src/theme.css, que cambian con el tema. Excepciones: la declaración que termina con
 // /* fijo: <motivo> */ en la misma línea, y la sombra negra (rgba(0, 0, 0, …) en box-shadow).
 
-const CSS = ["src/skin.css", "src/skin-list.css", "src/skin-pdp.css", "src/badge.css"];
+const CSS = ["src/skin.css", "src/skin-list.css", "src/skin-pdp.css", "src/badge.css", "src/theme-coto.css"];
 const COLOR = /#[0-9a-f]{3,8}\b|(?:rgba?|hsla?)\([^)]*\)/gi;
 const NEGRO = /^rgba\(\s*0\s*,\s*0\s*,\s*0\s*,/i;
 
@@ -58,7 +58,7 @@ describe("colores de Góndola a tokens", () => {
 
   it("toda var(--g-…) usada está definida en :root de src/theme.css", () => {
     const definidos = definidosEnRoot();
-    for (const archivo of [...CSS, "src/theme-coto.css"]) {
+    for (const archivo of CSS) {
       const usados = [...readFileSync(archivo, "utf8").matchAll(/var\(\s*(--g-[\w-]+)/g)].map((m) => m[1]);
       expect(usados.filter((n) => !definidos.has(n)), archivo).toEqual([]);
     }

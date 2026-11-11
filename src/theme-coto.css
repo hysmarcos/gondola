@@ -1,1 +1,80 @@
-/* Pintura de Coto en modo oscuro: todo bajo [data-gondola-theme="dark"]. Se completa en las tareas 4 y 5. */
+/* Pintura de Coto en modo oscuro: todo bajo [data-gondola-theme="dark"]. Solo colores, bordes,
+   sombras y el filtro del logo: nada cambia de tamaño ni de lugar. Sobre los estilos de Coto,
+   lo que choca lleva !important (misma norma que src/skin.css).
+   Superficies: página --g-bg, tarjetas y barras --g-surface, menús y ventanas --g-surface-2;
+   la altura se marca con superficies más claras y bordes --g-line, nunca con sombras.
+   Cada selector se prueba contra las capturas de tests/fixtures/dom/ (tests/theme-css-dom.test.js);
+   lo que solo existe con sesión o al abrirse lleva encima la marca "sin captura". */
+
+/* ---------- Encabezado, buscador y logo ---------- */
+
+/* Barra del encabezado: superficie, sin la sombra que Coto le pone al bajar. La línea de abajo
+   va por dentro (inset), así el encabezado no crece. */
+[data-gondola-theme="dark"] header.section-header {
+  background-color: var(--g-surface) !important;
+  box-shadow: inset 0 -1px 0 var(--g-line) !important;
+}
+
+/* Logo: la imagen original de Coto con su rojo llevado a negro; el blanco queda blanco. */
+[data-gondola-theme="dark"] header .img-logo-coto {
+  filter: grayscale(1) contrast(4) !important;
+  outline: 1px solid var(--g-line);
+  border-radius: 8px;
+}
+
+/* "Ingresar" y los demás botones rojos de Coto: el rojo de compra del tema, texto blanco de Coto. */
+[data-gondola-theme="dark"] .button_primary_red {
+  background-color: var(--g-red) !important;
+}
+
+/* sin captura: con sesión, el encabezado muestra links de la cuenta en lugar de "Ingresar" */
+[data-gondola-theme="dark"] .lado-derecho :is(a, .btn-link):not(.button_primary_red) {
+  color: var(--g-ink) !important;
+}
+
+/* Buscador: campo de texto oscuro con su botón pegado. El borde azul de foco es de Coto. */
+[data-gondola-theme="dark"] .cio-autocomplete :is(.cio-input, .cio-submit-btn) {
+  background: var(--g-bg) !important;
+  border-color: var(--g-line-2) !important;
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] .cio-autocomplete .cio-input::placeholder {
+  color: var(--g-ink2);
+}
+
+/* La lupa: el rojo queda para comprar y para las ofertas. */
+[data-gondola-theme="dark"] .cio-autocomplete .cio-icon {
+  color: var(--g-ink2) !important;
+  fill: var(--g-ink2) !important;
+}
+
+/* Sugerencias del buscador: un menú más claro que la página, sin sombra; el borde es un
+   contorno (outline) para no cambiar su tamaño. */
+[data-gondola-theme="dark"] .cio-autocomplete .cio-results {
+  outline: 1px solid var(--g-line);
+  background-color: var(--g-surface-2) !important;
+  box-shadow: none !important;
+  color: var(--g-ink);
+}
+
+/* sin captura: las sugerencias solo aparecen al escribir en el buscador */
+[data-gondola-theme="dark"] .cio-autocomplete .cio-item-featured-title {
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: las sugerencias solo aparecen al escribir en el buscador */
+[data-gondola-theme="dark"] .cio-autocomplete :is(.cio-section-name, .cio-sectionName, .cio-item-featured-price) {
+  color: var(--g-red-text) !important;
+}
+
+/* sin captura: las sugerencias solo aparecen al escribir en el buscador. Foto sobre la placa. */
+[data-gondola-theme="dark"] .cio-autocomplete .cio-item-featured-img-container {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-plate) !important;
+}
+
+/* sin captura: las sugerencias solo aparecen al escribir en el buscador */
+[data-gondola-theme="dark"] .cio-autocomplete :is(.cio-item:hover, .cio-item[aria-selected="true"]) {
+  background-color: var(--g-navy-hover) !important;
+}

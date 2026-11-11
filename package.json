@@ -20,7 +20,8 @@
     "fixtures:off": "node scripts/capture-off-fixtures.mjs",
     "fixtures:dom": "node scripts/capture-dom.mjs",
     "fixtures:chrome": "node scripts/capture-chrome.mjs",
-    "skin:check": "node scripts/skin-check.mjs"
+    "skin:check": "node scripts/skin-check.mjs",
+    "theme:check": "node scripts/theme-check.mjs"
   },
   "devDependencies": {
     "@fontsource/poppins": "^5.2.7",
