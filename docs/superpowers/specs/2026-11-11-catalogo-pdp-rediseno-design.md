@@ -298,6 +298,76 @@ inspeccionó el HTML real de estas partes:
 El primer paso del plan es capturar ese HTML. Si una parte no se puede lograr sin mover
 nodos de Coto, se simplifica el diseño de esa parte; la regla 2 no se negocia.
 
+### 10.1 Resultado de la captura (2026-11-11)
+
+El HTML real está en `tests/fixtures/dom/` y el mapa de selectores en `src/skin-dom.js`.
+Se capturó sin sesión iniciada. Lo que sigue corrige o precisa las secciones 4 y 5.
+
+**Lista**
+
+- Entre la grilla y `.card-container` hay **2 nodos**: `div.productos.row` (grilla) >
+  `div.producto-card` (columna de Bootstrap, `col-xl-4 col-lg-4 col-md-6 …`) >
+  `constructor-result-item` (elemento propio, `display` inline por defecto) >
+  `.card-container`. La celda de grilla es `.producto-card`. La piel tiene que pasar la
+  fila de Bootstrap a `display: grid` y anular el ancho, el `flex` y el relleno de las
+  columnas `col-*`, y darle a `constructor-result-item` `display: block` (o `contents`)
+  para que la tarjeta ocupe el alto de la celda. Sin mover nodos.
+- La página ya tiene dos columnas hermanas: `#filtrosmenu` (`col-md-3`) y
+  `.contenido-col` (`col-md-9`), dentro de un `div.row`. Los 184 px y el
+  `position: sticky` salen solo con CSS sobre `#filtrosmenu`. Falta probar que ningún
+  ascendiente tenga `overflow` que corte el sticky.
+- Título, cantidad y orden están en `header.plp-header`: `.plp-header__heading`
+  (`h1.plp-header__title` y `p.plp-header__count`) y `.plp-header__sort`. Existen como nodos.
+- Los grupos de filtros son `.filter-block` (título `h6.filter-title`, links en
+  `ul.filter-list > li > a`, con la cantidad en un `span`). El link activo trae la clase
+  `active`. El link "Más" cuelga directo del `ul`, sin `li`.
+- **Subcategorías**: son el `.filter-block` titulado "Categoría". No tiene clase propia y
+  solo existe en categorías con hijas (en una categoría hoja, como Pastas Rellenas, el primer
+  bloque es "Marca"). Hay que reconocerlo por el texto de su `.filter-title`.
+- **Filtros aplicados**: están en "Su selección" (`app-breadcrumbs`), que mezcla la ruta de
+  categorías (primer `ul`) con los filtros aplicados (segundo `ul`, uno por filtro, cada
+  link lo saca). Ese segundo `ul` solo existe si hay algún filtro. **No hay "Borrar todo"**:
+  Coto no trae ese link. Simplificación elegida: la fila de filtros aplicados muestra solo los
+  chips de Coto, sin "Borrar todo" (Góndola no arma URLs propias, regla 4.1).
+- "Ver planes de cuotas" es `.bottom-botones > a`. "Precio sin impuestos nacionales" es la
+  última `small.text-center` de `.centro-precios`, sin clase propia.
+- No se encontró un producto sin stock en las categorías revisadas (Leches, Yogures, Postres,
+  Leches por marca y por precio): no hay HTML de ese estado. Antes de la Tarea 3 hay que
+  ver cómo lo dibuja Coto.
+
+**Página de producto**
+
+- La columna derecha **sí es un solo contenedor**: el único `div` hijo de `aside.row`
+  (la otra columna es `article.gallery-wrap`). Dentro tiene `article.ps-lg-3` con el título
+  (`h1.title`), PLU y EAN (`.rating-wrap`), una línea (`hr`) y un `div` con, en este
+  orden: el bloque de precio (`div.mt-4`: etiqueta de oferta, "Llevando…", `var.price`,
+  precio regular, "sin impuestos", precio por unidad), el link "Ver planes de cuotas" y la
+  fila del botón (`div.row` con `product-add-show-remove`). Después, fuera del artículo,
+  `app-cuotas-destacadas` (vacío en esta captura).
+- El orden del diseño (precio, unidad, botón, banco, otros súper, cuotas, nota, impuestos) no
+  coincide con el de Coto (cuotas va antes del botón; "sin impuestos" antes del precio por
+  unidad). Se logra sin cambiar de padre: el bloque de precio pasa a `display: contents`, así
+  sus hijos y los de su hermano quedan como ítems de un mismo flex en columna, y se ordenan con
+  `order`. Las cajas propias de Góndola (banco, otros súper) se agregan en ese flex.
+- **"Instrucciones para armar el pedido" no apareció** en la página sin sesión ni con el
+  producto fuera del carrito. No hay HTML ni selector. Hasta capturarlo con sesión, el
+  diseño del punto 9 de 5.2 no se puede comprobar: se deja como pendiente y, si el formulario
+  no está en la página, la caja de compra no muestra ese acordeón.
+- El título de la PDP es `h1.title`. `.titulo-producto` es el del mini carrito.
+- La descripción (`.pdp-description`) y las características (`.pdp-characteristics`) están
+  fuera de `aside.row`, en un `div` hermano: el orden galería, nutrición, descripción sigue
+  siendo el natural del documento.
+
+**Selector de cantidad**
+
+Con la sesión sin iniciar, "Agregar" abre un aviso ("Aceptar e ingresá con tu usuario, o
+Cancelar para continuar como invitado") y el pedido al carrito responde "Debe estar
+logueado": el selector de cantidad no se dibuja, así que no está en las capturas. Su
+selector sale de `src/promo-clicks.js` y `src/pin-input.js` (`product-add-show-remove`
+con un `input[id^="input-prod"]`) y no está comprobado contra HTML real. Pendiente para
+el usuario: `WAIT_STEPPER=300 npm run fixtures:dom`, iniciar sesión en la ventana y agregar un
+producto; después, quitar `stepper` de `SIN_CAPTURA` en `tests/skin-dom.test.js`.
+
 ## 11. Evidencia usada
 
 Páginas abiertas y leídas el 2026-11-11:
