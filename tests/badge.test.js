@@ -213,7 +213,9 @@ describe("página de producto", () => {
     await tick();
     const box = doc.querySelector(".coto-unit-box--pdp");
     expect(box.parentElement.className).toBe("mt-4");
-    expect(box.previousElementSibling.querySelector(".price")).not.toBeNull();
+    // La caja va después de "Precio regular" y "sin impuestos": esas líneas quedan pegadas al precio.
+    expect(box.previousElementSibling).toBe(doc.querySelector(".mb-5"));
+    expect(doc.querySelector(".mt-2.small").previousElementSibling.querySelector(".price")).not.toBeNull();
     expect(box.querySelector(".coto-unit-cap").textContent).toBe("Precio real para comparar");
     expect(box.querySelector(".coto-unit-value").textContent).toBe("$109 /10 m");
     expect(box.querySelector(".coto-unit-note").textContent).toBe("≈ ancho 10 cm");
@@ -223,6 +225,78 @@ describe("página de producto", () => {
     expect(regular.hasAttribute("data-coto-unit-strike")).toBe(true);
     expect(hidden(doc.querySelector(".mb-5"))).toBe(true);
     expect(doc.querySelector(".mb-2").hasAttribute("data-coto-unit-dim")).toBe(true);
+  });
+
+  it("información nutricional: pinta debajo de la caja y respeta el ajuste", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const { doc, send } = setup(pdp, `/productos/papel/${key}`, { nutrition });
+    const label = L(109.33, { group: "rollo10m", ean: "7790895000997", nutri: true });
+    send({ type: "labels", labels: { [key]: label } });
+    await tick();
+    const box = doc.querySelector(".coto-unit-box--pdp");
+    const last = calls.at(-1);
+    expect(last[0]).toBe(doc.querySelector(".mt-4"));
+    expect(last[1]).toBe(box);
+    expect(last[2]).toMatchObject({ ean: "7790895000997", nutri: true });
+    expect(last[3]).toBe(true);
+    // Sin "Descripción del producto" no hay sección: desplegable en la columna.
+    expect(last[4]).toBeNull();
+    send({ type: "settings", selected: [], day: 1, nutrition: false });
+    await tick();
+    expect(calls.at(-1)[3]).toBe(false);
+  });
+
+  it("con Descripción del producto, la sección va junto a ella", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const withDesc = pdp + `<div class="col-12 mt-3 mb-5"><div class="mb-3 pdp-description"><h4>Descripción del producto</h4></div><div class="pdp-characteristics"></div></div>`;
+    const { doc, send } = setup(withDesc, `/productos/papel/${key}`, { nutrition });
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m", ean: "1", nutri: true }) } });
+    await tick();
+    const section = calls.at(-1)[4];
+    expect(section.after).toBe(doc.querySelector(".pdp-description"));
+    expect(section.host).toBe(doc.querySelector(".col-12.mt-3.mb-5"));
+  });
+
+  it("la galería de Coto se pasa a la información nutricional", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const html = `<article class="gallery-wrap"><div class="img-big-wrap"></div><div class="thumbs-wrap"></div></article>` + pdp;
+    const { doc, send } = setup(html, `/productos/papel/${key}`, { nutrition });
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m", ean: "1", nutri: true }) } });
+    await tick();
+    const gallery = calls.at(-1)[5];
+    expect(gallery.thumbs).toBe(doc.querySelector(".thumbs-wrap"));
+    expect(gallery.big).toBe(doc.querySelector(".img-big-wrap"));
+  });
+
+  it("refresh vuelve a pintar la información nutricional", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const win = new EventTarget();
+    win.location = { pathname: `/productos/papel/${key}` };
+    win.postMessage = () => {};
+    win.MutationObserver = window.MutationObserver;
+    const doc = document.implementation.createHTMLDocument("x");
+    doc.body.innerHTML = pdp;
+    const badges = installBadges(win, doc, { nutrition });
+    const before = calls.length;
+    badges.refresh();
+    await tick();
+    expect(calls.length).toBeGreaterThan(before);
+  });
+
+  it("si Coto dibuja una línea de precio después de la caja, la caja baja", async () => {
+    const { doc, send } = setup(pdp, `/productos/papel/${key}`);
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m" }) } });
+    await tick();
+    const box = doc.querySelector(".coto-unit-box--pdp");
+    const late = doc.createElement("div");
+    late.textContent = "Precio con tarjeta Coto: $3.000";
+    box.after(late);
+    await tick();
+    expect(doc.querySelector(".coto-unit-box--pdp").previousElementSibling).toBe(late);
   });
 
   it("sin oferta no tacha el precio regular", async () => {

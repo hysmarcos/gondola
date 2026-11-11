@@ -15,7 +15,7 @@
   <a href="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest_V3-2a78d6?logo=googlechrome&logoColor=white">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-2a78d6?logo=node.js&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-328-2a78d6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-412-2a78d6">
   <a href="https://hysmarcos.github.io/gondola/privacidad.html"><img alt="Sin servidores" src="https://img.shields.io/badge/servidores-0-2a78d6"></a>
   <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-2a78d6">
   <a href="CONTRIBUTING.md"><img alt="Colaboraciones bienvenidas" src="https://img.shields.io/badge/colaboraciones-bienvenidas-2a78d6"></a>
@@ -45,7 +45,7 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 | Precio por unidad | Kilo, litro, unidad o 10 metros (papel higiénico y rollos) |
 | Datos personales enviados | Ninguno. Los ajustes quedan en tu navegador. |
 | Servidores propios | Ninguno |
-| Tests | 328, con respuestas reales de las APIs de Coto, Carrefour, Día y Más |
+| Tests | 412, con respuestas reales de las APIs de Coto, Carrefour, Día, Más y Open Food Facts |
 
 ## Qué vas a encontrar
 
@@ -100,6 +100,7 @@ La web de Coto sirve para comprar, pero no para comparar:
 | Promos NxM | Si agregás 1 de un 2x1, agrega el segundo solo. En un 3x2 te avisa cuántos faltan. Se apaga en Ajustes. |
 | Carrito real | Subtotal, descuentos de Coto, reintegro del banco con su tope y total final. |
 | Otros súper | Busca el mismo producto por código de barras en Carrefour, Día y Más. Un botón dice "Mejor precio" o "Más barato en Día", con los links. |
+| Información nutricional | En la página de un producto de comida o bebida, la tabla nutricional de [Open Food Facts](https://world.openfoodfacts.org), si existe. Si falta, un link para cargarla. Se apaga en Ajustes. |
 
 Todo lo de Coto sigue funcionando: agregar, cantidades, carrito y pago. La extensión solo agrega elementos. No borra ninguno.
 
@@ -118,6 +119,7 @@ flowchart LR
         ui --> bg["background.js: pide precios por EAN"]
     end
     bg --> otros[("Búsqueda pública de Carrefour, Día y Más")]
+    bg --> off[("Open Food Facts: tabla nutricional por EAN")]
 ```
 
 Cada paso toma una decisión:
@@ -138,7 +140,7 @@ Estas pruebas buscan dónde falla la extensión:
 
 | | Prueba | Pregunta | Resultado |
 |:---:|---|---|---|
-| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 328 tests con respuestas guardadas de Coto, Carrefour, Día y Más |
+| ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 412 tests con respuestas guardadas de Coto, Carrefour, Día, Más y Open Food Facts |
 | ✅ | Coto sigue funcionando | ¿Agregar, cantidades y carrito andan igual? | Sí. La extensión agrega elementos y oculta partes con un atributo. No borra nada de Coto. |
 | ✅ | Promos bancarias | ¿Muestra un descuento que Coto no aplica? | No. Respeta los días, los topes y las exclusiones de la API de Coto. |
 | ⚠️ | Otros súper | ¿El precio es el de tu sucursal? | No siempre. Usa la zona por defecto de cada web y no incluye descuentos bancarios. |
@@ -153,6 +155,7 @@ Góndola no junta datos personales, no tiene analítica y no tiene publicidad. L
 | `storage` | Guardar tus tarjetas, el día y los ajustes en tu navegador |
 | `www.coto.com.ar` | Agregar el precio real, las promos y el carrito en las páginas de Coto |
 | `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar`, `www.masonline.com.ar` | Buscar el mismo producto por código de barras. Se apaga en Ajustes. |
+| `world.openfoodfacts.org` | Traer la tabla nutricional del producto que abrís. Solo se manda el código de barras, sin cookies. Se apaga en Ajustes. |
 
 ## 6. Cómo está armado
 
@@ -166,7 +169,7 @@ Góndola no junta datos personales, no tiene analítica y no tiene publicidad. L
 | `site/` | Sitio de GitHub Pages con la política de privacidad |
 | `docs/` | Banner del README, diseños y planes de cada versión |
 
-El build usa esbuild y arma cuatro archivos en `dist/`: `interceptor.js` (corre en la página de Coto), `badge.js` (dibuja la interfaz), `background.js` (pide precios a otros súper) y `popup.js`.
+El build usa esbuild y arma cuatro archivos en `dist/`: `interceptor.js` (corre en la página de Coto), `badge.js` (dibuja la interfaz), `background.js` (pide precios a otros súper y la tabla nutricional) y `popup.js`.
 
 ## 7. Cómo ejecutar
 
@@ -199,6 +202,7 @@ npm test
 | `npm run icons` | Genera los PNG del ícono desde `assets/icon/icon.svg` |
 | `npm run fixtures` | Baja respuestas reales de la API de Coto a `tests/fixtures/` |
 | `npm run fixtures:vtex` | Baja respuestas reales de Carrefour, Día y Más a `tests/fixtures/` |
+| `npm run fixtures:off` | Baja respuestas reales de Open Food Facts a `tests/fixtures/off.js` |
 | `node scripts/capture-readme.mjs` | Captura Coto sin y con Góndola para el README (abre Chrome: no toques la ventana) |
 | `node scripts/readme-media.mjs` | Arma las imágenes de antes y después en `docs/img/readme/` |
 | `node scripts/dev-server.mjs` | Servidor local en `http://127.0.0.1:8765` para las vistas previas |
@@ -244,10 +248,13 @@ Toda persona que aporta código, reporta un error o propone una idea que se hace
 | Manifest V3 | Versión actual de las reglas de las extensiones de Chrome. | [Chrome](https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3?hl=es-419) |
 | NxM | Promo de "llevá N, pagá M", como 2x1 o 3x2. | |
 | Precio por unidad | Precio por kilo, litro o unidad. Sirve para comparar paquetes de distinto tamaño. | |
+| Open Food Facts | Base abierta de alimentos, armada por la comunidad. Tiene tablas nutricionales por código de barras. | [Open Food Facts](https://world.openfoodfacts.org) |
 | VTEX | Plataforma de tiendas online que usan Carrefour, Día y Más. Tiene una búsqueda pública. | [VTEX](https://developers.vtex.com/) |
 
 ## Marcas y licencia
 
 Góndola no está afiliada a Coto, Carrefour, Día ni Más. Las marcas y los logos son de sus dueños. La extensión usa los datos que esas webs ya publican.
+
+La información nutricional viene de [Open Food Facts](https://world.openfoodfacts.org), con licencia [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
 
 El código tiene licencia MIT. La fuente Poppins tiene licencia [SIL Open Font License](assets/fonts/OFL.txt).

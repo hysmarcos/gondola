@@ -1,7 +1,7 @@
 // Intermediario entre Angular y la API de Coto.
 // Parchea XMLHttpRequest para agregar el orden "precio por unidad" sin tocar el DOM,
 // y lee (sin modificar) carruseles y carrito para publicar etiquetas y análisis.
-import { sortByUnitPrice, labelsFor } from "./sort.js";
+import { sortByUnitPrice, labelsFor, lookupLabels } from "./sort.js";
 import { parsePromos } from "./banks.js";
 import { analyzeCart } from "./cart.js";
 import { parseNxM, adjustQty, promoNotice } from "./promo.js";
@@ -226,7 +226,7 @@ export function installInterceptor(win, deps) {
     const data = await lookupPlu(String(plu));
     await ready;
     if (!data) return;
-    const labels = labelsFor([{ data: { ...data, url: key } }], store(), settings.selected, settings.day, opts());
+    const labels = lookupLabels(data, key, store(), settings.selected, settings.day, opts());
     if (labels[key]) post({ type: "labels", labels });
   }
 

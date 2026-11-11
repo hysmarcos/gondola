@@ -85,7 +85,7 @@ Góndola no está afiliada a Coto, Carrefour, Día ni Más. Las marcas son de su
 **Propósito único:**
 
 ```text
-Mejorar la web de compras de Coto Digital (coto.com.ar) para comparar precios: precio por kilo o litro, promos bancarias, total real del carrito y el precio del mismo producto en otros supermercados.
+Mejorar la web de compras de Coto Digital (coto.com.ar) para comparar productos antes de comprar: precio por kilo o litro, promos bancarias, total real del carrito, el precio del mismo producto en otros supermercados y su información nutricional.
 ```
 
 **Justificación de permisos:**
@@ -95,10 +95,11 @@ Mejorar la web de compras de Coto Digital (coto.com.ar) para comparar precios: p
 | `storage` | Guarda en el navegador las tarjetas, el día de compra y los ajustes que elige el usuario. |
 | Acceso a `www.coto.com.ar` (content scripts) | Agrega el precio por kilo, el orden por precio por kilo, las promos bancarias y el total real del carrito en las páginas de Coto. |
 | Acceso a `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar` y `www.masonline.com.ar` | Busca el mismo producto por código de barras en la búsqueda pública de cada súper para mostrar su precio. El usuario lo puede apagar. |
+| Acceso a `world.openfoodfacts.org` | Pide la tabla nutricional del producto que el usuario abre, por código de barras, a la base abierta Open Food Facts. El usuario lo puede apagar. |
 
 **¿Usa código remoto?** No. Todo el código va en el paquete.
 
-**Uso de datos.** Marcá solo **Contenido del sitio web**, con esta explicación: la extensión envía el código de barras (EAN) de los productos que el usuario ve en Coto a las búsquedas públicas de Carrefour, Día y Más, para mostrar el precio del mismo producto. No envía datos de la persona: ni nombre, ni cuenta, ni carrito, ni tarjetas. Todo lo demás pasa en el navegador.
+**Uso de datos.** Marcá solo **Contenido del sitio web**, con esta explicación: la extensión envía el código de barras (EAN) de los productos que el usuario ve en Coto a las búsquedas públicas de Carrefour, Día y Más, para mostrar el precio del mismo producto, y el del producto de comida que abre a Open Food Facts, para mostrar su tabla nutricional. No envía datos de la persona: ni nombre, ni cuenta, ni carrito, ni tarjetas. Todo lo demás pasa en el navegador.
 
 Marcá las tres certificaciones:
 

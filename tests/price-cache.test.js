@@ -71,4 +71,13 @@ describe("createPriceCache", () => {
     await cache.set({ "dia:2": offer });
     expect(await cache.get(["dia:2"])).toEqual({ "dia:2": offer });
   });
+
+  it("con otra clave no toca la memoria del comparador", async () => {
+    const storage = fakeStorage({ cmpCache: { "dia:1": { at: 1000, v: offer } } });
+    const nutri = createPriceCache(storage, () => 1000, { key: "nutriCache", ttlMs: 604_800_000, max: 2000 });
+    await nutri.set({ "7790895000997": "missing" });
+    expect(storage.data.cmpCache).toEqual({ "dia:1": { at: 1000, v: offer } });
+    expect(storage.data.nutriCache["7790895000997"]).toEqual({ at: 1000, v: "missing" });
+    expect(await nutri.get(["7790895000997", "dia:1"])).toEqual({ "7790895000997": "missing" });
+  });
 });

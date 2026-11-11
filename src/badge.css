@@ -265,6 +265,253 @@
   color: #6b6b6b;
 }
 
+/* Información nutricional (Open Food Facts), debajo de la caja de precio. */
+.coto-unit-nutri {
+  display: block;
+  max-width: 420px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #212529;
+}
+
+.coto-unit-nutri > summary {
+  cursor: pointer;
+  color: #0c447c;
+  font-weight: 600;
+}
+
+.coto-unit-nutri-table {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-nutri-table th,
+.coto-unit-nutri-table td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #e3e6e8;
+  text-align: right;
+}
+
+.coto-unit-nutri-table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7177;
+}
+
+.coto-unit-nutri-table td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.coto-unit-nutri-source,
+.coto-unit-nutri-missing {
+  margin: 4px 0 12px;
+  font-size: 12px;
+  color: #6b7177;
+}
+
+.coto-unit-nutri-source a,
+.coto-unit-nutri-missing a {
+  color: #0c447c;
+  text-decoration: underline;
+}
+
+/* Resumen en la columna de compra: ícono, "42 kcal · 11 g azúcares · …" y "Ver tabla". */
+.coto-unit-nutri-sum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #51585e;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-nutri-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.coto-unit-nutri-more {
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  line-height: inherit;
+  color: #0c447c;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Sección junto a "Descripción del producto", con el mismo estilo de título que Coto. */
+.coto-unit-nutri-section {
+  max-width: 520px;
+  margin-bottom: 1rem;
+  font-size: 13px;
+  color: #212529;
+}
+
+.coto-unit-nutri-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coto-unit-nutri-section .coto-unit-nutri-table {
+  margin-top: 0;
+}
+
+/* Envase y rinde: arriba de la tabla. */
+.coto-unit-nutri-pack,
+.coto-unit-nutri-value {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-nutri-value {
+  margin-bottom: 8px;
+  color: #0c447c;
+  font-weight: 600;
+}
+
+/* Pie: nota del %VD, fuente, fotos y fecha. */
+.coto-unit-nutri-note,
+.coto-unit-nutri-photos,
+.coto-unit-nutri-meta {
+  margin: 2px 0;
+  font-size: 12px;
+  color: #6b7177;
+}
+
+.coto-unit-nutri-section .coto-unit-nutri-source {
+  margin-bottom: 2px;
+}
+
+.coto-unit-nutri-photos a,
+.coto-unit-nutri-meta a {
+  color: #0c447c;
+  text-decoration: underline;
+}
+
+/* Fotos de Open Food Facts en la galería de Coto: miniaturas con el ícono de OFF. */
+.coto-unit-offthumb {
+  position: relative;
+}
+
+.coto-unit-offthumb-photo {
+  object-fit: contain;
+  background: #fff;
+}
+
+.coto-unit-offthumb-badge {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  padding: 1px;
+  border-radius: 50%;
+  background: #fff;
+  pointer-events: none;
+}
+
+.coto-unit-offthumb--active {
+  outline: 2px solid #0c447c;
+  outline-offset: -2px;
+}
+
+/* Visor encima de la foto grande de Coto, con el aviso de que la foto no es de Coto. */
+.coto-unit-offview {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* Coto da a toda imagen de la foto grande "width: 100%; height: auto" (.gallery-wrap
+   .img-big-wrap img): estas reglas son más específicas para ganarle. */
+.gallery-wrap .img-big-wrap .coto-unit-offview-photo {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  height: 0;
+  max-height: none;
+  object-fit: contain;
+  cursor: default;
+}
+
+.coto-unit-offview-note {
+  display: block;
+  margin: 0;
+  padding: 8px 12px;
+  background: #e6f1fb;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #0c447c;
+  text-align: left;
+}
+
+.gallery-wrap .img-big-wrap .coto-unit-offview-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  vertical-align: -4px;
+  cursor: default;
+}
+
+.coto-unit-offview-note a {
+  color: #0c447c;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Sin datos: QR para cargarla desde el celular. */
+.coto-unit-nutri-add {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #51585e;
+}
+
+.coto-unit-nutri-add p {
+  margin: 0;
+  max-width: 220px;
+}
+
+.coto-unit-nutri-qr {
+  flex: none;
+  border: 1px solid #e3e6e8;
+  border-radius: 4px;
+}
+
+/* Pantallas grandes: descripción y tabla en dos columnas; "Características" debajo. */
+@media (min-width: 992px) {
+  [data-coto-unit-nutri-host] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 32px;
+    align-items: start;
+  }
+
+  [data-coto-unit-nutri-host] > :not(.pdp-description):not(.coto-unit-nutri-section) {
+    grid-column: 1 / -1;
+  }
+}
+
 .coto-unit-box--mini {
   margin: 2px 0 4px;
   text-align: center;

@@ -19,6 +19,7 @@ const SETTINGS = [
   { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
   { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato de la categoría\" en el producto que más conviene por kg, litro o unidad." },
   { key: "compareStores", title: "Comparar con otros súper", text: "Un botón dice si Coto tiene el mejor precio o en qué súper está más barato." },
+  { key: "nutrition", title: "Información nutricional", text: "En la página de un producto, la tabla nutricional de Open Food Facts, si existe." },
 ];
 
 const HELP = [
@@ -26,6 +27,7 @@ const HELP = [
   ["Hoy con tu banco", "El mismo precio con la promo de tu tarjeta, si Coto la aplica a ese producto."],
   ["Banco no aplica", "El producto ya está en oferta o Coto lo excluye de las promos bancarias."],
   ["Ordenar por precio por kg/L", "Nueva opción en \"Ordenar por\" de cada categoría y búsqueda."],
+  ["Información nutricional", "Tabla de Open Food Facts por código de barras, cargada por la comunidad. Si falta, podés cargarla vos."],
   ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
 ];
 
@@ -174,7 +176,7 @@ function helpView(doc, meta) {
     el(doc, "dl", { className: "help" }, HELP.flatMap(([t, d]) => [el(doc, "dt", { textContent: t }), el(doc, "dd", { textContent: d })])),
     el(doc, "p", { className: "legal" }, [
       el(doc, "strong", { textContent: "No afiliado a Coto." }),
-      " Usa los datos de coto.com.ar. Para comparar, solo envía códigos de barras a Carrefour, Día y Más.",
+      " Usa los datos de coto.com.ar. Solo envía códigos de barras: a Carrefour, Día y Más para comparar, y a Open Food Facts para la tabla nutricional.",
     ]),
     el(doc, "p", { className: "version", textContent: `Versión ${meta.version ?? ""}`.trim() }),
   ];
@@ -209,7 +211,7 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 
 // storage: misma interfaz que en bridge.js. meta: { version }.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "popupTab"]);
+  const s = await storage.get(["promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "popupTab"]);
   let active = TABS.some((t) => t.id === s.popupTab) ? s.popupTab : "tarjetas";
 
   const header = el(doc, "header", { className: "top" }, [

@@ -91,6 +91,31 @@ describe("v5: ajuste comparar con otros súper", () => {
   });
 });
 
+describe("ajuste información nutricional", () => {
+  it("nutrition viene de storage; sin la clave, encendido; un cambio reenvía", async () => {
+    const win = fakeWin();
+    installBridge(win, fakeStorage({ nutrition: false }), () => 0);
+    await tick();
+    expect(win.posted.find((m) => m.type === "settings").nutrition).toBe(false);
+    const win2 = fakeWin();
+    const st = fakeStorage();
+    installBridge(win2, st, () => 0);
+    await tick();
+    expect(win2.posted.find((m) => m.type === "settings").nutrition).toBe(true);
+    await st.set({ nutrition: false });
+    await tick();
+    expect(win2.posted.filter((m) => m.type === "settings").at(-1).nutrition).toBe(false);
+  });
+
+  it("el popup tiene el ajuste Información nutricional, encendido", async () => {
+    await renderPopup(document, fakeStorage(), { version: "1" });
+    const box = document.querySelector('input[name="nutrition"]');
+    expect(box).not.toBeNull();
+    expect(box.checked).toBe(true);
+    expect(box.closest("label").textContent).toContain("Información nutricional");
+  });
+});
+
 describe("popup", () => {
   const open = async (st, meta = { version: "0.4.0" }) => {
     document.body.innerHTML = "";

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sortByUnitPrice, labelsFor } from "../src/sort.js";
+import { sortByUnitPrice, labelsFor, lookupLabels } from "../src/sort.js";
 import { row, ACEITE, MIXTA } from "./fixtures/coto.js";
 
 // Producto sintético: precio por unidad = formatPrice (lista 100, sin ofertas).
@@ -100,5 +100,61 @@ describe("sortByUnitPrice con EAN", () => {
     expect(labels["00012345"]).toBe(labels.E1);
     expect(labels.E2).toMatchObject({ ean: null, cmp: null });
     expect(labels).toEqual(labelsFor([r, item("E2", "Kilo", 200)], "200"));
+  });
+});
+
+describe("etiquetas con nutri", () => {
+  const food = (url, groupId, extra = {}) => {
+    const r = item(url, "Kilo", 150);
+    Object.assign(r.data, { product_main_ean: "7790742348302", groups: [{ group_id: groupId }], ...extra });
+    return r;
+  };
+
+  it("comida sí; limpieza y pesables no (labelsFor)", () => {
+    const labels = labelsFor([food("A", "catv00001254"), food("B", "catv00001258"), food("C", "catv00001255", { product_weighable: 1 })], "200");
+    expect(labels.A.nutri).toBe(true);
+    expect(labels.B.nutri).toBe(false);
+    expect(labels.C.nutri).toBe(false);
+  });
+
+  it("sortByUnitPrice también marca nutri", () => {
+    const { labels } = sortByUnitPrice([food("A", "catv00001254"), food("B", "catv00001258")], "200");
+    expect(labels.A.nutri).toBe(true);
+    expect(labels.B.nutri).toBe(false);
+  });
+});
+
+describe("lookupLabels (página de producto)", () => {
+  const KEY = "_/R-00000001-00000001-200";
+  const data = (groupId, extra = {}) => ({ ...item("x", null, null).data, product_main_ean: "7790895000997", groups: [{ group_id: groupId }], ...extra });
+
+  it("comida sin precio por unidad igual tiene etiqueta para la tabla nutricional", () => {
+    const labels = lookupLabels(data("catv00001254"), KEY, "200");
+    expect(labels[KEY]).toMatchObject({ group: "sin_dato", ean: "7790895000997", nutri: true });
+  });
+
+  it("algo que no es comida y no tiene precio por unidad: sin etiqueta", () => {
+    expect(lookupLabels(data("catv00001258"), KEY, "200")).toEqual({});
+  });
+
+  it("con precio por unidad es igual a labelsFor", () => {
+    const d = { ...item("x", "Kilo", 150).data, groups: [{ group_id: "catv00001254" }] };
+    expect(lookupLabels(d, KEY, "200")).toEqual(labelsFor([{ data: { ...d, url: KEY } }], "200"));
+  });
+
+  it("bebidas llevan drink: true", () => {
+    const d = { ...item("x", "Unidad", 50).data, groups: [{ group_id: "catv00001256" }] };
+    expect(lookupLabels(d, KEY, "200")[KEY].drink).toBe(true);
+    expect(lookupLabels(data("catv00001254"), KEY, "200")[KEY].drink).toBe(false);
+  });
+});
+
+describe("amount: tamaño del envase en la etiqueta", () => {
+  it("kg o L del envase; sin dato da null", () => {
+    // Lista $100 y $200 por litro: el envase es de medio litro.
+    const labels = labelsFor([item("L", "Litro", 200), item("K", "Kilo", 400), item("U", "Unidad", 50)], "200");
+    expect(labels.L.amount).toBeCloseTo(0.5, 6);
+    expect(labels.K.amount).toBeCloseTo(0.25, 6);
+    expect(labels.U.amount).toBeNull();
   });
 });

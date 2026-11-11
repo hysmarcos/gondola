@@ -1,9 +1,8 @@
-// Memoria de precios de otros super (6 h). Guarda todo bajo `cmpCache`
-// como { [clave]: { at, v } }. Clave: "<storeId>:<ean>".
+// Memoria con vencimiento en chrome.storage.local. Guarda todo bajo `key` como
+// { [clave]: { at, v } }. Por defecto es la de precios de otros súper (`cmpCache`,
+// 6 h, clave "<storeId>:<ean>"); la información nutricional usa `nutriCache`.
 // `storage` tiene la forma de chrome.storage.local.
-const KEY = "cmpCache";
-
-export function createPriceCache(storage, now = Date.now, { ttlMs = 21_600_000, max = 3000 } = {}) {
+export function createPriceCache(storage, now = Date.now, { key: KEY = "cmpCache", ttlMs = 21_600_000, max = 3000 } = {}) {
   // Las escrituras van en cadena: cada una espera a la anterior.
   let chain = Promise.resolve();
 
