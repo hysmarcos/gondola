@@ -8,6 +8,27 @@
    Cada selector se prueba contra las capturas de tests/fixtures/dom/ (tests/theme-css-dom.test.js);
    lo que solo existe con sesión o al abrirse lleva encima la marca "sin captura". */
 
+/* ---------- Respaldo: contenedores claros de Bootstrap ----------
+   La regla base (src/theme.css) pone texto claro en toda la página; un bloque blanco de
+   Bootstrap que nadie pintó (pasos de la compra, Mi cuenta, Mis pedidos, listas) quedaría con
+   texto casi blanco sobre blanco. Estos bloques pasan a superficie. Va arriba de todo y con la
+   menor especificidad posible: cualquier regla de zona de abajo (la placa de la galería, las
+   tarjetas del ingreso y del carrito) gana. El :where(:not(…)) deja afuera los nodos de
+   Góndola (que igual no usan estas clases) sin sumar especificidad. */
+[data-gondola-theme="dark"] :is(.card, .bg-light):where(:not([class*="coto-unit-"])) {
+  border-color: var(--g-line);
+  background-color: var(--g-surface) !important;
+  color: var(--g-ink);
+}
+
+/* sin captura: ninguna página sin sesión usa estas dos clases (Mi cuenta, Mis pedidos y los
+   pasos de la compra piden sesión). Mismo respaldo que la regla de arriba. */
+[data-gondola-theme="dark"] :is(.list-group-item, .bg-white):where(:not([class*="coto-unit-"])) {
+  border-color: var(--g-line);
+  background-color: var(--g-surface) !important;
+  color: var(--g-ink);
+}
+
 /* ---------- Encabezado, buscador y logo ---------- */
 
 /* Barra del encabezado: superficie, sin la sombra que Coto le pone al bajar. La línea de abajo
