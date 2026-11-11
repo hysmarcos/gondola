@@ -433,3 +433,37 @@
   background-color: var(--g-soft) !important;
   color: var(--g-red-text) !important;
 }
+
+/* ---------- Ingreso y registro (/ingresar; sin sesión, también /carrito) ---------- */
+
+[data-gondola-theme="dark"] login-main h2 > span {
+  color: var(--g-ink) !important;
+}
+
+/* Las dos tarjetas (Cliente Registrado, Nuevo Cliente): superficie con borde, sin sombra. */
+[data-gondola-theme="dark"] login-main .card {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface) !important;
+  box-shadow: none !important;
+}
+
+[data-gondola-theme="dark"] login-main :is(.card-title, label) {
+  color: var(--g-ink) !important;
+}
+
+/* Campos: fondo de página, borde y texto claro; el borde rojo al pasar el mouse o al escribir
+   es de Coto. */
+[data-gondola-theme="dark"] login-main .form-control {
+  border-color: var(--g-line-2);
+  background-color: var(--g-bg) !important;
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] login-main .form-control::placeholder {
+  color: var(--g-ink2) !important;
+}
+
+/* El ojo de la contraseña y "¿Olvidaste tu contraseña / usuario?": el rojo de texto. */
+[data-gondola-theme="dark"] login-main :is(.show-pass, a.back) {
+  color: var(--g-red-text) !important;
+}
