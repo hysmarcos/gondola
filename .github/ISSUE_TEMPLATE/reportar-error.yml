@@ -68,7 +68,7 @@ body:
     attributes:
       label: Versión de Góndola / Góndola version
       description: "Está en la pestaña Ayuda del popup. Si abriste este formulario desde la extensión, ya viene completa. / It is in the popup's Help tab. If you opened this form from the extension, it is already filled in."
-      placeholder: "0.12.0"
+      placeholder: "0.13.0"
     validations:
       required: true
   - type: checkboxes

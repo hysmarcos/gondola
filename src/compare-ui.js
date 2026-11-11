@@ -183,13 +183,17 @@ function wireToggle(block) {
 function plan(rows, variant) {
   if (variant === "icon") return [iconPlan(rows)];
   if (variant !== "mini") {
+    // La más barata de las que le ganan a Coto lleva --best (la PDP con la piel la resalta).
+    const lower = rows.filter((r) => r.state === "lower");
+    const cheapest = lower.length ? lower.reduce((a, b) => (b.unit < a.unit ? b : a)) : null;
     return rows.map((r) => ({
-      cls: `${CMP}-row ${CMP}-row--${r.state}`,
+      cls: `${CMP}-row ${CMP}-row--${r.state}${r === cheapest ? ` ${CMP}-row--best` : ""}`,
       name: r.name,
       price: r.unit === null ? ICON[r.state] : `${ICON[r.state]} ${formatMoney(r.unit)}`,
       label: r.unit === null ? `${r.name}: ${r.title ?? "consultando"}` : `${r.name}: ${formatMoney(r.unit)}, ${SAYS[r.state]}`,
       title: r.title,
       qty: r.qty > 1 ? `llevando ${r.qty}` : null,
+      ...(r.url ? { url: r.url } : {}),
     }));
   }
   const lower = rows.filter((r) => r.state === "lower");
@@ -222,9 +226,15 @@ function build(doc, items, block) {
     if ("text" in it) {
       el.textContent = it.text;
     } else {
-      const name = doc.createElement("span");
+      // Con link (solo https al mismo súper, ver safeUrl), el nombre abre su página.
+      const name = doc.createElement(it.url ? "a" : "span");
       name.className = `${CMP}-name`;
       name.textContent = it.name;
+      if (it.url) {
+        name.setAttribute("href", it.url);
+        name.setAttribute("target", "_blank");
+        name.setAttribute("rel", "noopener noreferrer");
+      }
       const price = doc.createElement("span");
       price.className = `${CMP}-price`;
       price.textContent = it.price;

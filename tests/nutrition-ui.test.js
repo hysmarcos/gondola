@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { renderNutrition, createNutritionUi, packageLine, valueLine, vdPercent, updatedText } from "../src/nutrition-ui.js";
+import { renderNutrition, createNutritionUi, packageLine, valueLine, vdPercent, updatedText, tileItems, cardTagItems } from "../src/nutrition-ui.js";
 
 const N = {
   per100: { kcal: 480, carbs: 70.25, sugars: 30, fat: 20, sodiumMg: 250 },
@@ -621,5 +621,317 @@ describe("revisión: la etiqueta cambia después del primer dibujo", () => {
     ui.paint(container, anchor, { ...first, tacc: "SI", name: "Avena Tradicional" }, true, section);
     expect(container.querySelector(".coto-unit-nutri-badge").classList.contains("coto-unit-nutri-badge--warn")).toBe(true);
     expect(section.host.querySelector(".coto-unit-nutri-tacc").classList.contains("coto-unit-nutri-tacc--warn")).toBe(true);
+  });
+});
+
+describe("piel de la PDP: interruptor 100 / porción y números grandes", () => {
+  // Leche Protein La Serenísima 1 L (PLU 508911), con los valores de la tabla del envase.
+  const LECHE = {
+    per100: { kcal: 42, carbs: 4.6, sugars: 4.6, proteins: 5, fat: 0, saturatedFat: 0, sodiumMg: 53 },
+    perServing: { kcal: 83, carbs: 9.2, sugars: 9.2, proteins: 10, fat: 0, saturatedFat: 0, sodiumMg: 106 },
+    servingSize: "200 ml", servingQty: 200, updatedAt: null, url: "https://world.openfoodfacts.org/product/7790742358608",
+    photos: {}, ingredients: null, allergens: ["milk"], traces: [], additives: [], nova: 1, glutenFreeLabel: false,
+  };
+  const OTRA = {
+    ...LECHE,
+    per100: { kcal: 380, carbs: 70, sugars: 20, proteins: 8, fat: 9, sodiumMg: 400 },
+    perServing: { kcal: 114, carbs: 21, sugars: 6, proteins: 2.4, fat: 2.7, sodiumMg: 120 },
+    servingSize: "30 g", servingQty: 30, url: "https://world.openfoodfacts.org/product/2",
+  };
+
+  describe("tileItems", () => {
+    it("cada 100 ml: calorías, proteínas, azúcares y sodio, con el formato de la tabla", () => {
+      const items = tileItems(LECHE, "100", true);
+      expect(items).toHaveLength(4);
+      expect(items[0].at(-1)).toMatch(/kcal cada 100 ml$/);
+      expect(items).toEqual([["42", "kcal cada 100 ml"], ["5 g", "proteínas"], ["4,6 g", "azúcares"], ["53 mg", "sodio"]]);
+      expect(tileItems(LECHE, "100", false)[0]).toEqual(["42", "kcal cada 100 g"]);
+    });
+    it("por porción: los valores de la porción", () => {
+      const items = tileItems(LECHE, "portion", true);
+      expect(items[0].at(-1)).toMatch(/kcal por porción$/);
+      expect(items).toEqual([["83", "kcal por porción"], ["10 g", "proteínas"], ["9,2 g", "azúcares"], ["106 mg", "sodio"]]);
+    });
+    it("sin proteínas ni sodio: dos ítems", () => {
+      const n = { per100: { kcal: 480, carbs: 70.25, sugars: 30, fat: 20 }, perServing: null };
+      expect(tileItems(n, "100", false)).toEqual([["480", "kcal cada 100 g"], ["30 g", "azúcares"]]);
+    });
+  });
+
+  describe("sección", () => {
+    let container, anchor, host, desc, skinOn;
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+    const reset = () => {
+      document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+      container = document.querySelector(".mt-4"); anchor = document.getElementById("a");
+      desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+    };
+    beforeEach(() => {
+      reset();
+      skinOn = true;
+    });
+    const label = (ean = "7790742358608", extra = {}) => ({ ean, nutri: true, group: "L", tacc: "SI", name: "Leche Protein La Serenisima 1L", amount: 1, value: 3244, ...extra });
+    // Dibuja con la opción skin que se pase (o sin ella, como antes de la piel).
+    async function draw(byEan, lab = label(), options = { skin: () => skinOn }) {
+      const ui = createNutritionUi(document, { request: async (ean) => byEan[ean] ?? "missing", onUpdate: () => {}, ...options });
+      const section = { host, after: desc };
+      ui.paint(container, anchor, lab, true, section);
+      await settle();
+      ui.paint(container, anchor, lab, true, section);
+      return { ui, section };
+    }
+    const sec = () => host.querySelector(".coto-unit-nutri-section");
+    const tiles = () => [...sec().querySelectorAll(".coto-unit-nutri-tiles > *")].map((t) => t.textContent);
+    const buttons = () => [...sec().querySelectorAll(".coto-unit-nutri-seg button")];
+
+    it("con la piel: interruptor de dos botones y cuatro números grandes antes de la tabla", async () => {
+      await draw({ "7790742358608": LECHE });
+      const s = sec();
+      expect(s.dataset.skin).toBe("1");
+      expect(s.dataset.basis).toBe("100");
+      expect(s.querySelector(".coto-unit-nutri-tiles").children).toHaveLength(4);
+      expect(tiles()).toEqual(["42kcal cada 100 ml", "5 gproteínas", "4,6 gazúcares", "53 mgsodio"]);
+      expect(buttons().map((b) => b.textContent)).toEqual(["Cada 100 ml", "Por porción"]);
+      expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false"]);
+      expect(buttons().every((b) => b.type === "button")).toBe(true);
+      const table = s.querySelector("table");
+      for (const node of [s.querySelector(".coto-unit-nutri-seg"), s.querySelector(".coto-unit-nutri-tiles")]) {
+        expect(node.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      }
+    });
+
+    it("click en Por porción: cambia data-basis, el botón apretado y los números; la tabla no se rehace", async () => {
+      await draw({ "7790742358608": LECHE });
+      const table = sec().querySelector("table");
+      buttons()[1].click();
+      expect(sec().dataset.basis).toBe("portion");
+      expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["false", "true"]);
+      expect(tiles()).toEqual(["83kcal por porción", "10 gproteínas", "9,2 gazúcares", "106 mgsodio"]);
+      expect(sec().querySelector("table")).toBe(table);
+      buttons()[0].click();
+      expect(sec().dataset.basis).toBe("100");
+      expect(tiles()[0]).toBe("42kcal cada 100 ml");
+    });
+
+    it("sin porción: no hay interruptor; los números grandes están", async () => {
+      await draw({ "7790742358608": { ...LECHE, perServing: null } });
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-tiles").children).toHaveLength(4);
+      expect(sec().dataset.basis).toBe("100");
+    });
+
+    it("missing: sin números grandes ni interruptor; queda el aviso de siempre", async () => {
+      await draw({});
+      expect(sec().querySelector(".coto-unit-nutri-tiles")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().textContent).toContain("Sin información nutricional. Podés cargarla en Open Food Facts");
+    });
+
+    // HTML de la sección con el código de antes de la piel (commit 3d67e57), con LECHE y
+    // label(). Sin fecha ni fotos: no cambia entre corridas.
+    const BEFORE_SKIN = `<section class="coto-unit-nutri-section" data-ean="7790742358608" data-tacc="ok|Coto lo marca Sin TACC"><h4 class="coto-unit-nutri-title">Información nutricional</h4><p class="coto-unit-nutri-pack">Envase de 1 L · 5 porciones de 200 ml · 420 kcal en total</p><p class="coto-unit-nutri-value">Rinde: $6.488 cada 100 g de proteína</p><table class="coto-unit-nutri-table"><thead><tr><th></th><th>cada 100 ml</th><th>Por porción (200 ml)</th><th>%VD</th></tr></thead><tbody><tr><td>Valor energético</td><td>42 kcal</td><td>83 kcal</td><td>4%</td></tr><tr><td>Carbohidratos</td><td>4,6 g</td><td>9,2 g</td><td>3%</td></tr><tr><td>Azúcares</td><td>4,6 g</td><td>9,2 g</td><td></td></tr><tr><td>Proteínas</td><td>5 g</td><td>10 g</td><td>13%</td></tr><tr><td>Grasas totales</td><td>0 g</td><td>0 g</td><td>0%</td></tr><tr><td>Grasas saturadas</td><td>0 g</td><td>0 g</td><td>0%</td></tr><tr><td>Sodio</td><td>53 mg</td><td>106 mg</td><td>4%</td></tr></tbody></table><p class="coto-unit-nutri-note">%VD: con base en una dieta de 2000 kcal</p><p class="coto-unit-nutri-tacc coto-unit-nutri-tacc--ok"><strong>Sin TACC: </strong>Coto lo marca Sin TACC. <span class="coto-unit-nutri-hint">Verificá el símbolo oficial en el envase.</span></p><div class="coto-unit-nutri-allergens"><strong>Alérgenos</strong><p class="coto-unit-nutri-chips">Declara: <span class="coto-unit-nutri-chip">Leche</span></p><p class="coto-unit-nutri-hint">Revisá el envase: los datos los carga la comunidad.</p></div><p class="coto-unit-nutri-nova">NOVA 1: sin procesar o mínimamente procesado</p><p class="coto-unit-nutri-source">Fuente: Open Food Facts, datos cargados por la comunidad. <a href="https://world.openfoodfacts.org/product/7790742358608" target="_blank" rel="noopener noreferrer">Ver ficha</a></p><p class="coto-unit-nutri-meta"><a href="https://world.openfoodfacts.org/product/7790742358608" target="_blank" rel="noopener noreferrer">Corregir en Open Food Facts</a></p></section>`;
+
+    it("sin la piel: sin piezas nuevas y el mismo HTML que antes de la piel", async () => {
+      await draw({ "7790742358608": LECHE }, label(), { skin: () => false });
+      expect(sec().querySelector(".coto-unit-nutri-tiles")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().outerHTML).toBe(BEFORE_SKIN);
+      reset();
+      await draw({ "7790742358608": LECHE }, label(), {});
+      expect(sec().outerHTML).toBe(BEFORE_SKIN);
+    });
+
+    // El CSS elige las columnas por posición (2 cada 100, 3 porción, 4 %VD): toda fila tiene
+    // las cuatro celdas, aunque falte el dato de la porción.
+    it("con porción incompleta: cada fila tiene cuatro celdas y la de la porción queda vacía", async () => {
+      const { sodiumMg, ...sinSodio } = LECHE.perServing;
+      await draw({ "7790742358608": { ...LECHE, perServing: sinSodio } });
+      const rows = [...sec().querySelectorAll(".coto-unit-nutri-table tbody tr")];
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((tr) => tr.children.length === 4)).toBe(true);
+      const sodio = rows.find((tr) => tr.firstElementChild.textContent === "Sodio");
+      expect(sodio.children[1].textContent).toBe("53 mg");
+      expect(sodio.children[2].textContent).toBe("");
+    });
+
+    it("sin porción, con la piel: dos columnas, sin nota de %VD ni interruptor, data-basis 100", async () => {
+      await draw({ "7790742358608": { ...LECHE, perServing: null } });
+      const table = sec().querySelector(".coto-unit-nutri-table");
+      expect(table.querySelectorAll("thead th")).toHaveLength(2);
+      expect([...table.querySelectorAll("tbody tr")].every((tr) => tr.children.length === 2)).toBe(true);
+      expect(sec().querySelector(".coto-unit-nutri-note")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().dataset.basis).toBe("100");
+    });
+
+    it("apagar la piel y repintar: la sección se rehace sin las piezas nuevas (y vuelven al prenderla)", async () => {
+      const { ui, section } = await draw({ "7790742358608": LECHE });
+      expect(sec().querySelector(".coto-unit-nutri-tiles")).not.toBeNull();
+      skinOn = false;
+      ui.paint(container, anchor, label(), true, section);
+      expect(host.querySelectorAll(".coto-unit-nutri-section")).toHaveLength(1);
+      expect(sec().querySelector(".coto-unit-nutri-tiles")).toBeNull();
+      expect(sec().querySelector(".coto-unit-nutri-seg")).toBeNull();
+      expect(sec().hasAttribute("data-skin")).toBe(false);
+      expect(sec().hasAttribute("data-basis")).toBe(false);
+      skinOn = true;
+      ui.paint(container, anchor, label(), true, section);
+      expect(host.querySelectorAll(".coto-unit-nutri-section")).toHaveLength(1);
+      expect(sec().querySelector(".coto-unit-nutri-tiles").children).toHaveLength(4);
+    });
+
+    it("otro producto en los mismos nodos: números del producto nuevo y data-basis vuelve a 100", async () => {
+      const { ui, section } = await draw({ "7790742358608": LECHE, 2: OTRA });
+      buttons()[1].click();
+      expect(sec().dataset.basis).toBe("portion");
+      const other = label("2", { group: "kg", drink: false, name: "Galletitas" });
+      ui.paint(container, anchor, other, true, section);
+      await settle();
+      ui.paint(container, anchor, other, true, section);
+      expect(sec().dataset.ean).toBe("2");
+      expect(sec().dataset.basis).toBe("100");
+      expect(tiles()).toEqual(["380kcal cada 100 g", "8 gproteínas", "20 gazúcares", "400 mgsodio"]);
+      expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false"]);
+    });
+  });
+});
+
+describe("etiquetas para vos en la tarjeta", () => {
+  const milk = { allergens: ["milk"], traces: ["soybeans"], per100: {} };
+  // [tipo, texto] de cada etiqueta, sin el title (lo prueba su propio test).
+  const short = (items) => items.map(([kind, text]) => [kind, text]);
+  const tags = (...args) => short(cardTagItems(...args));
+
+  it("cardTagItems: alérgenos, trazas y TACC, como máximo 2 y en ese orden", () => {
+    expect(tags({ allergens: ["milk", "soybeans"] }, {}, milk)).toEqual([["danger", "Tiene leche"], ["warn", "Puede tener soja"]]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "SI", name: "Leche" }, null)).toEqual([["ok", "Sin TACC"]]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "SI", name: "Avena tradicional" }, null)).toEqual([["warn", "Revisá TACC"]]);
+    expect(tags({ celiac: true, allergens: ["milk", "soybeans"] }, { tacc: "SI", name: "Leche" }, milk)).toHaveLength(2);
+    expect(tags({ celiac: false, allergens: [], sodium: true, sugar: true }, {}, milk)).toEqual([]);
+    expect(tags(null, {}, milk)).toEqual([]);
+  });
+
+  it("cardTagItems: nunca marca como seguro por falta de datos", () => {
+    // Celíaco sin alergias, sin tabla y sin dato de TACC: nada. Con datos de otro alérgeno: nada.
+    expect(tags({ celiac: true, allergens: [] }, { tacc: null, name: "Leche" }, null)).toEqual([]);
+    expect(tags({ celiac: true, allergens: [] }, {}, null)).toEqual([]);
+    expect(tags({ allergens: ["eggs"] }, {}, milk)).toEqual([]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "NO", name: "Leche" }, null)).toEqual([]);
+    // Un alérgeno declarado no se repite como traza.
+    expect(tags({ allergens: ["milk"] }, {}, { allergens: ["milk"], traces: ["milk"] })).toEqual([["danger", "Tiene leche"]]);
+  });
+
+  it("cardTagItems: el verde 'Sin TACC' es solo el de Coto; el de Open Food Facts es gris y lo dice", () => {
+    const gf = { allergens: [], traces: [], glutenFreeLabel: true, per100: {} };
+    // En la lista Coto no da el dato (tacc undefined): sello de OFF, gris, nunca verde.
+    expect(tags({ celiac: true, allergens: [] }, { name: "Arroz Gallo" }, gf)).toEqual([["unknown", "Sin TACC según OFF"]]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: null, name: "Arroz Gallo" }, gf)).toEqual([["unknown", "Sin TACC según OFF"]]);
+    // Con el dato de Coto y sin riesgo en el nombre: verde.
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "SI", name: "Arroz Gallo" }, gf)).toEqual([["ok", "Sin TACC"]]);
+    // Coto dice NO: nada, aunque OFF tenga el sello.
+    expect(tags({ celiac: true, allergens: [] }, { tacc: "NO", name: "Arroz Gallo" }, gf)).toEqual([]);
+    // Sello de OFF pero el nombre menciona avena: ni verde ni gris (taccStatus no lo da por bueno).
+    expect(tags({ celiac: true, allergens: [] }, { name: "Avena con sello" }, gf)).toEqual([]);
+  });
+
+  it("cardTagItems: cada etiqueta trae su explicación larga (title)", () => {
+    const gf = { allergens: [], traces: [], glutenFreeLabel: true, per100: {} };
+    expect(cardTagItems({ celiac: true, allergens: [] }, { name: "Arroz" }, gf)).toEqual([
+      ["unknown", "Sin TACC según OFF", "Según Open Food Facts, datos cargados por la comunidad. Verificá el símbolo oficial en el envase."],
+    ]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "SI", name: "Arroz" }, null)).toEqual([
+      ["ok", "Sin TACC", "Coto lo marca Sin TACC. Verificá el símbolo oficial en el envase."],
+    ]);
+    expect(cardTagItems({ allergens: ["milk"] }, {}, null)).toEqual([
+      ["unknown", "Alergias: sin dato", "Open Food Facts no tiene datos de alérgenos de este producto. Revisá el envase."],
+    ]);
+    expect(cardTagItems({ allergens: ["milk", "soybeans"] }, {}, milk)).toEqual([
+      ["danger", "Tiene leche", "Tiene leche. Revisá el envase."],
+      ["warn", "Puede tener soja", "Puede tener soja. Revisá el envase."],
+    ]);
+    expect(cardTagItems({ celiac: true, allergens: [] }, { tacc: "SI", name: "Avena" }, null)).toEqual([
+      ["warn", "Revisá TACC", "Revisá TACC. Revisá el envase."],
+    ]);
+  });
+
+  it("cardTagItems: con alergias y sin datos de alérgenos dice 'sin dato', nunca en silencio", () => {
+    const unknown = [["unknown", "Alergias: sin dato"]];
+    expect(tags({ allergens: ["milk"] }, {}, { allergens: [], traces: [] })).toEqual(unknown);
+    expect(tags({ allergens: ["milk"] }, {}, {})).toEqual(unknown);
+    expect(tags({ allergens: ["milk"] }, {}, null)).toEqual(unknown);
+    expect(tags({ celiac: true, allergens: ["milk"] }, { tacc: "SI", name: "Fideos" }, null)).toEqual([...unknown, ["ok", "Sin TACC"]]);
+    // Con datos de otro alérgeno, nada. Sin alergias en el perfil, nunca.
+    expect(tags({ allergens: ["eggs"] }, {}, { allergens: ["milk"], traces: [] })).toEqual([]);
+    expect(tags({ celiac: true, allergens: [] }, { tacc: null }, null)).toEqual([]);
+  });
+
+  it("cardTagItems: 'Revisá TACC' va antes que 'Alergias: sin dato' (lo neutro no saca el aviso)", () => {
+    expect(tags({ celiac: true, allergens: ["milk"] }, { tacc: "SI", name: "Avena tradicional" }, null)).toEqual([["warn", "Revisá TACC"], ["unknown", "Alergias: sin dato"]]);
+    // Y "sin dato" va antes que el Sin TACC (verde o gris).
+    const gf = { allergens: [], traces: [], glutenFreeLabel: true, per100: {} };
+    expect(tags({ celiac: true, allergens: ["milk"] }, { name: "Arroz" }, gf)).toEqual([["unknown", "Alergias: sin dato"], ["unknown", "Sin TACC según OFF"]]);
+    // Una traza va antes que "Revisá TACC".
+    expect(tags({ celiac: true, allergens: ["soybeans"] }, { tacc: "SI", name: "Avena" }, milk)).toEqual([["warn", "Puede tener soja"], ["warn", "Revisá TACC"]]);
+  });
+
+  it("cardTagItems: el límite de 2 nunca saca el peligro", () => {
+    const n = { allergens: ["milk"], traces: ["soybeans"] };
+    expect(tags({ celiac: true, allergens: ["milk", "soybeans"] }, { tacc: "SI", name: "Fideos" }, n)).toEqual([["danger", "Tiene leche"], ["warn", "Puede tener soja"]]);
+    expect(tags({ celiac: true, allergens: ["milk", "eggs", "fish"] }, { tacc: "SI", name: "Fideos" }, { allergens: ["milk", "eggs", "fish"], traces: [] }).map((i) => i[0])).toEqual(["danger", "danger"]);
+  });
+
+  it("cardTagItems: nombres de ALLERGENS en minúscula", () => {
+    const n = { allergens: ["tree-nuts", "gluten"], traces: [] };
+    expect(tags({ allergens: ["tree-nuts", "gluten"] }, {}, n)).toEqual([["danger", "Tiene frutos secos"], ["danger", "Tiene gluten (TACC)"]]);
+  });
+
+  it("wantsCards: celíaco o alguna alergia", () => {
+    const ui = createNutritionUi(document, { request: async () => "missing", onUpdate: () => {} });
+    expect(ui.wantsCards()).toBe(false);
+    ui.setProfile({ celiac: false, allergens: [], sodium: true, sugar: true });
+    expect(ui.wantsCards()).toBe(false);
+    ui.setProfile({ celiac: true, allergens: [] });
+    expect(ui.wantsCards()).toBe(true);
+    ui.setProfile({ celiac: false, allergens: ["milk"] });
+    expect(ui.wantsCards()).toBe(true);
+    ui.setProfile(null);
+    expect(ui.wantsCards()).toBe(false);
+  });
+
+  it("request pide una sola vez, avisa al llegar y cardTags sigue al perfil", async () => {
+    const calls = [];
+    let updates = 0;
+    const ui = createNutritionUi(document, { request: async (e) => { calls.push(e); return milk; }, onUpdate: () => updates++ });
+    ui.setProfile({ celiac: false, allergens: ["milk"] });
+    const label = { ean: "1", name: "Leche" };
+    expect(ui.cardTags(label)).toBeUndefined();
+    ui.request("1");
+    ui.request("1");
+    expect(ui.cardTags(label)).toBeUndefined();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(calls).toEqual(["1"]);
+    expect(updates).toBe(1);
+    expect(short(ui.cardTags(label))).toEqual([["danger", "Tiene leche"]]);
+    ui.setProfile({ celiac: false, allergens: ["soybeans"] });
+    expect(short(ui.cardTags(label))).toEqual([["warn", "Puede tener soja"]]);
+    ui.setProfile({ celiac: false, allergens: [] });
+    expect(short(ui.cardTags(label))).toEqual([]);
+  });
+
+  it("missing y error: sin dato de alergias, TACC con el dato de Coto, y sin reintento", async () => {
+    const results = { 1: "missing", 2: "error" };
+    const calls = [];
+    const ui = createNutritionUi(document, { request: async (e) => { calls.push(e); return results[e]; }, onUpdate: () => {} });
+    ui.setProfile({ celiac: true, allergens: ["milk"] });
+    ui.request("1");
+    ui.request("2");
+    await new Promise((r) => setTimeout(r, 0));
+    const unknown = ["unknown", "Alergias: sin dato"];
+    expect(short(ui.cardTags({ ean: "1", tacc: "SI", name: "Fideos" }))).toEqual([unknown, ["ok", "Sin TACC"]]);
+    expect(short(ui.cardTags({ ean: "1", name: "Fideos" }))).toEqual([unknown]);
+    expect(short(ui.cardTags({ ean: "2", tacc: "SI", name: "Fideos" }))).toEqual([unknown, ["ok", "Sin TACC"]]);
+    expect(ui.cardTags({ ean: "9" })).toBeUndefined();
+    ui.request("2");
+    expect(calls).toEqual(["1", "2"]);
   });
 });

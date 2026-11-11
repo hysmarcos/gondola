@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { installBadges, formatUnit, formatWhy, formatNote, formatBlocked, groupMark } from "../src/badge.js";
+import { createNutritionUi } from "../src/nutrition-ui.js";
 
 const K = (n) => `_/R-0000000${n}-0000000${n}-200`;
 // Tarjetas con la estructura real de Coto (listas de categoría, 2026-11).
@@ -40,9 +41,9 @@ function setup(html, path = "/productos/categorias/x", opts) {
   const doc = document.implementation.createHTMLDocument("x");
   doc.body.innerHTML = html;
   if (opts?.IntersectionObserver) win.IntersectionObserver = opts.IntersectionObserver;
-  installBadges(win, doc, opts);
+  const badges = installBadges(win, doc, opts);
   const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
-  return { win, doc, send };
+  return { win, doc, send, badges };
 }
 
 const hidden = (el) => el.hasAttribute("data-coto-unit-hide");
@@ -99,6 +100,27 @@ describe("tarjeta unificada", () => {
     expect(hidden(tax)).toBe(false);
     expect(tax.hasAttribute("data-coto-unit-dim")).toBe(true);
     expect(hidden(doc.querySelector(".bottom-botones"))).toBe(false);
+  });
+
+  it("con la piel de la lista oculta solo 'Ver planes de cuotas' (con el atributo); al apagarla vuelve", async () => {
+    // Un segundo link directo en .bottom-botones, con otro texto, no se toca.
+    const html = offerCard(K(1)).replace("Ver planes de cuotas</a>", 'Ver planes de cuotas</a><a href="/otra">Otra cosa</a>');
+    const { doc, send, badges } = setup(html);
+    const [cuotas, other] = doc.querySelectorAll(".bottom-botones > a");
+    send({ type: "labels", labels: { [K(1)]: L(733.33, { group: "L" }) } });
+    await tick();
+    // Sin la piel, como en la 0.12.0: el link se ve.
+    expect(hidden(cuotas)).toBe(false);
+    doc.documentElement.setAttribute("data-gondola-skin", "list");
+    badges.refresh();
+    await tick();
+    expect(hidden(cuotas)).toBe(true);
+    expect(hidden(other)).toBe(false);
+    doc.documentElement.removeAttribute("data-gondola-skin");
+    badges.refresh();
+    await tick();
+    expect(hidden(cuotas)).toBe(false);
+    expect(doc.querySelectorAll(".bottom-botones [data-coto-unit-hide]")).toHaveLength(0);
   });
 
   it("Comunidad: una sola oferta, un solo precio, sin el banner repetido", async () => {
@@ -700,6 +722,25 @@ describe("v5: comparar con otros súper", () => {
   });
 });
 
+// Sin la piel, la tarjeta es la de la 0.12.0: HTML fijado con el código de antes de la piel
+// (commit c995c57, src/badge.js y src/compare-ui.js), con estos mismos datos: oferta, banco con
+// logo, comparación resuelta (con un link) y perfil con alergias.
+const CARD_0_12 = "<div class=\"card-container\" data-coto-unit-card=\"\"><div class=\"top-imagen-promos\"><div class=\"coto-unit-tags\"><div class=\"coto-unit-offer\">40% dto</div></div><span class=\"cucarda-promo\" data-coto-unit-hide=\"\">40%DTO</span>\n    <a href=\"/productos/x/_/R-00000001-00000001-200\"><img class=\"product-image\"></a></div>\n    <div class=\"centro-precios\"><h3 class=\"nombre-producto\">Gaseosa Pomelo Cunnington 2250ml</h3><div class=\"coto-unit-price\"><div class=\"coto-unit-pricerow\"><span class=\"coto-unit-final\">$1.155,00</span><span class=\"coto-unit-sr\">Precio original:</span><s class=\"coto-unit-regular\">$2.750,00</s></div><div class=\"coto-unit-detail\" data-sig=\"30% hoy|https://x/logo_icbc_1.png|ICBC\" data-coto-unit-bank=\"\">con <img class=\"coto-unit-logo\" src=\"https://x/logo_icbc_1.png\" alt=\"ICBC\"> 30% hoy</div><div class=\"coto-unit-cmprow\" data-coto-unit-ean=\"7790070318213\"><div class=\"coto-unit-cmp coto-unit-cmp--icon\" data-state=\"worse\" data-coto-unit-sig=\"[{&quot;kind&quot;:&quot;icon&quot;,&quot;state&quot;:&quot;worse&quot;,&quot;text&quot;:&quot;Más barato en Día&quot;,&quot;label&quot;:&quot;Más barato en Día. Ver comparación&quot;,&quot;rows&quot;:[{&quot;name&quot;:&quot;Coto&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;coto&quot;,&quot;price&quot;:&quot;$2.225&quot;,&quot;qty&quot;:null,&quot;delta&quot;:null},{&quot;name&quot;:&quot;Carrefour&quot;,&quot;url&quot;:&quot;https://www.carrefour.com.ar/x/p&quot;,&quot;state&quot;:&quot;lower&quot;,&quot;price&quot;:&quot;$2.049&quot;,&quot;qty&quot;:null,&quot;delta&quot;:&quot;−8%&quot;},{&quot;name&quot;:&quot;Día&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;lower&quot;,&quot;price&quot;:&quot;$1.899&quot;,&quot;qty&quot;:&quot;x2&quot;,&quot;delta&quot;:&quot;−15%&quot;},{&quot;name&quot;:&quot;Más&quot;,&quot;url&quot;:null,&quot;state&quot;:&quot;equal&quot;,&quot;price&quot;:&quot;$2.229&quot;,&quot;qty&quot;:null,&quot;delta&quot;:&quot;igual&quot;}]}]\"><button class=\"coto-unit-cmp-btn\" type=\"button\" aria-label=\"Más barato en Día. Ver comparación\" aria-expanded=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z\"></path><path d=\"M7.5 7.5h.01\"></path></svg><span class=\"coto-unit-cmp-text\">Más barato en Día</span></button><div class=\"coto-unit-cmp-pop\" role=\"group\" aria-label=\"Mismo producto en otros súper\"><div class=\"coto-unit-cmp-head\">Mismo producto en otros súper</div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--coto\"><span class=\"coto-unit-cmp-name\">Coto</span><span class=\"coto-unit-cmp-price\">$2.225</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--lower\"><a class=\"coto-unit-cmp-name\" href=\"https://www.carrefour.com.ar/x/p\" target=\"_blank\" rel=\"noopener noreferrer\">Carrefour</a><span class=\"coto-unit-cmp-price\">$2.049</span><span class=\"coto-unit-cmp-delta\">−8%</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--lower\"><span class=\"coto-unit-cmp-name\">Día</span><span class=\"coto-unit-cmp-price\">$1.899</span><span class=\"coto-unit-cmp-qty\">x2</span><span class=\"coto-unit-cmp-delta\">−15%</span></div><div class=\"coto-unit-cmp-row coto-unit-cmp-row--equal\"><span class=\"coto-unit-cmp-name\">Más</span><span class=\"coto-unit-cmp-price\">$2.229</span><span class=\"coto-unit-cmp-delta\">igual</span></div></div></div></div><div class=\"coto-unit-unit\" title=\"Precio por litro para comparar con otros productos\"><span class=\"coto-unit-value\">$513 /L</span></div></div>\n      <div class=\"descuentos-slot\" data-coto-unit-hide=\"\"><small class=\"offer-crum\"> PRECIO CON 40%DTO </small><h4 class=\"card-title\"> $1.650,00 </h4></div>\n      <div class=\"d-flex flex-column\"><small class=\"card-text\" data-coto-unit-hide=\"\"> Precio Regular: $2.750,00 </small><small class=\"text-center\" data-coto-unit-dim=\"\"> Precio sin impuestos nacionales: $2.272,73 </small></div>\n      <div class=\"w-100\"></div>\n      <div class=\"text-center\" data-coto-unit-hide=\"\"><small class=\"card-text\"> Precio por 1 Litro: $1.222,22 </small></div>\n      <div class=\"bottom-botones\"><product-add-show-remove><button>Agregar</button></product-add-show-remove><a href=\"javascript:void(0)\">Ver planes de cuotas</a></div>\n    </div></div>";
+
+describe("sin la piel, como en la 0.12.0", () => {
+  it("tarjeta: el mismo HTML que antes de la piel", async () => {
+    const res = { ...RES, carrefour: { ...RES.carrefour, url: "https://www.carrefour.com.ar/x/p" } };
+    const nutrition = createNutritionUi(document, { request: async () => ({ allergens: ["milk"], traces: [], per100: {} }), onUpdate: () => {} });
+    nutrition.setProfile({ celiac: true, allergens: ["milk"] });
+    const compare = { peek: () => res, request: () => Promise.resolve(res) };
+    const { doc, send } = setup(offerCard(K(1)), undefined, { compare, nutrition, logoUrl: (n) => (n ? "https://x/" + n : null) });
+    send({ type: "settings", selected: [{ id: "1" }], day: new Date().getDay() });
+    send({ type: "labels", labels: { [K(1)]: L(733.33, { group: "L", bankValue: 513.33, bankName: "ICBC", bankLogo: "logo_icbc_1.png", bankPrice: 1155, bankPercent: 30, ean: EAN_A, cmp: CMP, nutri: true }) } });
+    await tick();
+    expect(doc.querySelector(".card-container").outerHTML).toBe(CARD_0_12);
+  });
+});
+
 describe("v7: logos de bancos", () => {
   const logoUrl = (n) => (n ? "https://x/" + n : null);
   function setupLogo(html, path) {
@@ -744,5 +785,196 @@ describe("v7: logos de bancos", () => {
     expect(why.querySelector("img")).not.toBeNull();
     expect(why.textContent.trim()).toBe("");
     expect(why.getAttribute("aria-label")).toBe("ICBC");
+  });
+});
+
+describe("v8: etiquetas para vos en la tarjeta", () => {
+  const MILK = { allergens: ["milk"], traces: [], per100: {} };
+  // nutrition de prueba: perfil fijo, resultados que llegan cuando el test lo decide.
+  function fakeNutrition(profile, results = {}) {
+    const n = {
+      asked: [],
+      profile,
+      results: { ...results },
+      wantsCards: () => Boolean(n.profile.celiac || n.profile.allergens?.length),
+      request: (ean) => { n.asked.push(ean); },
+      cardTags: (label) => {
+        const r = n.results[label.ean];
+        if (r === undefined) return undefined;
+        const mine = n.profile.allergens ?? [];
+        if (r === "error") return mine.length ? [["unknown", "Alergias: sin dato", "Open Food Facts no tiene datos de alérgenos de este producto. Revisá el envase."]] : [];
+        return mine.filter((k) => r.allergens?.includes(k)).map(() => ["danger", "Tiene leche", "Tiene leche. Revisá el envase."]);
+      },
+      paint: () => {},
+    };
+    return n;
+  }
+  const two = () => offerCard(K(1)) + offerCard(K(2));
+  const food = (ean) => L(5177, { ean, nutri: true });
+  const labels = (a = food(EAN_A), b = food(EAN_B)) => ({ [K(1)]: a, [K(2)]: b });
+  const tagsOf = (doc) => [...doc.querySelectorAll(".coto-unit-foryou")];
+  const skin = (doc, kind) => (kind ? doc.documentElement.setAttribute("data-gondola-skin", kind) : doc.documentElement.removeAttribute("data-gondola-skin"));
+
+  it("perfil vacío: no se pide nada y no hay etiquetas", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: [] });
+    const { doc, send } = setup(two(), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels() });
+    await tick();
+    expect(nutrition.asked).toEqual([]);
+    expect(tagsOf(doc)).toHaveLength(0);
+  });
+
+  it("con alergia a la leche: pide cada EAN una vez y pinta la etiqueta al llegar", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
+    const { doc, send } = setup(two(), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels() });
+    await tick();
+    send({ type: "labels", labels: labels() });
+    await tick();
+    expect(nutrition.asked).toEqual([EAN_A, EAN_B]);
+    expect(tagsOf(doc)).toHaveLength(0);
+    nutrition.results[EAN_A] = MILK;
+    send({ type: "labels", labels: labels() });
+    await tick();
+    const [box] = tagsOf(doc);
+    expect(tagsOf(doc)).toHaveLength(1);
+    expect(box.getAttribute("data-coto-unit-ean")).toBe(EAN_A);
+    expect(box.closest(".top-imagen-promos")).not.toBeNull();
+    expect(box.querySelector(".coto-unit-foryou-danger").textContent).toBe("Tiene leche");
+  });
+
+  it("cada etiqueta lleva su explicación larga en el title", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK, [EAN_B]: "error" });
+    const { doc, send } = setup(two(), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels() });
+    await tick();
+    const spans = tagsOf(doc).map((box) => [...box.children].map((s) => [s.textContent, s.title]));
+    expect(spans).toEqual([
+      [["Tiene leche", "Tiene leche. Revisá el envase."]],
+      [["Alergias: sin dato", "Open Food Facts no tiene datos de alérgenos de este producto. Revisá el envase."]],
+    ]);
+  });
+
+  it("con el createNutritionUi de verdad: pide el EAN, repinta al llegar y pinta 'Tiene leche'", async () => {
+    const asked = [];
+    let badges = null;
+    const nutrition = createNutritionUi(document, {
+      request: async (ean) => { asked.push(ean); return { allergens: ["milk"], traces: [], per100: {} }; },
+      onUpdate: () => badges.refresh(),
+    });
+    nutrition.setProfile({ celiac: false, allergens: ["milk"] });
+    const t = setup(offerCard(K(1)), undefined, { nutrition });
+    badges = t.badges;
+    skin(t.doc, "list");
+    t.send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+    await tick();
+    await tick();
+    expect(asked).toEqual([EAN_A]);
+    const spans = tagsOf(t.doc).flatMap((box) => [...box.children]);
+    expect(spans.map((s) => [s.className, s.textContent, s.title])).toEqual([["coto-unit-foryou-danger", "Tiene leche", "Tiene leche. Revisá el envase."]]);
+  });
+
+  it("con IntersectionObserver pide cuando la tarjeta se ve, una sola vez", async () => {
+    const observers = [];
+    class FakeIO {
+      constructor(cb) { this.cb = cb; this.targets = new Set(); observers.push(this); }
+      observe(t) { this.targets.add(t); }
+      unobserve(t) { this.targets.delete(t); }
+      disconnect() { this.targets.clear(); }
+      show(t) { this.cb([{ target: t, isIntersecting: true }], this); }
+    }
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
+    const { doc, send } = setup(two(), undefined, { nutrition, IntersectionObserver: FakeIO });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels() });
+    await tick();
+    expect(nutrition.asked).toEqual([]);
+    const cards = [...doc.querySelectorAll(".card-container")];
+    expect(cards.every((c) => observers[0].targets.has(c))).toBe(true);
+    observers[0].show(cards[0]);
+    observers[0].show(cards[0]);
+    send({ type: "labels", labels: labels() });
+    await tick();
+    expect(nutrition.asked).toEqual([EAN_A]);
+  });
+
+  it("producto que no es comida: no se pide", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
+    const { doc, send } = setup(two(), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: labels(L(5177, { ean: EAN_A, nutri: false }), food(EAN_B)) });
+    await tick();
+    expect(nutrition.asked).toEqual([EAN_B]);
+  });
+
+  it("sin la piel de la lista: no se pide nada y no hay etiquetas", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK });
+    for (const kind of [null, "pdp"]) {
+      const { doc, send } = setup(two(), undefined, { nutrition });
+      skin(doc, kind);
+      send({ type: "labels", labels: labels() });
+      await tick();
+      expect(tagsOf(doc)).toHaveLength(0);
+    }
+    expect(nutrition.asked).toEqual([]);
+  });
+
+  it("si Open Food Facts falla: dice 'sin dato' y no reintenta en los repintados", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] });
+    const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+    await tick();
+    nutrition.results[EAN_A] = "error";
+    for (let i = 0; i < 3; i++) {
+      send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+      await tick();
+    }
+    expect(tagsOf(doc)).toHaveLength(1);
+    expect(doc.querySelector(".coto-unit-foryou-unknown").textContent).toBe("Alergias: sin dato");
+    expect(nutrition.asked).toEqual([EAN_A]);
+  });
+
+  it("la tarjeta pasa a otro producto: pierde las etiquetas del anterior en el mismo repintado", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK });
+    const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: { [K(1)]: food(EAN_A), [K(2)]: food(EAN_B) } });
+    await tick();
+    expect(tagsOf(doc)).toHaveLength(1);
+    doc.querySelector('a[href*="_/R-"]').setAttribute("href", `/productos/x/${K(2)}`);
+    await tick();
+    expect(tagsOf(doc)).toHaveLength(0);
+    expect(nutrition.asked).toEqual([EAN_B]);
+  });
+
+  it("apagar la piel y repintar saca las etiquetas; prenderla las vuelve a poner", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK });
+    const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+    await tick();
+    expect(tagsOf(doc)).toHaveLength(1);
+    skin(doc, null);
+    send({ type: "settings", selected: [], day: 1 });
+    expect(tagsOf(doc)).toHaveLength(0);
+    skin(doc, "list");
+    send({ type: "settings", selected: [], day: 1 });
+    expect(tagsOf(doc)).toHaveLength(1);
+  });
+
+  it("el perfil cambia y el repintado saca las etiquetas", async () => {
+    const nutrition = fakeNutrition({ celiac: false, allergens: ["milk"] }, { [EAN_A]: MILK });
+    const { doc, send } = setup(offerCard(K(1)), undefined, { nutrition });
+    skin(doc, "list");
+    send({ type: "labels", labels: { [K(1)]: food(EAN_A) } });
+    await tick();
+    expect(tagsOf(doc)).toHaveLength(1);
+    nutrition.profile = { celiac: false, allergens: [] };
+    send({ type: "settings", selected: [], day: 1 });
+    expect(tagsOf(doc)).toHaveLength(0);
   });
 });

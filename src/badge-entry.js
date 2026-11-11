@@ -7,6 +7,7 @@ import { installPromoUi } from "./promo-ui.js";
 import { logoUrl } from "./logos.js";
 import { createNutritionUi } from "./nutrition-ui.js";
 import { installProfile } from "./profile.js";
+import { installSkin } from "./skin.js";
 
 // Logos de bancos: los empaquetados salen de la extensión, los nuevos del sitio de Coto.
 const logo = (icono) => logoUrl(icono, (p) => chrome.runtime.getURL(p));
@@ -20,10 +21,13 @@ const nutrition = createNutritionUi(document, {
   onUpdate: () => badges?.refresh(),
   iconUrl: chrome.runtime.getURL("assets/off/off-logo-icon-light.svg"),
   assetUrl: (path) => chrome.runtime.getURL(path),
+  // Con la piel de la PDP, la sección suma el interruptor 100 / porción y los números grandes.
+  skin: () => document.documentElement.getAttribute("data-gondola-skin") === "pdp",
 });
 
 badges = installBadges(window, document, { logoUrl: logo, compare, nutrition });
 installCartUi(window, document, { logoUrl: logo, compare, nutrition: { request: nutritionRequest } });
+installSkin(window, document, chrome.storage.local, () => badges?.refresh());
 installPromoUi(window, document);
 installBridge(window, chrome.storage.local);
 // Perfil personal: directo de storage, sin pasar por mensajes que la página puede leer.

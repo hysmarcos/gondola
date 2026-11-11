@@ -15,7 +15,7 @@
   <a href="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/hysmarcos/gondola/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Chrome Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest_V3-2a78d6?logo=googlechrome&logoColor=white">
   <img alt="Node 24" src="https://img.shields.io/badge/node-24-2a78d6?logo=node.js&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-461-2a78d6">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-555-2a78d6">
   <a href="https://hysmarcos.github.io/gondola/privacidad.html"><img alt="No servers" src="https://img.shields.io/badge/servers-0-2a78d6"></a>
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2a78d6">
   <a href="CONTRIBUTING.md"><img alt="Contributions welcome" src="https://img.shields.io/badge/contributions-welcome-2a78d6"></a>
@@ -45,7 +45,7 @@ The question: which of these products is really the best deal, with my card, tod
 | Unit price | Kilo, liter, unit or 10 meters (toilet paper and rolls) |
 | Personal data sent | None. Settings stay in your browser. |
 | Own servers | None |
-| Tests | 461, with real responses from the Coto, Carrefour, Día, Más and Open Food Facts APIs |
+| Tests | 555, with real responses from the Coto, Carrefour, Día, Más and Open Food Facts APIs |
 | Language of the UI | Spanish (Argentina) |
 
 ## Before and after
@@ -62,6 +62,7 @@ The same Coto page, without and with Góndola. Real captures from November 9, 20
 
 | Feature | What it does |
 |---|---|
+| Góndola design | New look for the product list and the product page. Turn it off in the popup ("Diseño Góndola") to get Coto's own look back. |
 | Sort by price per kg/L | Adds "Precio por kg/L: menor a mayor" to the sort menu, in categories and search. |
 | Real price on every product | Shows the final price with the best deal, the original price struck through, and the price per kilo, liter or unit. |
 | Your bank | Pick your cards and the shopping day in the popup. You see the bank price only if Coto applies the promo to that product. |
@@ -72,8 +73,9 @@ The same Coto page, without and with Góndola. Real captures from November 9, 20
 | Nutrition facts | On a food or drink product page, the nutrition table from [Open Food Facts](https://world.openfoodfacts.org), if it exists. If it is missing, a link to add it. Adds gluten-free status (Coto's data, with a warning if it mentions wheat, oats, barley or rye), allergens, ingredients, additives and NOVA. Can be turned off. |
 | My profile | In Settings you choose if you are celiac, watch sodium or sugar, and your allergies. Each product page shows "Para vos" (for you). It stays in your browser. It is not medical advice. |
 | Cart nutrition | In the cart, the total kcal, sugars and sodium of your purchase. |
+| Allergies in the list | With the Góndola design and nutrition facts on, and coeliac or at least one allergy in your profile, food cards mark the products that declare your allergies, or say there is no allergen data. No tag does not mean safe. |
 
-Everything on Coto keeps working: add to cart, quantities, cart and checkout. The extension only adds elements. It never removes any.
+Everything on Coto keeps working: add to cart, quantities, cart and checkout. The extension adds elements and hides some of Coto's parts, with an attribute or with CSS. It never removes any.
 
 ## How it works
 
@@ -105,8 +107,8 @@ flowchart LR
 
 | | Test | Question | Result |
 |:---:|---|---|---|
-| ✅ | Tests with real data | Are price, size and order right? | 461 tests with saved responses from Coto, Carrefour, Día, Más and Open Food Facts |
-| ✅ | Coto keeps working | Do add, quantities and cart behave the same? | Yes. The extension adds elements and hides parts with an attribute. It removes nothing from Coto. |
+| ✅ | Tests with real data | Are price, size and order right? | 555 tests with saved responses from Coto, Carrefour, Día, Más and Open Food Facts |
+| ✅ | Coto keeps working | Do add, quantities and cart behave the same? | Yes. The extension adds elements and hides parts with an attribute (with the Góndola design, also "Ver planes de cuotas" on list cards). With the Góndola design it sets `data-gondola-skin` on `<html>` and hides with CSS the fixed rating stars on the product page. It removes nothing from Coto. |
 | ✅ | Bank promos | Does it show a discount Coto does not apply? | No. It follows the days, caps and exclusions of Coto's API. |
 | ⚠️ | Other stores | Is it the price at your branch? | Not always. It uses each site's default area and leaves out bank discounts. |
 | ⚠️ | Coto changes | Does it keep working if Coto changes its site? | It depends. If the API changes, the extension stops showing data instead of showing wrong data. |
@@ -120,7 +122,7 @@ Góndola collects no personal data, has no analytics and no ads. Full policy (in
 | `storage` | Keep your cards, day and settings in your browser |
 | `www.coto.com.ar` | Add the real price, promos and cart on Coto's pages |
 | `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar`, `www.masonline.com.ar` | Find the same product by barcode. Can be turned off. |
-| `world.openfoodfacts.org` | Get the nutrition table of the product you open. Only the barcode is sent, without cookies. Can be turned off. |
+| `world.openfoodfacts.org` | Get the nutrition table of the product you open and of the products in your cart. Only with the Góndola design on and coeliac or an allergy in your profile, also of the food products in the list that scroll into view. Only the barcode is sent, without cookies. Can be turned off. |
 
 ## Run it
 

@@ -12,6 +12,7 @@ const MARK = "coto-unit-mark";
 const TAGS = "coto-unit-tags";
 const NOTICE = "coto-unit-notice";
 const CMP = "coto-unit-cmp";
+const FORYOU = "coto-unit-foryou";
 const EAN_ATTR = "data-coto-unit-ean";
 const KEY_RE = /_\/R-[\w-]+/;
 
@@ -71,6 +72,18 @@ export function formatBlocked(reason) {
   return null;
 }
 
+// Bloque "Con tu banco" de la PDP con la piel. hasBank: el usuario eligió alguna tarjeta.
+// null: con tarjetas pero sin promo para este producto (el bloque no se muestra).
+export function formatBankBox(label, hasBank, day, today) {
+  if (!hasBank) return { kind: "none", text: "Elegí tus tarjetas en el botón de Góndola y vas a ver el precio con el descuento de cada día." };
+  if (label?.bankPrice != null && label.bankName) {
+    const when = day === today ? "hoy" : `el ${dayName(day).toLowerCase()}`;
+    return { kind: "apply", text: `${label.bankName} ${when}: ${label.bankPercent}% · ${$2(label.bankPrice)}` };
+  }
+  const blocked = formatBlocked(label?.bankBlocked);
+  return blocked ? { kind: "blocked", text: blocked } : null;
+}
+
 export function groupMark(group) {
   return MARK_TEXT[group] ? "▸ " + MARK_TEXT[group] : null;
 }
@@ -119,9 +132,15 @@ export function installBadges(win, doc, deps = {}) {
   const compare = deps.compare ?? null;
   const nutrition = deps.nutrition ?? null;
   const today = () => new Date().getDay();
-  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true, compare: true, nutrition: true };
+  // hasBank empieza en true: hasta leer los ajustes no se invita a elegir tarjetas.
+  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true, compare: true, nutrition: true, hasBank: true };
+  // La piel de la PDP (src/skin.js pone el atributo; al cambiarlo llama a refresh()).
+  const pdpSkin = () => doc.documentElement.getAttribute("data-gondola-skin") === "pdp";
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
-  let watching = new WeakMap(); // caja -> EAN que espera verse para pedirse
+  const askedCards = new Set(); // EAN pedidos para las etiquetas "para vos" de las tarjetas
+  let watching = new WeakMap(); // nodo -> { ean, go }: lo que espera verse para pedirse
+  // Etiquetas "para vos": solo con la piel de la lista y un perfil que las pide.
+  const listSkin = () => doc.documentElement.getAttribute("data-gondola-skin") === "list";
   let io = null;
   let scheduled = false;
 
@@ -148,22 +167,29 @@ export function installBadges(win, doc, deps = {}) {
     compare.request(ean).then(renderSoon);
   }
 
-  // Pide el EAN la primera vez que la caja entra en pantalla (o enseguida si no se puede saber).
-  function want(box, ean) {
-    if (requested.has(ean)) return;
-    if (!win.IntersectionObserver) return ask(ean);
-    if (watching.get(box) === ean) return;
+  // Llama a go(ean) la primera vez que el nodo entra en pantalla (o enseguida si no se puede
+  // saber). done(): ese EAN ya se pidió. El observador es uno solo, para todos los pedidos.
+  function want(box, ean, go = ask, done = () => requested.has(ean)) {
+    if (done()) return;
+    if (!win.IntersectionObserver) return go(ean);
+    if (watching.get(box)?.ean === ean) return;
     io ??= new win.IntersectionObserver((entries) => {
       for (const e of entries) {
         if (!e.isIntersecting || !watching.has(e.target)) continue;
         io.unobserve(e.target);
         const seen = watching.get(e.target);
         watching.delete(e.target);
-        ask(seen);
+        seen.go(seen.ean);
       }
     });
-    watching.set(box, ean);
+    watching.set(box, { ean, go });
     io.observe(box);
+  }
+
+  function unwant(box) {
+    if (!watching.has(box)) return;
+    watching.delete(box);
+    io?.unobserve(box);
   }
 
   // Filas "en otros súper" como último hijo del bloque de precio (tarjeta, PDP o carrusel),
@@ -179,9 +205,17 @@ export function installBadges(win, doc, deps = {}) {
       box.querySelector(":scope > ." + CMP)?.remove();
       box.setAttribute(EAN_ATTR, ean);
     }
+    // Pastilla <-> filas (la piel de la PDP se prende o se apaga): se arma de cero, así no
+    // quedan la clase, el estado ni el panel de la pastilla en las filas.
+    const old = box.querySelector(":scope > ." + CMP);
+    if (old && old.classList.contains(`${CMP}--icon`) !== (variant === "icon")) old.remove();
     const results = compare.peek(ean);
     paintCompare(box, compareRows(label.cmp, results), variant);
-    if (!results) want(box, ean);
+    // Las filas son de la PDP con la piel: la caja pasa a display: contents (sin caja propia,
+    // un IntersectionObserver nunca la ve) y es el único producto de la página: se pide ya.
+    if (results) return;
+    if (variant === "rows") ask(ean);
+    else want(box, ean);
   }
 
   // Fila "precio por unidad + motivo". Sirve en tarjeta, producto y carrusel.
@@ -306,6 +340,45 @@ export function installBadges(win, doc, deps = {}) {
     order(tags, ["coto-unit-best", "coto-unit-offer", MARK]);
   }
 
+  // Etiquetas "para vos" abajo de la foto: alergias y TACC del perfil, según Open Food Facts.
+  // Se pide el EAN solo cuando la tarjeta se ve. Si la tarjeta pasa a otro producto, la
+  // etiqueta del anterior sale en este mismo repintado.
+  function paintForYou(card, label) {
+    const ean = nutrition && state.nutrition && listSkin() && nutrition.wantsCards?.() && label.nutri && label.ean ? String(label.ean) : null;
+    let box = card.querySelector("." + FORYOU);
+    if (box && box.getAttribute(EAN_ATTR) !== ean) {
+      box.remove();
+      box = null;
+    }
+    if (!ean) return unwant(card);
+    const items = nutrition.cardTags(label);
+    if (items === undefined) {
+      return want(card, ean, (e) => {
+        askedCards.add(e);
+        nutrition.request(e);
+      }, () => askedCards.has(ean));
+    }
+    unwant(card);
+    if (!items.length) return box?.remove();
+    const sig = items.map(([kind, text, title]) => `${kind}:${text}:${title ?? ""}`).join("|");
+    if (box && box.dataset.sig === sig) return;
+    if (!box) {
+      box = doc.createElement("div");
+      box.className = FORYOU;
+      box.setAttribute(EAN_ATTR, ean);
+      (card.querySelector(".top-imagen-promos") ?? card).append(box);
+    }
+    box.dataset.sig = sig;
+    // Cada etiqueta: [tipo, texto corto, explicación larga para el title].
+    box.replaceChildren(...items.map(([kind, text, title]) => {
+      const tag = doc.createElement("span");
+      tag.className = `${FORYOU}-${kind}`;
+      tag.textContent = text;
+      if (title) tag.title = title;
+      return tag;
+    }));
+  }
+
   // Qué partes de Coto repiten lo que ya muestra el bloque.
   function cotoParts(card, centro) {
     const hide = new Set();
@@ -326,12 +399,19 @@ export function installBadges(win, doc, deps = {}) {
       if (t.length > 80 || /sin impuestos/i.test(t)) continue;
       if (/precio por \d/i.test(t) || /con\s*comunidad\s*pagas/i.test(t)) hide.add(child);
     }
+    // Con la piel de la lista, "Ver planes de cuotas" no va en la tarjeta (sigue en la página
+    // de producto). Solo ese link: los demás de .bottom-botones quedan.
+    if (listSkin()) {
+      for (const a of card.querySelectorAll(".bottom-botones > a")) if (/planes de cuotas/i.test(a.textContent)) hide.add(a);
+    }
     return { hide, dim };
   }
 
   function restoreCard(card, centro) {
     centro.querySelector(":scope > ." + BLOCK)?.remove();
     card.querySelector("." + TAGS)?.remove();
+    card.querySelector("." + FORYOU)?.remove();
+    unwant(card);
     for (const el of card.querySelectorAll(`[${HIDE}], [${DIM}]`)) {
       el.removeAttribute(HIDE);
       el.removeAttribute(DIM);
@@ -354,6 +434,7 @@ export function installBadges(win, doc, deps = {}) {
         setAttr(card, CARD, true);
         paintCardBlock(centro, centro.querySelector(":scope > .nombre-producto, :scope > h3"), label);
         paintTags(card, label, key);
+        paintForYou(card, label);
         const { hide, dim } = cotoParts(card, centro);
         for (const el of card.querySelectorAll(`[${HIDE}]`)) if (!hide.has(el)) el.removeAttribute(HIDE);
         for (const el of card.querySelectorAll(`[${DIM}]`)) if (!dim.has(el)) el.removeAttribute(DIM);
@@ -377,13 +458,35 @@ export function installBadges(win, doc, deps = {}) {
       else container.appendChild(box);
     }
     const mini = variant === "mini";
+    // Con la piel, la PDP suma "Con tu banco" y muestra los otros súper en filas con título.
+    // cap y bankno quedan (la piel los oculta con CSS): sin la piel se ven como siempre.
+    const skin = variant === "pdp" && pdpSkin();
     upsert(box, "coto-unit-cap", mini ? null : "Precio real para comparar");
     paintUnit(box, label, mini);
     upsert(box, "coto-unit-note", mini ? null : formatNote(label));
     upsert(box, "coto-unit-bankno", mini ? null : formatBlocked(label.bankBlocked));
-    order(box, ["coto-unit-cap", "coto-unit-unit", "coto-unit-note", "coto-unit-bankno"]);
-    paintCmp(box, label, mini ? "mini" : "icon");
+    paintBankBox(box, skin ? formatBankBox(label, state.hasBank, state.day, today()) : null);
+    order(box, ["coto-unit-cap", "coto-unit-unit", "coto-unit-note", "coto-unit-bankno", "coto-unit-bankbox", "coto-unit-cmptitle"]);
+    paintCmp(box, label, mini ? "mini" : skin ? "rows" : "icon");
+    const cmp = skin ? box.querySelector(":scope > ." + CMP) : null;
+    upsert(box, "coto-unit-cmptitle", cmp ? "El mismo producto en otros súper" : null, cmp);
     return box;
+  }
+
+  // "Con tu banco": título y una línea. Va antes del comparador (paintCmp lo deja último).
+  function paintBankBox(box, info) {
+    const cmp = box.querySelector(":scope > ." + CMP);
+    let el = box.querySelector(":scope > .coto-unit-bankbox");
+    if (!info) return el?.remove();
+    if (!el) {
+      el = doc.createElement("div");
+      el.className = "coto-unit-bankbox";
+      if (cmp) box.insertBefore(el, cmp);
+      else box.appendChild(el);
+    }
+    if (el.getAttribute("data-kind") !== info.kind) el.setAttribute("data-kind", info.kind);
+    upsert(el, "coto-unit-bankbox-title", "Con tu banco");
+    upsert(el, "coto-unit-bankbox-text", info.text);
   }
 
   function pdpKey() {
@@ -490,6 +593,7 @@ export function installBadges(win, doc, deps = {}) {
       state.markBest = m.markBest !== false;
       state.compare = m.compareStores !== false;
       state.nutrition = m.nutrition !== false;
+      state.hasBank = (m.selected ?? []).length > 0;
       if (!state.compare) {
         io?.disconnect();
         watching = new WeakMap();
