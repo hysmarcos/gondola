@@ -19,6 +19,7 @@
     "package": "npm run build && node scripts/package.mjs",
     "fixtures:off": "node scripts/capture-off-fixtures.mjs",
     "fixtures:dom": "node scripts/capture-dom.mjs",
+    "fixtures:chrome": "node scripts/capture-chrome.mjs",
     "skin:check": "node scripts/skin-check.mjs"
   },
   "devDependencies": {
