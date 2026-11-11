@@ -338,7 +338,10 @@
   height: 20px;
 }
 
+/* Coto le da a todo button "display: flex; height: 45px": "Ver tabla" es un link de texto. */
 .coto-unit-nutri-more {
+  display: inline;
+  height: auto;
   align-self: center;
   margin: 0;
   padding: 0;
