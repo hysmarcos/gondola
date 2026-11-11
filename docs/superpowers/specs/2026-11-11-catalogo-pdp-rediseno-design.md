@@ -14,7 +14,8 @@ ordenar, paginar, la nota del pedido, las cuotas.
 
 Entra:
 
-- Lista: tarjeta, grilla, columna de filtros, subcategorías, barra de orden.
+- Lista: tarjeta, grilla, columna de filtros y barra de orden. Las subcategorías no tienen
+  una fila de chips propia: quedan como un grupo de filtros más.
 - PDP: galería, caja de compra, información nutricional, descripción y características.
 - Un interruptor en el popup para apagar el diseño nuevo.
 
@@ -52,7 +53,10 @@ Estas reglas valen más que cualquier detalle visual de este documento.
 2. Góndola no mueve esos controles a otro padre. El orden visual se cambia con CSS (`order`,
    grilla, `position`), no reubicando nodos. Motivo: Coto es una aplicación Angular y un
    nodo movido puede perder sus eventos o volver a dibujarse.
-3. Lo que sobra se oculta con el atributo `data-coto-unit-hide`, como hoy.
+3. Lo que sobra se oculta con el atributo `data-coto-unit-hide`, como hoy. También "Ver
+   planes de cuotas" en la tarjeta de la lista: badge.js le pone el atributo solo con la
+   piel de la lista. Además, la piel oculta con CSS, bajo `[data-gondola-skin]`, las
+   estrellas fijas de la PDP y los `div` vacíos de su bloque de precio.
 4. Los nodos propios de Góndola (precio por unidad, comparador, etiquetas, nutrición) sí se
    pueden crear y mover.
 5. Todo el diseño nuevo cuelga de un atributo en `<html>`: `data-gondola-skin`. Sin el
@@ -75,27 +79,32 @@ Estas reglas valen más que cualquier detalle visual de este documento.
 | Verde (Coto gana, Sin TACC) | `#0a7a3d`, suave `#e6f4ec` |
 
 - Tipografía: Poppins 400, 500 y 600 (ya está en `assets/fonts/`). Texto base 13 px, mínimo
-  12 px. Etiquetas 11 px. Precio de tarjeta 20 px. Precio de PDP 32 px.
+  12 px, salvo las etiquetas y la línea de impuestos de la tarjeta, que van en 11 px.
+  Precio de tarjeta 20 px. Precio de PDP 32 px.
 - Números con `font-variant-numeric: tabular-nums`.
 - Radios: tarjeta 14 px, foto 8 px, botón 10 px, etiqueta 6 px, caja de compra 16 px.
-- Bordes con `box-shadow: 0 0 0 1px` en lugar de `border`, para no cambiar medidas.
+- Bordes con `box-shadow: 0 0 0 1px` en lugar de `border`, para no cambiar medidas. Salvo
+  la etiqueta de nutrición (con su recuadro punteado cuando no hay tabla) y la ficha de
+  características: llevan `border` negro, como el envase.
 - Contraste mínimo 4,5:1 en texto (WCAG 1.4.3). Revisar el precio tachado y las etiquetas.
 
 ## 4. Lista de productos
 
 ### 4.1 Página
 
-- Dos columnas: filtros a la izquierda (184 px, fijos al bajar con `position: sticky`) y
-  productos a la derecha.
+- Desde 768 px de ancho de ventana, dos columnas: filtros a la izquierda (184 px, fijos al
+  bajar con `position: sticky`) y productos a la derecha. El `top` de los filtros es el
+  alto del encabezado fijo de Coto, medido a cada ancho, más 12 px. Por debajo de 768 px las
+  columnas quedan como las arma Coto (apiladas, con los filtros detrás de su botón).
 - Arriba de los productos: título de la categoría con la cantidad de productos, y a la
   derecha el selector de orden de Coto (`.plp-header__sort`) con estilo nuevo.
-- Subcategorías como una fila de chips, separadas del resto de los filtros.
-- Filtros aplicados: una fila con un chip por filtro activo y "Borrar todo". Solo se
-  muestra si Coto ya trae esos links; Góndola no arma URLs de filtro propias.
+- Las subcategorías no tienen fila de chips: quedan como un grupo de filtros más.
+- Filtros aplicados: una fila con un chip por filtro activo, sin "Borrar todo". Son los
+  links de Coto; Góndola no arma URLs de filtro propias.
 - Filtros: grupos con título, casilla y cantidad. Son los links de Coto. La casilla es
   dibujo (un `::before`); el click sigue siendo el del link.
-- Grilla: 4 columnas desde 1100 px de ancho de ventana, 3 columnas por debajo. Separación
-  de 12 px.
+- Grilla: 4 columnas desde 1100 px de ancho de ventana, 3 desde 992 px y 2 desde 768 px;
+  por debajo, la de Coto. Separación de 12 px.
 - El banner publicitario de arriba de la lista no se toca.
 
 ### 4.2 Tarjeta
@@ -105,7 +114,7 @@ corta con "…".
 
 | Orden | Parte | Alto | Contenido |
 |---|---|---|---|
-| 1 | Foto | cuadrada | Fondo suave. Arriba a la izquierda, una etiqueta: "Más barato por litro" (ámbar), o la oferta de Coto (roja), o "Sin stock". Abajo, las etiquetas "para vos". |
+| 1 | Foto | cuadrada | Fondo suave. Arriba a la izquierda, una etiqueta: "Más barato por litro" (ámbar), o la oferta de Coto (roja). Abajo, las etiquetas "para vos". |
 | 2 | Nombre | 36 px | 2 líneas. |
 | 3 | Precio | 28 px | Precio final de 20 px y, al lado, el precio regular tachado. |
 | 4 | Precio por unidad | 20 px | Azul. Valor, unidad y motivo ("llevando 2", "con ICBC hoy"). Vacío si no hay dato. |
@@ -118,31 +127,45 @@ Reglas de cada parte:
   en ese orden de prioridad. La marca de inicio de grupo al ordenar por unidad ("▸ Por
   litro") se sigue viendo, debajo.
 - **Etiquetas "para vos"**: máximo 2, en una fila. Flotan sobre la foto, así que no cambian
-  el alto. Solo para alergias y celíaco: "Tiene leche", "Puede tener soja", "Sin TACC",
-  "Revisá TACC". Sodio y azúcar no generan etiqueta en la tarjeta (sería calcular un
-  sello); siguen en la PDP. Sin perfil, no hay etiquetas.
+  el alto. Si no entran las dos, cualquiera se achica y se corta con "…". Cada una lleva
+  la explicación larga en el `title`. Solo para alergias y celíaco, en este orden de
+  prioridad (el límite de 2 corta desde el final):
+  1. "Tiene leche" (ámbar con borde), una por alérgeno declarado.
+  2. "Puede tener soja" (ámbar), una por traza.
+  3. "Revisá TACC" (ámbar): Coto lo marca Sin TACC, pero el nombre o los ingredientes
+     mencionan un cereal con gluten, o Open Food Facts declara gluten o trazas de
+     gluten.
+  4. "Alergias: sin dato" (gris): hay alergias en el perfil y Open Food Facts no tiene
+     datos de alérgenos.
+  5. "Sin TACC" (verde), solo con el dato de Coto; o "Sin TACC según OFF" (gris), con el
+     sello de Open Food Facts y sin riesgo en el nombre ni en los ingredientes.
+  Sodio y azúcar no generan etiqueta en la tarjeta (sería calcular un sello); siguen en la
+  PDP. Sin perfil, no hay etiquetas.
   - Dato nuevo: hoy la nutrición se pide solo en la PDP. Con celíaco o alguna alergia en el
     perfil, Góndola pide a Open Food Facts cada producto de comida cuando su tarjeta entra
     en pantalla. Viaja solo el código de barras, se guarda 7 días y un error no se
     reintenta en la misma página.
 - **Precio y precio por unidad**: son los mismos valores de hoy (`bankValue ?? value`). El
-  banco no agrega una línea: aparece como motivo, con el nombre del banco sobre fondo azul.
+  banco no agrega una línea: aparece como motivo, en texto azul marino con el logo del
+  banco.
 - **Comparador**: es la pastilla que ya dibuja `compare-ui.js`, a lo ancho de su fila y
   sin fondo, con sus textos de hoy: "Mejor precio" (verde), "Más barato en Más" (ámbar),
-  "Igual", "Comparando…" y "Sin comparar" (gris). Al hacer click se abre el panel de hoy
-  con Coto y los tres súper. El panel flota sobre la tarjeta y no mueve nada. El mockup
-  muestra otros textos y barras; vale este texto.
+  "Igual", "Comparando…" y "Sin comparar" (gris). Al hacer click o con el teclado se abre
+  el panel de hoy con Coto y los tres súper; al pasar el mouse no se abre. El panel flota
+  sobre la tarjeta y no mueve nada. El mockup muestra otros textos y barras; vale este
+  texto.
 - **En el carrito**: borde rojo de 2 px en la tarjeta y el selector de cantidad en lugar de
   "Agregar".
-- **Sin stock**: foto atenuada y el botón de Coto deshabilitado. El precio y el comparador
-  se siguen viendo.
+- **Sin stock**: no tiene estilo propio (no se capturó ese estado). La tarjeta se ve como
+  las demás, con el botón como lo dibuje Coto.
 
 Se ocultan las mismas partes de Coto que hoy (`.descuentos-slot`, `h4.card-title`, "Precio
 Regular", "Precio por 1 …", el banner de Comunidad) y además "Ver planes de cuotas" en la
-tarjeta: sigue en la PDP.
+tarjeta, con `data-coto-unit-hide`: sigue en la PDP. Una tarjeta sin etiqueta de Góndola
+lo sigue mostrando, debajo del botón, en el lugar reservado.
 
 "Precio sin impuestos nacionales" no se oculta: es una séptima parte, debajo del botón, de
-18 px de alto, en 12 px y gris. El mockup no la muestra; vale este texto.
+30 px de alto: dos líneas de 11 px, en gris. El mockup no la muestra; vale este texto.
 
 ### 4.3 Por qué alto fijo y no subgrid
 
@@ -169,9 +192,10 @@ Columna izquierda, en orden:
 
 En orden:
 
-1. Nombre del producto (20 px) y, debajo, marca y contenido.
+1. Nombre del producto (20 px) y, debajo, PLU y EAN (las estrellas fijas de Coto se
+   ocultan).
 2. Oferta de Coto como etiqueta roja.
-3. Precio final (32 px) con el regular tachado al lado.
+3. Precio final (32 px) con el regular tachado debajo.
 4. Precio por unidad con su motivo.
 5. "Agregar" o el selector de cantidad de Coto.
 6. **Con tu banco**, con las reglas reales de Coto (un producto en oferta no suma banco):
@@ -183,22 +207,28 @@ En orden:
    No hay link "Cambiar": una página no puede abrir el popup de la extensión. El mockup
    muestra un caso "banco contra llevando 2" que no existe; vale este texto.
 7. **El mismo producto en otros súper**: las filas que ya dibuja `compare-ui.js`, una por
-   súper, con nombre y precio. La más barata en verde. Cada fila abre la página de ese
-   súper. Sin barras de proporción.
+   súper, con nombre y precio. En verde, el súper más barato de los que le ganan a Coto;
+   si Coto gana, ninguno. Solo el nombre del súper es un link a su página (si
+   hay link). Sin barras de proporción.
 8. "Ver planes de cuotas" (link de Coto).
 9. "Agregar una nota o un reemplazo": el formulario de Coto ("Instrucciones para armar el
-   pedido"), plegado. Si el formulario ya tiene texto guardado, arranca abierto.
+   pedido"), tal como lo dibuja Coto (no se capturó con sesión).
 10. "Precio sin impuestos nacionales", en 12 px.
+
+Entre 7 y 8 van las piezas de nutrición de Góndola: el resumen (kcal, azúcares, sodio), la
+marca Sin TACC y "Para vos".
 
 Las secciones 6 y 7 se separan con una línea fina, sin cajas de color (evita tarjetas
 dentro de tarjetas).
 
 ### 5.3 Información nutricional (estilo "etiqueta")
 
-- Arriba: etiquetas "Para vos" (si hay perfil) y el rinde por proteína (si aplica).
+- "Para vos" (si hay perfil) queda en la caja de compra (5.2), no en esta sección.
+- Arriba: el rinde por proteína (si aplica).
 - Izquierda (300 px): la tabla como la del envase. Borde negro de 2 px, título, línea de
   envase y porciones, barra negra gruesa, y filas con línea negra. Un interruptor "Cada
-  100 g/ml" / "Por porción" cambia las columnas. Al pie, la nota de %VD.
+  100 g/ml" / "Por porción" cambia las columnas. El %VD y su nota al pie son de la
+  porción: se ven solo con "Por porción".
 - Derecha: cuatro números grandes (calorías, proteínas, azúcares, sodio), que siguen al
   interruptor. Debajo: alérgenos, Sin TACC, procesamiento (NOVA) e ingredientes plegados.
   Al final, la fuente y los links de Open Food Facts.
@@ -208,7 +238,7 @@ Estados:
 
 | Caso | Qué se ve |
 |---|---|
-| Sin tabla en Open Food Facts | Un recuadro de línea punteada: "Todavía no hay tabla" y el link para cargarla. |
+| Sin tabla en Open Food Facts | El aviso de hoy, "Sin información nutricional. Podés cargarla en Open Food Facts", con el QR, en un recuadro de línea punteada. |
 | Tabla parcial | La tabla con las filas que hay. Los números grandes que falten no se muestran. |
 | Sin perfil | Sin etiquetas "Para vos". Lo demás igual. |
 | Aviso de TACC (`warn`) | Etiqueta ámbar "Revisá el envase" con el texto de `taccStatus`. |
@@ -224,7 +254,7 @@ Estados:
 
 - Botones: `transform: scale(0.97)` al apretar, 160 ms, curva
   `cubic-bezier(0.23, 1, 0.32, 1)`.
-- "Agregar" → selector de cantidad: 200 ms, opacidad y un desenfoque leve. No cambia el
+- "Agregar" → selector de cantidad: sin animación (el cambio lo dibuja Coto). No cambia el
   alto de la tarjeta.
 - Panel del comparador: 150 ms, opacidad y escala desde 0,97, con origen en la línea que lo
   abre.
@@ -241,9 +271,16 @@ Estados:
   `data-gondola-skin` y la página se ve como en la 0.12.0, con todas las funciones.
 - En el popup: título "Diseño Góndola", texto "Diseño nuevo en la lista de productos y en
   la página de producto. Apagalo para ver el de Coto."
-- `PRODUCT.md` cambia en dos lugares, porque hoy dice que las páginas de Coto mantienen su
+- El ajuste "Información nutricional" también rige las etiquetas de la lista. Su texto en
+  el popup: "La tabla nutricional de Open Food Facts en el producto, el resumen del carrito
+  y las etiquetas de alergias en la lista." La ayuda de "Mi perfil" dice que las etiquetas
+  de la lista piden "Diseño Góndola" e "Información nutricional" prendidos.
+- `PRODUCT.md` cambia en tres lugares, porque hoy dice que las páginas de Coto mantienen su
   aspecto:
   - "Name": las páginas de Coto usan la piel Góndola en la lista y la PDP; se puede apagar.
+  - "Capabilities and Constraints": con la piel, Góndola pone `data-gondola-skin` en
+    `<html>` y oculta con CSS las estrellas fijas de la PDP; "Ver planes de cuotas" de la
+    tarjeta se oculta con `data-coto-unit-hide`.
   - "Brand Commitments": base neutra; rojo Coto solo en comprar y ofertas; azul y ámbar
     para lo que agrega Góndola.
 
@@ -256,8 +293,9 @@ Estados:
 | `src/skin.css` | Tokens (sección 3) y piezas comunes: botón, selector de cantidad, etiquetas. | nada |
 | `src/skin-list.css` | Lista: página, filtros, grilla y tarjeta. | `skin.css` |
 | `src/skin-pdp.css` | PDP: galería, caja de compra, nutrición, ficha. | `skin.css` |
-| `src/badge.js` | Sigue pintando los nodos de Góndola. Suma la línea de comparador de la tarjeta, las etiquetas sobre la foto y el plegado de la nota del pedido. | lo de hoy |
-| `src/nutrition-ui.js` | Suma el interruptor "100 g/ml / porción" y los cuatro números grandes. | lo de hoy |
+| `src/badge.js` | Sigue pintando los nodos de Góndola. Suma la línea de comparador de la tarjeta, las etiquetas sobre la foto, "Con tu banco" en la PDP y el `data-coto-unit-hide` de "Ver planes de cuotas" en la tarjeta. | lo de hoy |
+| `src/compare-ui.js` | Solo en la variante de filas (la PDP con la piel): la fila más barata de las que le ganan a Coto lleva la clase `coto-unit-cmp-row--best` y el nombre del súper, si hay link, abre su página. | lo de hoy |
+| `src/nutrition-ui.js` | Suma el interruptor "100 g/ml / porción", los cuatro números grandes y las etiquetas "para vos" de la tarjeta (`cardTagItems`). | lo de hoy |
 | `src/popup.js` | Suma el interruptor del diseño. | `chrome.storage` |
 
 - Todas las reglas de los archivos `skin-*.css` empiezan con `[data-gondola-skin]`.
@@ -273,7 +311,9 @@ Automáticas (Vitest con jsdom):
 - Tarjeta: una etiqueta arriba según la prioridad; máximo 2 etiquetas "para vos"; los
   cuatro estados del comparador; el lugar del precio por unidad existe aunque esté vacío.
 - Nutrición: el interruptor cambia tabla y números; los estados de la tabla 5.3.
-- Los tests actuales siguen pasando sin cambios.
+- Los tests que ya existían siguen pasando. Solo cambian `tests/package.test.js` (suma los
+  CSS nuevos al paquete) y el ayudante `setup` de `tests/badge.test.js`, que ahora también
+  devuelve `refresh`.
 
 Manuales, en coto.com.ar, con la piel encendida y apagada:
 
@@ -284,7 +324,9 @@ Manuales, en coto.com.ar, con la piel encendida y apagada:
 4. PDP: agregar, sumar, restar. Guardar y borrar una nota del pedido. Abrir las cuotas.
 5. PDP: la caja de compra queda fija al bajar y no tapa el pie.
 6. Búsqueda y página de ofertas: mismas pruebas que la lista.
-7. `npm run audit` no reporta diferencias de precio.
+7. `npm run skin:check` pasa, con y sin `PROFILE`.
+8. En la página de inicio y en `/carrito`, `document.documentElement.dataset.gondolaSkin`
+   es `undefined`.
 
 ## 10. A confirmar al implementar
 
@@ -323,7 +365,8 @@ Se capturó sin sesión iniciada. Lo que sigue corrige o precisa las secciones 4
   `active`. El link "Más" cuelga directo del `ul`, sin `li`.
 - **Subcategorías**: son el `.filter-block` titulado "Categoría". No tiene clase propia y
   solo existe en categorías con hijas (en una categoría hoja, como Pastas Rellenas, el primer
-  bloque es "Marca"). Hay que reconocerlo por el texto de su `.filter-title`.
+  bloque es "Marca"). Solo se podría reconocer por el texto de su `.filter-title`; la piel
+  no lo reconoce y lo deja como un grupo de filtros más.
 - **Filtros aplicados**: están en "Su selección" (`app-breadcrumbs`), que mezcla la ruta de
   categorías (primer `ul`) con los filtros aplicados (segundo `ul`, uno por filtro, cada
   link lo saca). Ese segundo `ul` solo existe si hay algún filtro. **No hay "Borrar todo"**:
@@ -332,8 +375,8 @@ Se capturó sin sesión iniciada. Lo que sigue corrige o precisa las secciones 4
 - "Ver planes de cuotas" es `.bottom-botones > a`. "Precio sin impuestos nacionales" es la
   última `small.text-center` de `.centro-precios`, sin clase propia.
 - No se encontró un producto sin stock en las categorías revisadas (Leches, Yogures, Postres,
-  Leches por marca y por precio): no hay HTML de ese estado. Antes de la Tarea 3 hay que
-  ver cómo lo dibuja Coto.
+  Leches por marca y por precio): no hay HTML de ese estado, así que la piel no le da
+  estilo propio.
 
 **Página de producto**
 
@@ -350,9 +393,8 @@ Se capturó sin sesión iniciada. Lo que sigue corrige o precisa las secciones 4
   sus hijos y los de su hermano quedan como ítems de un mismo flex en columna, y se ordenan con
   `order`. Las cajas propias de Góndola (banco, otros súper) se agregan en ese flex.
 - **"Instrucciones para armar el pedido" no apareció** en la página sin sesión ni con el
-  producto fuera del carrito. No hay HTML ni selector. Hasta capturarlo con sesión, el
-  diseño del punto 9 de 5.2 no se puede comprobar: se deja como pendiente y, si el formulario
-  no está en la página, la caja de compra no muestra ese acordeón.
+  producto fuera del carrito. No hay HTML ni selector. Por eso el punto 9 de 5.2
+  queda como lo dibuja Coto, sin acordeón.
 - El título de la PDP es `h1.title`. `.titulo-producto` es el del mini carrito.
 - La descripción (`.pdp-description`) y las características (`.pdp-characteristics`) están
   fuera de `aside.row`, en un `div` hermano: el orden galería, nutrición, descripción sigue
