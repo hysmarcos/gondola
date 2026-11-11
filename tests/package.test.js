@@ -9,7 +9,7 @@ const popup = readFileSync("popup.html", "utf8");
 const REPO = [
   "manifest.json", "popup.html", "LICENSE", "README.md", "package.json", "build.mjs",
   "dist/interceptor.js", "dist/badge.js", "dist/popup.js", "dist/background.js",
-  "src/badge.css", "src/skin.css", "src/skin-list.css", "src/popup.css", "src/popup.js", "src/badge.js",
+  "src/badge.css", "src/skin.css", "src/skin-list.css", "src/skin-pdp.css", "src/popup.css", "src/popup.js", "src/badge.js",
   "assets/icon/icon.svg", "assets/icon/icon-16.svg", "assets/icon/icon-16.png", "assets/icon/icon-32.png", "assets/icon/icon-48.png", "assets/icon/icon-128.png",
   "assets/banks/logo_icbc_1.png", "assets/banks/logo_galicia.png",
   "assets/off/off-logo-icon-light.svg",

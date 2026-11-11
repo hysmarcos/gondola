@@ -1,0 +1,484 @@
+/* Piel Góndola: página de producto (spec 5.1 y 5.2).
+   Nodos de Coto: app-product-detail > div (sin clase propia estable; se reconoce por tener
+   a aside.row) > [div de links de cuenta, aside.row > [article.gallery-wrap, div (columna
+   de compra)], div con .pdp-description, constructor-carousel].
+   Columna de compra: article > [h1.title, .rating-wrap (PLU y EAN), hr, div > [div.mt-4
+   (bloque de precio: oferta, precio, "Precio regular", "sin impuestos", "Precio por 1 …"
+   y, dentro, la caja de Góndola y la nutrición), a ("Ver planes de cuotas"), div.row
+   (product-add-show-remove)]].
+   Ningún nodo de Coto cambia de padre: el orden de la caja de compra sale de `order` en un
+   flex en columna. Para que los hijos del bloque de precio y los de su hermano sean ítems
+   del mismo flex, div.mt-4 (y la caja de Góndola) pasan a display: contents.
+   Como en la lista: los estilos de los componentes de Coto entran con selectores largos y
+   utilidades de Bootstrap con !important (ps-lg-3, mt-*, my-4, col-*): lo que choca con
+   ellos lleva !important. */
+
+/* ---------- Página: dos columnas, la caja de compra fija a la derecha ---------- */
+
+/* Coto pone overflow-x: hidden en la sección: eso la vuelve contenedor de desplazamiento y
+   el sticky no se movería con la página. clip recorta igual sin ese efecto. */
+[data-gondola-skin="pdp"] section.section-content:has(app-product-detail) {
+  overflow-x: clip !important;
+  overflow-y: visible !important;
+}
+
+[data-gondola-skin="pdp"] app-product-detail {
+  display: block;
+}
+
+/* Caja de compra: 380 px, borde de 1 px con sombra, radio 16 px, relleno 20 px. */
+[data-gondola-skin="pdp"] app-product-detail aside.row > div {
+  padding: 20px !important;
+  border-radius: 16px;
+  background-color: #fff;
+  box-shadow: 0 0 0 1px var(--g-line), 0 8px 24px -12px rgba(20, 40, 75, 0.18);
+  color: var(--g-ink);
+  font-family: Poppins, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Coto pone 15 px a todos los elementos (html, *): dentro de la caja cada texto hereda el
+   tamaño de su bloque, y los que importan llevan el suyo más abajo. */
+[data-gondola-skin="pdp"] app-product-detail aside.row > div * {
+  font-size: inherit;
+}
+
+/* Galería: fondo suave en la foto grande, miniaturas de 56 px. */
+[data-gondola-skin="pdp"] app-product-detail .gallery-wrap .img-big-wrap {
+  border: 0 !important;
+  border-radius: 14px;
+  background-color: var(--g-soft) !important;
+}
+
+[data-gondola-skin="pdp"] app-product-detail .gallery-wrap .img-big-wrap img.image {
+  mix-blend-mode: multiply;
+}
+
+[data-gondola-skin="pdp"] app-product-detail .gallery-wrap .item-thumb {
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 8px;
+  background-color: var(--g-soft);
+  box-shadow: 0 0 0 1px var(--g-line);
+}
+
+/* Sin el ícono de OFF que va en la esquina de sus miniaturas. */
+[data-gondola-skin="pdp"] app-product-detail .gallery-wrap .item-thumb > img:not(.coto-unit-offthumb-badge) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+/* Fotos del envase de Open Food Facts: borde ámbar (spec 5.1). */
+[data-gondola-skin="pdp"] app-product-detail .gallery-wrap .item-thumb.coto-unit-offthumb {
+  box-shadow: 0 0 0 1.5px var(--g-amber);
+}
+
+/* Desde 820 px: grilla de dos columnas en el contenedor de la página. aside.row es una
+   subgrilla que ocupa dos filas: la galería va en la primera y la caja de compra en las dos.
+   Así la descripción (fila 2, columna izquierda) queda debajo de la galería y la caja sigue
+   fija mientras se lee. Lo demás (links de cuenta, carrusel) va a todo el ancho. */
+@media (min-width: 820px) {
+  [data-gondola-skin="pdp"] app-product-detail > div:has(> aside.row) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    column-gap: 32px;
+    width: 100%;
+    max-width: none;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  [data-gondola-skin="pdp"] app-product-detail > div:has(> aside.row) > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  [data-gondola-skin="pdp"] app-product-detail > div > aside.row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 2 / span 2;
+    grid-template-columns: subgrid;
+    grid-template-rows: subgrid;
+    margin: 24px 0 0 !important;
+  }
+
+  [data-gondola-skin="pdp"] app-product-detail aside.row > .gallery-wrap {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+    max-width: none;
+    padding: 0;
+  }
+
+  [data-gondola-skin="pdp"] app-product-detail > div > aside.row ~ div:has(> .pdp-description) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  /* La caja de compra ocupa las dos filas de la subgrilla: se mueve hasta el final de la
+     descripción y nunca baja sobre el carrusel ni el pie. top: alto del encabezado fijo de
+     Coto más 12 px (199 px por debajo de 992 de ancho; 159 hasta 1199; 153 desde 1200),
+     como la columna de filtros de la lista. */
+  [data-gondola-skin="pdp"] app-product-detail aside.row > div {
+    position: sticky;
+    top: 211px;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+}
+
+@media (min-width: 992px) {
+  [data-gondola-skin="pdp"] app-product-detail aside.row > div {
+    top: 171px;
+  }
+}
+
+@media (min-width: 1200px) {
+  [data-gondola-skin="pdp"] app-product-detail aside.row > div {
+    top: 165px;
+  }
+}
+
+/* Ventana baja: la caja no entraría entera; queda en su lugar. */
+@media (min-width: 820px) and (max-height: 760px) {
+  [data-gondola-skin="pdp"] app-product-detail aside.row > div {
+    position: static;
+  }
+}
+
+/* Por debajo de 820 px: una columna, con la caja de compra primero. */
+@media (max-width: 819.98px) {
+  [data-gondola-skin="pdp"] app-product-detail aside.row {
+    flex-direction: column;
+    row-gap: 16px;
+  }
+
+  [data-gondola-skin="pdp"] app-product-detail aside.row > div {
+    order: -1;
+    width: auto;
+    max-width: none;
+    margin: 0 calc(var(--bs-gutter-x, 1.5rem) * 0.5);
+  }
+}
+
+/* ---------- Caja de compra: nombre, PLU y EAN ---------- */
+
+[data-gondola-skin="pdp"] app-product-detail aside.row > div > article {
+  padding: 0 !important;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row h1.title {
+  margin: 0 0 6px !important;
+  color: var(--g-ink) !important;
+  font: 600 20px/1.25 Poppins, system-ui, sans-serif !important;
+  text-wrap: balance;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .rating-wrap {
+  margin: 0 !important;
+  color: var(--g-ink2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Las estrellas de Coto son fijas (no hay reseñas): no dicen nada del producto. */
+[data-gondola-skin="pdp"] app-product-detail aside.row .rating-wrap .rating-stars {
+  display: none;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row > div > article > hr {
+  height: 1px;
+  margin: 16px 0;
+  border: 0;
+  background-color: var(--g-line);
+  opacity: 1;
+}
+
+/* ---------- Caja de compra: el orden de spec 5.2 ----------
+   1 precio (oferta y precio), 2 precio regular, 3 precio por unidad, 4 "Agregar",
+   5 "Con tu banco", 6 otros súper, 7 nutrición de Góndola, 8 "Ver planes de cuotas",
+   10 "sin impuestos". Lo que el spec no nombra va al final (20), en su orden. */
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div:has(> .mt-4) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4,
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp {
+  display: contents;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div:has(> .mt-4) > *,
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > *,
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > * {
+  order: 20;
+  margin: 0 !important;
+}
+
+/* Divs vacíos de Coto (solo comentarios de Angular): no ocupan un hueco del flex. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > div:empty {
+  display: none;
+}
+
+/* 1. Oferta de Coto y precio final. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > div:has(.price) {
+  order: 1;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 > div:has(.price) > * {
+  margin: 0 !important;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 .etiqueta-corta {
+  display: inline-flex !important;
+  flex: none;
+  width: auto !important;
+  max-width: 100%;
+  margin: 0 0 8px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px;
+  background: var(--g-red) !important;
+  clip-path: none;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 .etiqueta-corta * {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #fff !important;
+  font: 600 11px/14px Poppins, system-ui, sans-serif !important;
+  letter-spacing: 0;
+}
+
+/* "Llevando 2 25%Dto": la oferta de Coto, en rojo. */
+[data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 > div:has(.price) .text-success {
+  color: var(--g-red) !important;
+  font: 600 13px/18px Poppins, system-ui, sans-serif !important;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 > div:has(.price) > div:has(> .text-success) {
+  margin-bottom: 2px !important;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 var.price {
+  display: block;
+  margin: 0 !important;
+  color: var(--g-ink) !important;
+  font: 600 32px/1.15 Poppins, system-ui, sans-serif !important;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* "No acumulable con otras promos" y otras notas cortas del bloque de precio. */
+[data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 > div:has(.price) > small {
+  display: block;
+  margin-top: 4px !important;
+  color: var(--g-ink2) !important;
+  font-size: 12px !important;
+}
+
+/* 2. Precio regular, tachado, pegado al precio. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .mt-2 {
+  order: 2;
+  margin-top: -8px !important;
+}
+
+/* 3. Precio por unidad de Góndola, con su motivo. "Precio real para comparar" y el aviso de
+   banco que no aplica se ocultan: el valor se explica solo y el banco tiene su bloque. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > :is(.coto-unit-unit, .coto-unit-note) {
+  order: 3;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > :is(.coto-unit-cap, .coto-unit-bankno) {
+  display: none;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > .coto-unit-unit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px 8px;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-value {
+  color: var(--g-navy);
+  font: 600 16px/22px Poppins, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-why {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: var(--g-navy-soft);
+  color: var(--g-navy);
+  font: 600 12px/16px Poppins, system-ui, sans-serif;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-why:has(.coto-unit-logo) {
+  padding: 2px 8px 2px 4px;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-logo {
+  height: 16px;
+  max-width: 56px;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > .coto-unit-note {
+  margin-top: -8px !important;
+  color: var(--g-ink2);
+  font-size: 12px;
+}
+
+/* 4. "Agregar" o el selector de cantidad (estilo en skin.css). */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div:has(> .mt-4) > div:has(> product-add-show-remove) {
+  order: 4;
+  width: 100%;
+  margin: 4px 0 !important;
+  --bs-gutter-x: 0;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > div > product-add-show-remove > .col {
+  padding: 0;
+}
+
+/* 5 y 6. Bloques de Góndola: una línea fina arriba, sin fondo. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > .coto-unit-bankbox {
+  order: 5;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > :is(.coto-unit-cmptitle, .coto-unit-cmp) {
+  order: 6;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > :is(.coto-unit-bankbox, .coto-unit-cmptitle) {
+  padding-top: 12px;
+  box-shadow: inset 0 1px 0 var(--g-line);
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-bankbox-title,
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > .coto-unit-cmptitle {
+  color: var(--g-navy);
+  font: 600 12px/16px Poppins, system-ui, sans-serif;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-bankbox-title {
+  margin-bottom: 4px;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-bankbox-text {
+  color: var(--g-ink);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-bankbox:is([data-kind="none"], [data-kind="blocked"]) .coto-unit-bankbox-text {
+  color: var(--g-ink2);
+  font-size: 12px;
+}
+
+/* Filas del comparador: nombre a la izquierda, precio a la derecha; la más barata en verde. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .coto-unit-box--pdp > .coto-unit-cmp {
+  margin-top: -6px !important;
+  padding: 0;
+  border: 0;
+  color: var(--g-ink);
+  font: 400 13px/20px Poppins, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  color: var(--g-ink);
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-price {
+  font-weight: 500;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-row:is(.coto-unit-cmp-row--none, .coto-unit-cmp-row--pending) {
+  color: var(--g-ink2);
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-row--best,
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-row--best .coto-unit-cmp-price {
+  color: var(--g-green);
+  font-weight: 600;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp a.coto-unit-cmp-name {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--g-line);
+  text-underline-offset: 3px;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp a.coto-unit-cmp-name:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--g-navy);
+  outline-offset: 2px;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-qty {
+  margin: -3px 0 2px;
+  color: var(--g-ink2);
+  font-size: 11px;
+  line-height: 14px;
+  text-align: right;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp a.coto-unit-cmp-name:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* 7. Nutrición de Góndola (resumen, Sin TACC, "Para vos"): la tarea 6 les da estilo. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > [class^="coto-unit-nutri"] {
+  order: 7;
+}
+
+/* 8. "Ver planes de cuotas": link gris. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div:has(> .mt-4) > a {
+  order: 8;
+  align-self: flex-start;
+  color: var(--g-ink2) !important;
+  font-size: 12px;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div:has(> .mt-4) > a .form-check-label {
+  color: inherit !important;
+  font-size: 12px !important;
+  text-underline-offset: 3px;
+}
+
+/* 10. "Precio sin impuestos nacionales", al final, 12 px. */
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > .mb-2 {
+  order: 10;
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > :is(.mt-2, .mb-2)[data-coto-unit-dim],
+[data-gondola-skin="pdp"] app-product-detail aside.row article > div > .mt-4 > :is(.mt-2, .mb-2)[data-coto-unit-dim] * {
+  color: var(--g-ink2) !important;
+  font-size: 12px !important;
+  font-variant-numeric: tabular-nums;
+}

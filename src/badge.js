@@ -71,6 +71,18 @@ export function formatBlocked(reason) {
   return null;
 }
 
+// Bloque "Con tu banco" de la PDP con la piel. hasBank: el usuario eligió alguna tarjeta.
+// null: con tarjetas pero sin promo para este producto (el bloque no se muestra).
+export function formatBankBox(label, hasBank, day, today) {
+  if (!hasBank) return { kind: "none", text: "Elegí tus tarjetas en el botón de Góndola y vas a ver el precio con el descuento de cada día." };
+  if (label?.bankPrice != null && label.bankName) {
+    const when = day === today ? "hoy" : `el ${dayName(day).toLowerCase()}`;
+    return { kind: "apply", text: `${label.bankName} ${when}: ${label.bankPercent}% · ${$2(label.bankPrice)}` };
+  }
+  const blocked = formatBlocked(label?.bankBlocked);
+  return blocked ? { kind: "blocked", text: blocked } : null;
+}
+
 export function groupMark(group) {
   return MARK_TEXT[group] ? "▸ " + MARK_TEXT[group] : null;
 }
@@ -119,7 +131,10 @@ export function installBadges(win, doc, deps = {}) {
   const compare = deps.compare ?? null;
   const nutrition = deps.nutrition ?? null;
   const today = () => new Date().getDay();
-  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true, compare: true, nutrition: true };
+  // hasBank empieza en true: hasta leer los ajustes no se invita a elegir tarjetas.
+  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true, compare: true, nutrition: true, hasBank: true };
+  // La piel de la PDP (src/skin.js pone el atributo; al cambiarlo llama a refresh()).
+  const pdpSkin = () => doc.documentElement.getAttribute("data-gondola-skin") === "pdp";
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
   let watching = new WeakMap(); // caja -> EAN que espera verse para pedirse
   let io = null;
@@ -179,9 +194,17 @@ export function installBadges(win, doc, deps = {}) {
       box.querySelector(":scope > ." + CMP)?.remove();
       box.setAttribute(EAN_ATTR, ean);
     }
+    // Pastilla <-> filas (la piel de la PDP se prende o se apaga): se arma de cero, así no
+    // quedan la clase, el estado ni el panel de la pastilla en las filas.
+    const old = box.querySelector(":scope > ." + CMP);
+    if (old && old.classList.contains(`${CMP}--icon`) !== (variant === "icon")) old.remove();
     const results = compare.peek(ean);
     paintCompare(box, compareRows(label.cmp, results), variant);
-    if (!results) want(box, ean);
+    // Las filas son de la PDP con la piel: la caja pasa a display: contents (sin caja propia,
+    // un IntersectionObserver nunca la ve) y es el único producto de la página: se pide ya.
+    if (results) return;
+    if (variant === "rows") ask(ean);
+    else want(box, ean);
   }
 
   // Fila "precio por unidad + motivo". Sirve en tarjeta, producto y carrusel.
@@ -377,13 +400,35 @@ export function installBadges(win, doc, deps = {}) {
       else container.appendChild(box);
     }
     const mini = variant === "mini";
+    // Con la piel, la PDP suma "Con tu banco" y muestra los otros súper en filas con título.
+    // cap y bankno quedan (la piel los oculta con CSS): sin la piel se ven como siempre.
+    const skin = variant === "pdp" && pdpSkin();
     upsert(box, "coto-unit-cap", mini ? null : "Precio real para comparar");
     paintUnit(box, label, mini);
     upsert(box, "coto-unit-note", mini ? null : formatNote(label));
     upsert(box, "coto-unit-bankno", mini ? null : formatBlocked(label.bankBlocked));
-    order(box, ["coto-unit-cap", "coto-unit-unit", "coto-unit-note", "coto-unit-bankno"]);
-    paintCmp(box, label, mini ? "mini" : "icon");
+    paintBankBox(box, skin ? formatBankBox(label, state.hasBank, state.day, today()) : null);
+    order(box, ["coto-unit-cap", "coto-unit-unit", "coto-unit-note", "coto-unit-bankno", "coto-unit-bankbox", "coto-unit-cmptitle"]);
+    paintCmp(box, label, mini ? "mini" : skin ? "rows" : "icon");
+    const cmp = skin ? box.querySelector(":scope > ." + CMP) : null;
+    upsert(box, "coto-unit-cmptitle", cmp ? "El mismo producto en otros súper" : null, cmp);
     return box;
+  }
+
+  // "Con tu banco": título y una línea. Va antes del comparador (paintCmp lo deja último).
+  function paintBankBox(box, info) {
+    const cmp = box.querySelector(":scope > ." + CMP);
+    let el = box.querySelector(":scope > .coto-unit-bankbox");
+    if (!info) return el?.remove();
+    if (!el) {
+      el = doc.createElement("div");
+      el.className = "coto-unit-bankbox";
+      if (cmp) box.insertBefore(el, cmp);
+      else box.appendChild(el);
+    }
+    if (el.getAttribute("data-kind") !== info.kind) el.setAttribute("data-kind", info.kind);
+    upsert(el, "coto-unit-bankbox-title", "Con tu banco");
+    upsert(el, "coto-unit-bankbox-text", info.text);
   }
 
   function pdpKey() {
@@ -490,6 +535,7 @@ export function installBadges(win, doc, deps = {}) {
       state.markBest = m.markBest !== false;
       state.compare = m.compareStores !== false;
       state.nutrition = m.nutrition !== false;
+      state.hasBank = (m.selected ?? []).length > 0;
       if (!state.compare) {
         io?.disconnect();
         watching = new WeakMap();

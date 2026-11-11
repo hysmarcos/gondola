@@ -10,11 +10,20 @@
 //   URL=<dirección de coto.com.ar>: mide esa página en lugar de las dos de siempre.
 //   INTERACT=1: además, en Leches a 1280 x 900, aplica un filtro, cambia el orden y pasa de
 //   página, para ver que la piel no le quitó nada a Coto.
+// Página de producto (PLU 508911, 1280 × 900): la caja de compra mide 380 px, sigue en la
+// ventana al bajar 600 px, nunca pasa por encima del pie y no hay barra horizontal.
+//   ONLY_PDP=1: mide solo la página de producto. PDP_URL=<dirección>: otra página de producto.
+//   Con SHOTS, guarda pdp-top.png (arriba de todo) y pdp-600.png (600 px más abajo).
+//   Con INTERACT=1, además hace click en "Agregar" y en "Ver planes de cuotas" y cuenta qué
+//   hizo Coto (sin sesión, "Agregar" abre su aviso para ingresar).
 // Sin la extensión cargada y sin sesión: inyecta dist/ (con un chrome.* de mentira, como
-// scripts/capture-readme.mjs) y los CSS de la piel, y pone data-gondola-skin="list" a mano.
+// scripts/capture-readme.mjs) y los CSS de la piel, y pone data-gondola-skin ("list" o "pdp")
+// a mano. Lo que hace el service worker (otros súper e información nutricional de Open Food
+// Facts) corre acá, en Node; a Open Food Facts solo viaja el código de barras.
 import { readFile, mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 import { createCompareService } from "../src/compare-service.js";
+import { createNutritionService } from "../src/nutrition-service.js";
 
 const BASE = "https://www.coto.com.ar";
 const PAGES = process.env.URL ? [{ name: process.env.URL, url: process.env.URL }] : [
@@ -31,7 +40,11 @@ const SIZES = [
   // Zoom del navegador al 150 %: la ventana de 1280 × 900 deja 853 × 600 px de CSS.
   { name: "1280x900 zoom 1,5", viewport: { width: 853, height: 600 }, scale: 1.5, columns: 2 },
 ].filter((s) => !process.env.ONLY || s.name === process.env.ONLY);
-const CSS = ["src/badge.css", "src/skin.css", "src/skin-list.css"];
+const CSS = ["src/badge.css", "src/skin.css", "src/skin-list.css", "src/skin-pdp.css"];
+const PDP = { name: "PDP Leche Protein (PLU 508911)", url: process.env.PDP_URL || `${BASE}/productos/leche-protein-la-serenisima-1l/_/R-00508911-00508911-200` };
+const PDP_SIZE = { name: "1280x900", viewport: { width: 1280, height: 900 }, scale: 1 };
+const BUY_WIDTH = 380; // caja de compra (spec 5.1), más o menos 2 px
+const PDP_SCROLL = 600;
 const DEV = "https://gondola.local"; // host falso: sirve assets/ (logos de bancos)
 const TOLERANCE = 1;
 const FILTER_WIDTH = 184; // ancho de la columna de filtros (spec 4.1), más o menos 2 px
@@ -47,6 +60,17 @@ const compareService = createCompareService({
   },
 });
 
+// Y la información nutricional de Open Food Facts (solo viaja el código de barras, como en
+// la extensión): la PDP de un alimento la muestra, y con ella la columna izquierda es más alta.
+const nutritionMemory = new Map();
+const nutritionService = createNutritionService({
+  fetch: globalThis.fetch.bind(globalThis),
+  cache: {
+    get: async (keys) => Object.fromEntries(keys.filter((k) => nutritionMemory.has(k)).map((k) => [k, nutritionMemory.get(k)])),
+    set: async (o) => Object.entries(o).forEach(([k, v]) => nutritionMemory.set(k, v)),
+  },
+});
+
 async function serve(route) {
   const path = new URL(route.request().url()).pathname;
   if (path.startsWith("/assets/") && !path.includes("..")) {
@@ -58,7 +82,7 @@ async function serve(route) {
 
 // El content script de la extensión, con chrome.* de mentira solo para él (no queda en
 // window, así Coto no ve una extensión). El ajuste "skin" queda prendido.
-function injection(badge, styles) {
+function injection(badge, styles, kind) {
   return `(() => {
   const data = {};
   const listeners = [];
@@ -71,14 +95,14 @@ function injection(badge, styles) {
   const chrome = {
     runtime: {
       getURL: (p) => ${JSON.stringify(DEV)} + "/" + p,
-      sendMessage: (m) => m && m.type === "compare" ? window.__gondolaCompare(m.eans) : Promise.resolve("error"),
+      sendMessage: (m) => m && m.type === "compare" ? window.__gondolaCompare(m.eans) : m && m.type === "nutrition" ? window.__gondolaNutrition(m.ean) : Promise.resolve("error"),
     },
     storage: { local },
   };
   window.__gondolaStorage = local;
   const start = () => {
     if (!document.documentElement) return setTimeout(start, 0);
-    document.documentElement.setAttribute("data-gondola-skin", "list");
+    document.documentElement.setAttribute("data-gondola-skin", ${JSON.stringify(kind)});
     const style = document.createElement("style");
     style.id = "gondola-skin-check";
     style.textContent = ${JSON.stringify(styles)};
@@ -290,6 +314,157 @@ async function interact(page) {
   return { problems, notes };
 }
 
+// ---------- Página de producto ----------
+
+// Caja de compra, encabezado y pie, en coordenadas de la ventana.
+function measurePdp() {
+  const buy = document.querySelector("app-product-detail aside.row > div");
+  const header = document.querySelector("header.section-header, app-header header");
+  const footer = document.querySelector("footer");
+  const r = buy?.getBoundingClientRect();
+  // Primer ascendiente que corta el sticky (overflow que no sea visible ni clip).
+  let scroller = null;
+  for (let e = buy?.parentElement; e && e !== document.documentElement && !scroller; e = e.parentElement) {
+    const o = getComputedStyle(e);
+    if (![o.overflowX, o.overflowY].every((v) => v === "visible" || v === "clip")) scroller = `${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 2).join(".")} (overflow ${o.overflowX} ${o.overflowY})`;
+  }
+  return {
+    found: !!buy,
+    position: buy ? getComputedStyle(buy).position : null,
+    scroller,
+    width: r ? Math.round(r.width * 10) / 10 : null,
+    top: r ? Math.round(r.top) : null,
+    bottom: r ? Math.round(r.bottom) : null,
+    headerBottom: header ? Math.round(header.getBoundingClientRect().bottom) : 0,
+    footerTop: footer ? Math.round(footer.getBoundingClientRect().top) : null,
+    scrollY: Math.round(scrollY),
+    maxScroll: document.documentElement.scrollHeight - innerHeight,
+    docWidth: document.documentElement.scrollWidth,
+    innerWidth,
+    innerHeight,
+  };
+}
+
+async function scrollAndMeasure(page, y) {
+  await page.evaluate((to) => scrollTo(0, to), y);
+  await page.waitForTimeout(350);
+  return page.evaluate(measurePdp);
+}
+
+// Problemas de la caja de compra, en texto. Vacío si todo está como pide el spec.
+async function checkPdp(page) {
+  const problems = [];
+  const notes = [];
+  const top = await scrollAndMeasure(page, 0);
+  if (!top.found) return { problems: ["caja de compra: no está app-product-detail aside.row > div"], notes };
+  if (Math.abs(top.width - BUY_WIDTH) > 2) problems.push(`caja de compra: mide ${top.width} px, se esperaban ${BUY_WIDTH} (más o menos 2)`);
+  if (top.docWidth > top.innerWidth) problems.push(`barra horizontal: la página mide ${top.docWidth} px y la ventana ${top.innerWidth}`);
+  const down = await scrollAndMeasure(page, PDP_SCROLL);
+  if (down.scrollY < PDP_SCROLL) problems.push(`la página solo bajó ${down.scrollY} px, no alcanza para medir si la caja queda fija`);
+  else if (down.top < down.headerBottom - 1 || down.top >= down.innerHeight) problems.push(`caja de compra: tras bajar ${down.scrollY} px queda con top ${down.top} (el encabezado de Coto llega a ${down.headerBottom}, la ventana a ${down.innerHeight}; position ${down.position}${down.scroller ? `, lo corta ${down.scroller}` : ""})`);
+  else notes.push(`tras bajar ${down.scrollY} px: top ${down.top} (antes ${top.top}), encabezado hasta ${down.headerBottom}`);
+  // Hasta el final, de a 200 px: la caja nunca pasa por encima del pie.
+  let worst = null;
+  for (let y = 0; y <= top.maxScroll + 200; y += 200) {
+    const m = await scrollAndMeasure(page, Math.min(y, top.maxScroll));
+    if (m.footerTop !== null && m.bottom > m.footerTop + 1 && (!worst || m.bottom - m.footerTop > worst.over)) worst = { over: m.bottom - m.footerTop, scrollY: m.scrollY };
+    if (y >= top.maxScroll) break;
+  }
+  if (top.footerTop === null) problems.push("pie: no está <footer>");
+  else if (worst) problems.push(`caja de compra: tapa el pie ${worst.over} px tras bajar ${worst.scrollY} px`);
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  return { problems, notes };
+}
+
+// Con la piel puesta, los controles de Coto de la caja de compra siguen respondiendo.
+async function interactPdp(page) {
+  const notes = [];
+  const dialogs = [];
+  const onDialog = (d) => {
+    dialogs.push(`${d.type()}: "${d.message().replace(/\s+/g, " ").trim()}"`);
+    d.dismiss().catch(() => {});
+  };
+  page.on("dialog", onDialog);
+  const visibleModals = () => page.evaluate(() => [...document.querySelectorAll(".modal, [role=dialog], .swal2-popup, .cdk-overlay-pane")]
+    .filter((m) => m.getClientRects().length > 0 && getComputedStyle(m).visibility !== "hidden" && getComputedStyle(m).display !== "none")
+    .map((m) => `${m.tagName.toLowerCase()}.${[...m.classList].slice(0, 3).join(".")}: ${m.textContent.replace(/\s+/g, " ").trim().slice(0, 120)}`));
+  const closeAll = async () => {
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.waitForTimeout(400);
+    for (const sel of [".modal.show .btn-close", ".modal.show [data-bs-dismiss=modal]", ".modal.show .close", ".swal2-cancel", ".swal2-close"]) {
+      const b = page.locator(sel).first();
+      if (await b.count() && await b.isVisible().catch(() => false)) await b.click().catch(() => {});
+    }
+    await page.waitForTimeout(400);
+  };
+
+  const before = await visibleModals();
+  await page.locator("app-product-detail aside.row product-add-show-remove .btn-primary").first().click();
+  await page.waitForTimeout(2000);
+  const afterAdd = await visibleModals();
+  notes.push(`"Agregar": ${dialogs.length ? `diálogo ${dialogs.join(" | ")}` : "sin diálogo nativo"}; ventanas nuevas: ${afterAdd.filter((m) => !before.includes(m)).join(" | ") || "ninguna"}`);
+  await closeAll();
+  const n = dialogs.length;
+  const base = await visibleModals();
+  await page.locator("app-product-detail aside.row a:has(> .form-check-label)").first().click();
+  await page.waitForTimeout(2000);
+  const afterCuotas = await visibleModals();
+  notes.push(`"Ver planes de cuotas": ${dialogs.length > n ? `diálogo ${dialogs.slice(n).join(" | ")}` : "sin diálogo nativo"}; ventanas nuevas: ${afterCuotas.filter((m) => !base.includes(m)).join(" | ") || "ninguna"}`);
+  await closeAll();
+  page.off("dialog", onDialog);
+  return notes;
+}
+
+async function newContext(size, kind) {
+  const context = await browser.newContext({ viewport: size.viewport, deviceScaleFactor: size.scale, locale: "es-AR" });
+  await context.route(DEV + "/**", serve);
+  await context.exposeBinding("__gondolaCompare", (_src, eans) => compareService.compare(eans).catch(() => ({})));
+  await context.exposeBinding("__gondolaNutrition", (_src, ean) => nutritionService.get(ean).catch(() => "error"));
+  await context.addInitScript({ content: interceptor });
+  await context.addInitScript({ content: injection(badge, styles, kind) });
+  return context;
+}
+
+async function runPdp() {
+  console.log(PDP.name);
+  const context = await newContext(PDP_SIZE, "pdp");
+  const page = await context.newPage();
+  try {
+    await page.goto(PDP.url, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("app-product-detail .price", { timeout: 45000 });
+    await page.waitForSelector(".coto-unit-box--pdp", { timeout: 30000 });
+    // Que llegue la comparación con otros súper (cambia el alto de la caja).
+    await page.waitForFunction(() => !document.querySelector(".coto-unit-box--pdp .coto-unit-cmp-row--pending"), null, { timeout: 20000 }).catch(() => {});
+    // Y la información nutricional (un producto que no es comida no la tiene).
+    const nutri = await page.waitForSelector(".coto-unit-nutri-section", { timeout: 15000 }).then(() => true, () => false);
+    await page.waitForTimeout(1500);
+    const { problems, notes } = await checkPdp(page);
+    notes.push(nutri ? "con información nutricional" : "sin información nutricional");
+    if (problems.length) {
+      failed = true;
+      console.log(`${PDP_SIZE.name}:\n  ${problems.join("\n  ")}`);
+    } else {
+      console.log(`${PDP_SIZE.name}: caja de compra de ${BUY_WIDTH} px, fija (${notes.join("; ")}), no tapa el pie, sin barra horizontal`);
+    }
+    if (shots) {
+      await page.evaluate(() => scrollTo(0, 0));
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: `${shots}/pdp-top.png` });
+      await page.evaluate((y) => scrollTo(0, y), PDP_SCROLL);
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: `${shots}/pdp-600.png` });
+      await page.evaluate(() => scrollTo(0, 0));
+    }
+    if (process.env.INTERACT) for (const n of await interactPdp(page)) console.log(`  interacción: ${n}`);
+  } catch (e) {
+    failed = true;
+    console.log(`${PDP_SIZE.name}: no se pudo medir: ${e.message.split("\n")[0]}`);
+  } finally {
+    await context.close();
+  }
+}
+
 const shots = process.env.SHOTS;
 if (shots) await mkdir(shots, { recursive: true });
 const badge = await readFile("dist/badge.js", "utf8");
@@ -300,14 +475,10 @@ const browser = await chromium.launch({ channel: process.env.CHROME_PATH ? undef
 let failed = false;
 let unlabelledSeen = 0;
 try {
-  for (const pg of PAGES) {
+  for (const pg of process.env.ONLY_PDP ? [] : PAGES) {
     console.log(pg.name);
     for (const size of SIZES) {
-      const context = await browser.newContext({ viewport: size.viewport, deviceScaleFactor: size.scale, locale: "es-AR" });
-      await context.route(DEV + "/**", serve);
-      await context.exposeBinding("__gondolaCompare", (_src, eans) => compareService.compare(eans).catch(() => ({})));
-      await context.addInitScript({ content: interceptor });
-      await context.addInitScript({ content: injection(badge, styles) });
+      const context = await newContext(size, "list");
       const page = await context.newPage();
       try {
         await page.goto(pg.url, { waitUntil: "domcontentloaded" });
@@ -361,8 +532,9 @@ try {
       }
     }
   }
+  if (!process.env.URL && (!process.env.ONLY || process.env.ONLY === PDP_SIZE.name)) await runPdp();
 } finally {
   await browser.close();
 }
-if (!unlabelledSeen) console.log("Aviso: ninguna página trajo una tarjeta sin etiqueta de Góndola; el punto 2 de Review Focus no quedó medido.");
+if (!unlabelledSeen && !process.env.ONLY_PDP) console.log("Aviso: ninguna página trajo una tarjeta sin etiqueta de Góndola; el punto 2 de Review Focus no quedó medido.");
 process.exit(failed ? 1 : 0);

@@ -51,7 +51,8 @@
       "css": [
         "src/badge.css",
         "src/skin.css",
-        "src/skin-list.css"
+        "src/skin-list.css",
+        "src/skin-pdp.css"
       ],
       "run_at": "document_start"
     }
