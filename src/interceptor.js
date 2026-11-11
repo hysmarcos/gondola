@@ -5,6 +5,7 @@ import { sortByUnitPrice, labelsFor, lookupLabels } from "./sort.js";
 import { parsePromos } from "./banks.js";
 import { analyzeCart } from "./cart.js";
 import { taccFromSearch, withTaccFilter } from "./tacc.js";
+import { nutriEligible } from "./nutrition.js";
 import { parseNxM, adjustQty, promoNotice } from "./promo.js";
 import {
   isProductsUrl, isRecommendationsUrl, isCartUrl, isUnitSort, toNativeSort, cacheKey, pageUrl,
@@ -251,6 +252,8 @@ export function installInterceptor(win, deps) {
     for (const label of unique) label.name = data.sku_display_name ?? null;
     // El precio primero: la búsqueda de Sin TACC puede tardar o no responder.
     post({ type: "labels", labels });
+    // Sin TACC solo importa en comida: en lo demás no se le piden más búsquedas a Coto.
+    if (!nutriEligible(data)) return;
     const tacc = await lookupTacc(String(plu)).catch(() => null);
     for (const label of unique) label.tacc = tacc;
     post({ type: "labels", labels });
