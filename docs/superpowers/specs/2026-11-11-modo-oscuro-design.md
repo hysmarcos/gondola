@@ -103,12 +103,18 @@ Reglas:
 ### 5. Colores de Góndola a tokens
 
 `src/badge.css`, `src/skin.css`, `src/skin-list.css` y `src/skin-pdp.css` tienen colores
-escritos a mano (`#fff`, grises, rojos). Se reemplazan por tokens. En modo claro el resultado
-visual no cambia.
+escritos a mano (`#fff`, grises, rojos; unos 170, 48 distintos en `src/badge.css`). Se
+reemplazan por tokens. En modo claro el cambio no se nota: solo se unifican grises y tonos
+casi iguales.
+
+Para cubrir las familias de `src/badge.css` se suman tokens: `--g-ink3`, `--g-line-2`,
+`--g-blue`, `--g-blue-soft`, `--g-danger`, `--g-danger-soft`. Sus valores están en el plan.
+
+Al imprimir, la página sale clara aunque el tema sea oscuro.
 
 ### 6. Pintura de Coto
 
-En `src/theme.css`, todo bajo `[data-gondola-theme="dark"]`. Los estilos de Coto usan
+En un archivo aparte, `src/theme-coto.css`, todo bajo `[data-gondola-theme="dark"]`. Los estilos de Coto usan
 selectores de Angular y a veces `!important`; donde chocan, la regla lleva `!important`
 (misma norma que `src/skin.css`).
 
