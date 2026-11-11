@@ -1,4 +1,4 @@
-// Guarda el HTML real del encabezado, el pie, el inicio y el carrito vacío de Coto en
+// Guarda el HTML real del encabezado, el pie, el inicio y la página de ingreso de Coto en
 // tests/fixtures/dom/. Con eso se escriben y prueban los selectores del modo oscuro
 // (src/theme.css). Hermano de capture-dom.mjs: mismo método, otras páginas.
 // Sin la extensión cargada y sin sesión: contexto nuevo de Playwright, sin cookies, sin
@@ -9,8 +9,9 @@
 //   Playwright no encuentra el instalado.
 //   Si el encabezado muestra a una persona ("Hola" con un nombre, "Envío a" con una
 //   dirección, un correo) o no muestra "Ingresar", el script falla y no escribe nada.
-//   Sin sesión, /carrito redirige a /ingresar: carrito.html es esa página (login y registro),
-//   no un carrito vacío. El script imprime la URL final (carritoUrl).
+//   El carrito no se puede capturar sin sesión (/carrito redirige a /ingresar), y iniciar sesión
+//   está fuera de este script: se revisa a mano. En su lugar se guarda ingresar.html (login y
+//   registro). Si /ingresar deja de ser esa página (otra URL final), el script falla y no escribe.
 import { mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 
@@ -20,7 +21,7 @@ const MAX_CARDS = 8;
 const VIEW = { width: 1280, height: 860 };
 
 // Partes de la página que no hacen falta para los selectores o que pueden traer datos de la persona.
-// Sin app-header ni footer-section: esos se guardan aparte, y el inicio y el carrito van sin ellos.
+// Sin app-header ni footer-section: esos se guardan aparte, y el inicio y la página de ingreso van sin ellos.
 const DROP = "script, style, noscript, iframe, link, template, app-header, footer-section, app-chat-agent, ngx-spinner, .grecaptcha-badge, #a11y-status-message";
 
 // Datos de una persona en el encabezado: saludo, dirección de envío o correo.
@@ -116,17 +117,21 @@ if (PERSONAL.test(headerAfter) || PERSONAL.test(headerHtml)) {
   process.exit(1);
 }
 
-// Carrito vacío
-await open(page, `${BASE}/carrito`, "app-header");
-await page.waitForTimeout(4000);
-const cartUrl = page.url();
-const cartHtml = await snapshot(page, "body");
+// Página de ingreso (a donde redirige /carrito sin sesión)
+await open(page, `${BASE}/ingresar`, "app-header");
+const loginUrl = page.url();
+if (new URL(loginUrl).pathname !== "/ingresar" || !(await page.locator("login-main form").count())) {
+  await browser.close();
+  console.error(`${loginUrl} no es la página de ingreso (login-main con formulario). No se guardó nada.`);
+  process.exit(1);
+}
+const loginHtml = await snapshot(page, "body");
 await browser.close();
 
 await writeFile(`${OUT}/header.html`, headerHtml);
 await writeFile(`${OUT}/footer.html`, footerHtml);
 await writeFile(`${OUT}/home.html`, homeHtml);
-await writeFile(`${OUT}/carrito.html`, cartHtml);
+await writeFile(`${OUT}/ingresar.html`, loginHtml);
 
 const kb = (s) => (Buffer.byteLength(s) / 1024).toFixed(1) + " KB";
-console.log(JSON.stringify({ carritoUrl: cartUrl, header: kb(headerHtml), footer: kb(footerHtml), home: kb(homeHtml), carrito: kb(cartHtml), menuAbierto: menuOpened }));
+console.log(JSON.stringify({ ingresarUrl: loginUrl, header: kb(headerHtml), footer: kb(footerHtml), home: kb(homeHtml), ingresar: kb(loginHtml), menuAbierto: menuOpened }));
