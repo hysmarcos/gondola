@@ -632,6 +632,12 @@
   border-bottom: 3px solid var(--g-ink);
 }
 
+/* En oscuro --g-ink es casi blanco: las barras gruesas serían lo que más brilla en la página. */
+[data-gondola-skin="pdp"][data-gondola-theme="dark"] app-product-detail .pdp-characteristics > div:has(> .characteristics-columns):has(td, li) {
+  border-top-color: var(--g-ink2);
+  border-bottom-color: var(--g-ink2);
+}
+
 [data-gondola-skin="pdp"] app-product-detail .pdp-characteristics .characteristics-columns {
   display: block;
   margin: 0 !important;
