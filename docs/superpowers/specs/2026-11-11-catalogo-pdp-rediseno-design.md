@@ -21,8 +21,9 @@ Entra:
 No entra:
 
 - Encabezado, menú principal, pie, carruseles, mini-carrito y `/carrito`.
-- Datos o cálculos nuevos. Precio por unidad, bancos, comparador y nutrición usan lo que ya
-  existe.
+- Cálculos nuevos. Precio por unidad, bancos, comparador y nutrición usan lo que ya existe.
+  Única excepción de datos: las etiquetas "para vos" de la tarjeta piden la ficha de Open
+  Food Facts de los productos que se ven en pantalla (sección 4.2).
 - Octógonos (Ley 27.642): siguen fuera, por el motivo del spec de nutrición.
 - Calorías en la tarjeta de la lista: cargan la tarjeta. Quedan en la PDP.
 - Vista de lista tipo planilla y vista "etiqueta" en la tarjeta (variantes 2 y 3,
@@ -57,7 +58,8 @@ Estas reglas valen más que cualquier detalle visual de este documento.
 5. Todo el diseño nuevo cuelga de un atributo en `<html>`: `data-gondola-skin`. Sin el
    atributo, la página se ve como en la versión 0.12.0.
 6. Si en una página falta un nodo que el diseño necesita, Góndola saca el atributo en esa
-   página y deja el aspecto de la 0.12.0. No se muestra un diseño a medias.
+   página y deja el aspecto de la 0.12.0. No se muestra un diseño a medias. Mientras la
+   página todavía no se dibujó (Coto la arma después de cargar), el atributo queda puesto.
 
 ## 3. Sistema visual
 
@@ -112,19 +114,24 @@ corta con "…".
 
 Reglas de cada parte:
 
-- **Etiqueta de arriba**: una sola. Prioridad: sin stock, más barato de la categoría,
-  oferta de Coto.
-- **Etiquetas "para vos"**: salen de `forYouItems` con el perfil del popup. Máximo 2, en
-  una fila. Flotan sobre la foto, así que no cambian el alto. Sin perfil, no hay etiquetas.
+- **Etiqueta de arriba**: una sola entre "más barato de la categoría" y la oferta de Coto,
+  en ese orden de prioridad. La marca de inicio de grupo al ordenar por unidad ("▸ Por
+  litro") se sigue viendo, debajo.
+- **Etiquetas "para vos"**: máximo 2, en una fila. Flotan sobre la foto, así que no cambian
+  el alto. Solo para alergias y celíaco: "Tiene leche", "Puede tener soja", "Sin TACC",
+  "Revisá TACC". Sodio y azúcar no generan etiqueta en la tarjeta (sería calcular un
+  sello); siguen en la PDP. Sin perfil, no hay etiquetas.
+  - Dato nuevo: hoy la nutrición se pide solo en la PDP. Con celíaco o alguna alergia en el
+    perfil, Góndola pide a Open Food Facts cada producto de comida cuando su tarjeta entra
+    en pantalla. Viaja solo el código de barras, se guarda 7 días y un error no se
+    reintenta en la misma página.
 - **Precio y precio por unidad**: son los mismos valores de hoy (`bankValue ?? value`). El
   banco no agrega una línea: aparece como motivo, con el nombre del banco sobre fondo azul.
-- **Comparador**: cuatro estados.
-  - Verde: "Coto es el más barato".
-  - Ámbar: "En Más: $2.112" (el súper y el precio más bajo).
-  - Gris: "No está en otros súper".
-  - Buscando: una barra gris animada.
-  Al hacer click (verde o ámbar) se abre un panel con los tres súper, con barra y precio.
-  El panel flota sobre la tarjeta y no mueve nada.
+- **Comparador**: es la pastilla que ya dibuja `compare-ui.js`, a lo ancho de su fila y
+  sin fondo, con sus textos de hoy: "Mejor precio" (verde), "Más barato en Más" (ámbar),
+  "Igual", "Comparando…" y "Sin comparar" (gris). Al hacer click se abre el panel de hoy
+  con Coto y los tres súper. El panel flota sobre la tarjeta y no mueve nada. El mockup
+  muestra otros textos y barras; vale este texto.
 - **En el carrito**: borde rojo de 2 px en la tarjeta y el selector de cantidad en lugar de
   "Agregar".
 - **Sin stock**: foto atenuada y el botón de Coto deshabilitado. El precio y el comparador
@@ -167,12 +174,17 @@ En orden:
 3. Precio final (32 px) con el regular tachado al lado.
 4. Precio por unidad con su motivo.
 5. "Agregar" o el selector de cantidad de Coto.
-6. **Con tu banco**: banco, día, precio con ese banco y tope. Una línea aclara cuál conviene
-   y que no se suman. Link "Cambiar" que abre el popup. Sin banco elegido: una invitación a
-   elegir tarjetas.
-7. **El mismo producto en otros súper**: una fila por súper con barra y precio, ordenadas
-   de menor a mayor. La más barata en verde. "No lo tiene" en gris. Cada fila abre la
-   página de ese súper.
+6. **Con tu banco**, con las reglas reales de Coto (un producto en oferta no suma banco):
+   - El banco aplica: "ICBC hoy: 10% · $1.816,20". El precio grande ya es ese.
+   - No aplica: "Banco no aplica: ya está en oferta" o "…excluido de promos".
+   - Sin tarjetas elegidas: "Elegí tus tarjetas en el botón de Góndola y vas a ver el
+     precio con el descuento de cada día."
+   - Con tarjetas pero sin promo para este producto: no se muestra el bloque.
+   No hay link "Cambiar": una página no puede abrir el popup de la extensión. El mockup
+   muestra un caso "banco contra llevando 2" que no existe; vale este texto.
+7. **El mismo producto en otros súper**: las filas que ya dibuja `compare-ui.js`, una por
+   súper, con nombre y precio. La más barata en verde. Cada fila abre la página de ese
+   súper. Sin barras de proporción.
 8. "Ver planes de cuotas" (link de Coto).
 9. "Agregar una nota o un reemplazo": el formulario de Coto ("Instrucciones para armar el
    pedido"), plegado. Si el formulario ya tiene texto guardado, arranca abierto.
@@ -227,7 +239,8 @@ Estados:
 
 - Ajuste nuevo `skin` en `chrome.storage.local`, encendido por defecto. Apagado: se saca
   `data-gondola-skin` y la página se ve como en la 0.12.0, con todas las funciones.
-- En el popup: "Diseño Góndola en la lista y el producto".
+- En el popup: título "Diseño Góndola", texto "Diseño nuevo en la lista de productos y en
+  la página de producto. Apagalo para ver el de Coto."
 - `PRODUCT.md` cambia en dos lugares, porque hoy dice que las páginas de Coto mantienen su
   aspecto:
   - "Name": las páginas de Coto usan la piel Góndola en la lista y la PDP; se puede apagar.
@@ -238,7 +251,8 @@ Estados:
 
 | Unidad | Qué hace | Depende de |
 |---|---|---|
-| `src/skin.js` | Lee el ajuste `skin`, pone o saca `data-gondola-skin` en `<html>` y revisa que estén los nodos que el diseño necesita (regla 2.6). | `chrome.storage`, el DOM de Coto |
+| `src/skin-dom.js` | Mapa de selectores de Coto para la lista y la PDP, sacado del HTML real. | nada |
+| `src/skin.js` | Lee el ajuste `skin`, pone o saca `data-gondola-skin` en `<html>` (`"list"` o `"pdp"`) y revisa que estén los nodos que el diseño necesita (regla 2.6). | `chrome.storage`, `skin-dom.js` |
 | `src/skin.css` | Tokens (sección 3) y piezas comunes: botón, selector de cantidad, etiquetas. | nada |
 | `src/skin-list.css` | Lista: página, filtros, grilla y tarjeta. | `skin.css` |
 | `src/skin-pdp.css` | PDP: galería, caja de compra, nutrición, ficha. | `skin.css` |
