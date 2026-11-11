@@ -134,7 +134,7 @@ https://hysmarcos.github.io/gondola/privacidad.html
 En "Enviar para revisión" hay un campo de notas. Pegá esto:
 
 ```text
-No hace falta cuenta. Para probar: abrí https://www.coto.com.ar/productos/categorias/catalogo-almac%C3%A9n-aceites-y-condimentos-aceites/catv00001264 . Cada producto muestra el precio por litro y un botón que compara con Carrefour, Día y Más. En "Ordenar por" aparece "Precio por kg/L: menor a mayor". En el popup se eligen tarjetas bancarias y el día. Código abierto: https://github.com/hysmarcos/gondola
+No hace falta cuenta. Para probar: abrí https://www.coto.com.ar/productos/categorias/catalogo-almac%C3%A9n-aceites-y-condimentos-aceites/catv00001264 . Cada producto muestra el precio por litro y un botón que compara con Carrefour, Día y Más. En "Ordenar por" aparece "Precio por kg/L: menor a mayor". En un producto de comida, por ejemplo https://www.coto.com.ar/productos/x/_/R-00508911-00508911-200 , aparece "Información nutricional" con datos de Open Food Facts (permiso world.openfoodfacts.org: solo se envía el código de barras). En el popup se eligen tarjetas bancarias, el día y, opcionalmente, el perfil (queda en el navegador). Código abierto: https://github.com/hysmarcos/gondola
 ```
 
 ## 4. Después de publicar
