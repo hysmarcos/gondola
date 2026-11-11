@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { renderNutrition, createNutritionUi } from "../src/nutrition-ui.js";
+import { renderNutrition, createNutritionUi, packageLine, valueLine, vdPercent, updatedText } from "../src/nutrition-ui.js";
 
 const N = {
   per100: { kcal: 480, carbs: 70.25, sugars: 30, fat: 20, sodiumMg: 250 },
@@ -311,5 +311,119 @@ describe("diseño A: resumen en la columna y sección junto a la descripción", 
     ui.paint(container, anchor, label(), true, null);
     expect(container.querySelector("details.coto-unit-nutri")).not.toBeNull();
     expect(container.querySelector(".coto-unit-nutri-sum")).toBeNull();
+  });
+});
+
+describe("primera ola de mejoras", () => {
+  const N = {
+    per100: { kcal: 480, carbs: 70, sugars: 30, proteins: 6, fat: 20, saturatedFat: 8, fiber: 2.5, sodiumMg: 250 },
+    perServing: { kcal: 144, carbs: 21, sugars: 9, proteins: 1.8, fat: 6, sodiumMg: 75 },
+    servingSize: "30 g", servingQty: 30, updatedAt: Date.UTC(2026, 2, 15), url: "https://world.openfoodfacts.org/product/1",
+    photos: { front: "https://images.openfoodfacts.org/f.jpg", nutrition: "https://images.openfoodfacts.org/n.jpg", ingredients: null },
+  };
+
+  describe("packageLine (total por envase)", () => {
+    it("envase, porciones y kcal en total", () => {
+      expect(packageLine(N, { amount: 0.4 }, false)).toBe("Envase de 400 g · 13 porciones de 30 g · 1.920 kcal en total");
+    });
+    it("bebida en litros, una porción", () => {
+      const coca = { per100: { kcal: 42 }, servingQty: 354 };
+      expect(packageLine(coca, { amount: 0.354 }, true)).toBe("Envase de 354 ml · 1 porción de 354 ml · 149 kcal en total");
+    });
+    it("kilos y litros con decimales; sin porción ni kcal", () => {
+      expect(packageLine({ per100: { fat: 1 }, servingQty: null }, { amount: 2.25 }, true)).toBe("Envase de 2,25 L");
+      expect(packageLine({ per100: { kcal: 350 }, servingQty: null }, { amount: 1 }, false)).toBe("Envase de 1 kg · 3.500 kcal en total");
+    });
+    it("sin tamaño de envase no hay línea; porciones fuera de 1 a 100, sin porciones", () => {
+      expect(packageLine(N, { amount: null }, false)).toBeNull();
+      expect(packageLine({ ...N, servingQty: 1 }, { amount: 0.4 }, false)).toBe("Envase de 400 g · 1.920 kcal en total");
+    });
+  });
+
+  describe("valueLine (precio por nutriente)", () => {
+    it("proteína y kcal con el precio real por kg", () => {
+      // $6.000 /kg: 60 g de proteína por kg → $10.000 cada 100 g; 4.800 kcal por kg → $1.250 cada 1000 kcal.
+      expect(valueLine(N, { group: "kg", value: 6000, bankValue: null })).toBe("Rinde: $10.000 cada 100 g de proteína · $1.250 cada 1000 kcal");
+    });
+    it("con banco usa el precio con banco", () => {
+      expect(valueLine(N, { group: "kg", value: 6000, bankValue: 4800 })).toBe("Rinde: $8.000 cada 100 g de proteína · $1.000 cada 1000 kcal");
+    });
+    it("poca proteína o pocas kcal: no se muestran; sin grupo kg/L no hay línea", () => {
+      expect(valueLine({ per100: { kcal: 42, proteins: 0 } }, { group: "L", value: 5085 })).toBeNull();
+      expect(valueLine({ per100: { kcal: 380, proteins: 1 } }, { group: "kg", value: 2000 })).toBe("Rinde: $526 cada 1000 kcal");
+      expect(valueLine(N, { group: "unidad", value: 100 })).toBeNull();
+      expect(valueLine(N, { group: "kg", value: null })).toBeNull();
+    });
+  });
+
+  it("vdPercent: % del valor diario con los valores del Mercosur", () => {
+    expect(vdPercent("kcal", 144)).toBe(7);
+    expect(vdPercent("sodiumMg", 75)).toBe(3);
+    expect(vdPercent("saturatedFat", 22)).toBe(100);
+    expect(vdPercent("sugars", 9)).toBeNull();
+    expect(vdPercent("transFat", 1)).toBeNull();
+  });
+
+  it("updatedText: mes y año", () => {
+    expect(updatedText(Date.UTC(2026, 2, 15))).toBe("Actualizado en marzo de 2026");
+    expect(updatedText(null)).toBeNull();
+  });
+
+  describe("sección", () => {
+    let host, desc, container, anchor;
+    beforeEach(() => {
+      document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+      container = document.querySelector(".mt-4"); anchor = document.getElementById("a");
+      desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+    });
+    async function draw(result, label) {
+      const ui = createNutritionUi(document, { request: async () => result, onUpdate: () => {} });
+      const section = { host, after: desc };
+      ui.paint(container, anchor, label, true, section);
+      await new Promise((r) => setTimeout(r, 0));
+      ui.paint(container, anchor, label, true, section);
+      return host.querySelector(".coto-unit-nutri-section");
+    }
+    const label = { ean: "1", nutri: true, group: "kg", value: 6000, bankValue: null, amount: 0.4 };
+
+    it("muestra envase, rinde, %VD, fotos, fecha y link para corregir", async () => {
+      const sec = await draw(N, label);
+      expect(sec.querySelector(".coto-unit-nutri-pack").textContent).toBe("Envase de 400 g · 13 porciones de 30 g · 1.920 kcal en total");
+      expect(sec.querySelector(".coto-unit-nutri-value").textContent).toBe("Rinde: $10.000 cada 100 g de proteína · $1.250 cada 1000 kcal");
+      const ths = [...sec.querySelectorAll("thead th")].map((t) => t.textContent);
+      expect(ths.at(-1)).toBe("%VD");
+      const kcalRow = sec.querySelector("tbody tr");
+      expect(kcalRow.lastElementChild.textContent).toBe("7%");
+      expect(sec.textContent).toContain("%VD: con base en una dieta de 2000 kcal");
+      const photos = [...sec.querySelectorAll(".coto-unit-nutri-photos a")];
+      expect(photos.map((a) => a.textContent)).toEqual(["frente", "tabla"]);
+      expect(photos[0].href).toBe("https://images.openfoodfacts.org/f.jpg");
+      expect(photos.every((a) => a.target === "_blank" && a.rel === "noopener noreferrer")).toBe(true);
+      expect(sec.textContent).toContain("Actualizado en marzo de 2026");
+      const fix = [...sec.querySelectorAll("a")].find((a) => a.textContent === "Corregir en Open Food Facts");
+      expect(fix.href).toBe("https://world.openfoodfacts.org/product/1");
+    });
+
+    it("sin porción no hay columna %VD ni nota", async () => {
+      const sec = await draw({ ...N, perServing: null }, label);
+      expect([...sec.querySelectorAll("thead th")].map((t) => t.textContent)).not.toContain("%VD");
+      expect(sec.textContent).not.toContain("%VD:");
+    });
+
+    it("sin fotos ni fecha no hay esas líneas", async () => {
+      const sec = await draw({ ...N, photos: { front: null, nutrition: null, ingredients: null }, updatedAt: null }, label);
+      expect(sec.querySelector(".coto-unit-nutri-photos")).toBeNull();
+      expect(sec.textContent).not.toContain("Actualizado");
+    });
+
+    it("missing: QR dibujado con nodos SVG y texto para cargarla desde el celular", async () => {
+      const sec = await draw("missing", label);
+      const svg = sec.querySelector("svg.coto-unit-nutri-qr");
+      expect(svg).not.toBeNull();
+      expect(svg.getAttribute("role")).toBe("img");
+      expect(svg.getAttribute("aria-label")).toBe("Código QR de https://world.openfoodfacts.org/product/1");
+      expect(svg.querySelectorAll("path, rect").length).toBeGreaterThan(0);
+      expect(sec.textContent).toContain("Escaneá el código con el celular para cargarla con fotos del envase.");
+    });
   });
 });
