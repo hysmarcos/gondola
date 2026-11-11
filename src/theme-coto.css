@@ -205,8 +205,10 @@
   color: var(--g-red-text) !important;
 }
 
-/* "Agregar": el rojo de compra del tema (texto blanco de Coto). */
-[data-gondola-theme="dark"] .card-container .bottom-botones .btn-primary {
+/* "Agregar" (lista, producto y carruseles): el rojo de compra del tema, con el texto blanco de
+   Coto. En las tarjetas chicas de los carruseles Coto lo pinta con más peso: va su regla aparte. */
+[data-gondola-theme="dark"] product-add-show-remove .btn.btn-primary,
+[data-gondola-theme="dark"] mini-product-card .mini-product-card product-add-show-remove .btn.btn-primary {
   border-color: var(--g-red) !important;
   background-color: var(--g-red) !important;
 }
@@ -223,4 +225,67 @@
   border-color: var(--g-red) !important;
   background-color: var(--g-red) !important;
   color: #ffffff !important; /* fijo: blanco sobre el rojo de compra, como el texto de Coto */
+}
+
+/* ---------- Página de producto ----------
+   Como en la lista: con la piel prendida, src/skin-pdp.css ya pinta la caja de compra; lo que
+   chocaría con ella va bajo :not([data-gondola-skin]). */
+
+/* Ruta de categorías: texto secundario. */
+[data-gondola-theme="dark"] app-product-detail a.selected {
+  color: var(--g-ink2);
+}
+
+/* Galería: la foto grande y las miniaturas sobre la placa clara (la piel ya les da el radio). */
+[data-gondola-theme="dark"] app-product-detail .gallery-wrap :is(.img-big-wrap, .item-thumb) {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-plate) !important;
+}
+
+/* Títulos: Coto los pinta casi negros (el nombre, con una clase de utilidad con !important). */
+[data-gondola-theme="dark"] app-product-detail h1.title {
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] app-product-detail :is(h4, h5) {
+  color: var(--g-ink);
+}
+
+/* Piel apagada: el precio y "Ver planes de cuotas" son rojos; en oscuro, el rojo de texto. */
+[data-gondola-theme="dark"]:not([data-gondola-skin]) app-product-detail aside.row :is(.price, a) {
+  color: var(--g-red-text) !important;
+}
+
+[data-gondola-theme="dark"] app-product-detail .pdp-characteristics {
+  border-color: var(--g-line) !important;
+}
+
+/* ---------- Carruseles de productos ("También te pueden interesar") ----------
+   Tarjetas chicas en superficie con borde, foto sobre la placa y textos claros. */
+
+[data-gondola-theme="dark"] .constructor-carousel__title {
+  color: var(--g-ink);
+}
+
+[data-gondola-theme="dark"] mini-product-card .mini-product-card {
+  border-color: var(--g-line);
+  background: var(--g-surface);
+}
+
+[data-gondola-theme="dark"] mini-product-card .mini-product-card__img-wrap {
+  background: var(--g-plate);
+}
+
+[data-gondola-theme="dark"] mini-product-card :is(.mini-product-card__name, .mini-product-card__price) {
+  color: var(--g-ink);
+}
+
+[data-gondola-theme="dark"] mini-product-card :is(.mini-product-card__list-price, .mini-product-card__regular-price, .mini-product-card__unit) {
+  color: var(--g-ink2);
+}
+
+/* "No acumulable": la etiqueta gris clara pasa a un relleno suave. */
+[data-gondola-theme="dark"] mini-product-card .mini-product-card__badge--oferta--no-acumulable {
+  background-color: var(--g-soft);
+  color: var(--g-ink);
 }

@@ -265,9 +265,9 @@
   letter-spacing: 0;
 }
 
-/* "Llevando 2 25%Dto": la oferta de Coto, en rojo. */
+/* "Llevando 2 25%Dto": la oferta de Coto, en el rojo de texto (en oscuro, --g-red es un relleno). */
 [data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 > div:has(.price) .text-success {
-  color: var(--g-red) !important;
+  color: var(--g-red-text) !important;
   font: 600 13px/18px Poppins, system-ui, sans-serif !important;
 }
 
