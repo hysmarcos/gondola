@@ -150,24 +150,62 @@ aunque tengan EAN: su código no es el de un envase con tabla.
 
 ## 5. Cómo se ve
 
-Es un bloque desplegable (`<details>`). Las clases usan el prefijo `coto-unit-nutri` y los
-estilos van en `src/badge.css`, con la misma línea visual que la caja de precio.
+Diseño A, aprobado el 2026-11-10 después de ver la versión 1 en coto.com.ar. Las clases usan
+el prefijo `coto-unit-nutri` y los estilos van en `src/badge.css`.
 
-- **Cerrado:** "Información nutricional · 480 kcal cada 100 g". Si no hay calorías, solo
-  "Información nutricional".
-- **Abierto:** una tabla con una fila por nutriente presente, en este orden: valor
-  energético (kcal), carbohidratos, azúcares, proteínas, grasas totales, grasas saturadas,
-  grasas trans, fibra y sodio (mg). Los gramos van con un decimal y los mg y kcal sin
-  decimales.
-- **Columnas:** "cada 100 g" siempre. "Por porción (…)" solo si hay `perServing` con
-  datos; el texto entre paréntesis es `servingSize` tal como viene.
-- **Bebidas:** si la unidad del producto en Góndola es litro, dice "cada 100 ml".
-- **Pie:** "Fuente: Open Food Facts, datos cargados por la comunidad." y un link
-  "Ver ficha" a `url` (`target="_blank"`, `rel="noopener noreferrer"`).
-- **Sin tabla (`"missing"`):** una línea: "Sin información nutricional. Podés cargarla en
-  Open Food Facts", con link a `https://world.openfoodfacts.org/product/{ean}`.
-- **Error:** no se muestra nada.
-- **Ajuste apagado:** se borra la sección y no se hacen pedidos.
+**HTML real del PDP de Coto (2026-11-10).** Columna de compra: `div.mt-4` con, en orden,
+`div.mb-1`, el bloque del precio (badge, "Llevando…", `var.price`, "No acumulable"),
+`div.mt-2.small` "Precio regular", `div.mb-2` "Precio sin impuestos nacionales" y
+`div.mb-5.small` "Precio por 1 …". Después vienen "Ver planes de cuotas" y el botón
+"Agregar". Debajo de la foto y la columna: `div.col-12.mt-3.mb-5` con `div.pdp-description`
+("Descripción del producto") y `div.pdp-characteristics` ("Características").
+
+**Columna de compra, de arriba a abajo:**
+
+1. El bloque del precio de Coto, sin cambios.
+2. "Precio regular" y "Precio sin impuestos nacionales", justo debajo del precio, atenuados
+   como hoy.
+3. La caja "Precio real para comparar" de Góndola. Va **después** de esas dos líneas, no
+   entre el precio y ellas.
+4. Resumen nutricional en una línea, solo si hay tabla: ícono de Open Food Facts +
+   "42 kcal · 11 g azúcares · 6 mg sodio · cada 100 ml" + link "Ver tabla", que lleva a la
+   sección. Muestra solo los que existen de: kcal, azúcares, sodio.
+5. "Ver planes de cuotas" y "Agregar", de Coto.
+
+Góndola no mueve nodos de Coto: solo elige dónde inserta los suyos.
+
+**Sección "Información nutricional"**, en `div.col-12.mt-3.mb-5`, después de
+`div.pdp-description`:
+
+- Título como los de Coto (`h4`), con el ícono de Open Food Facts a la izquierda.
+- La tabla siempre visible, sin desplegar: una fila por nutriente presente, en este orden:
+  valor energético (kcal), carbohidratos, azúcares, proteínas, grasas totales, grasas
+  saturadas, grasas trans, fibra y sodio (mg). Gramos con hasta un decimal ("30 g",
+  "70,3 g"); mg y kcal sin decimales.
+- Columnas: "cada 100 g" (o "cada 100 ml") siempre. "Por porción (…)" solo si hay
+  `perServing`; el paréntesis es `servingSize` tal como viene, y sin él dice "Por porción".
+- Pie: "Fuente: Open Food Facts, datos cargados por la comunidad." y un link "Ver ficha" a
+  `url` (`target="_blank"`, `rel="noopener noreferrer"`).
+- En pantallas de 992 px o más, la descripción y la sección van en dos columnas;
+  "Características" queda debajo, a lo ancho. En pantallas chicas, una debajo de la otra.
+- **Sin tabla (`"missing"`):** no hay resumen en la columna. La sección muestra el título y
+  la línea "Sin información nutricional. Podés cargarla en Open Food Facts", con link a
+  `https://world.openfoodfacts.org/product/{ean}`.
+
+**Bebidas:** "cada 100 ml" si la unidad del producto es litro, o si es una bebida
+(`catv00001256`) que no se vende por peso.
+
+**Si la página no tiene `div.pdp-description`:** se usa el bloque desplegable de la versión 1
+(`<details>`) en la columna de compra, debajo de la caja de Góndola.
+
+**Error:** no se muestra nada. **Ajuste apagado:** se borran el resumen y la sección, y no
+se hacen pedidos.
+
+**Ícono de Open Food Facts:** `assets/off/off-logo-icon-light.svg`, copiado sin cambios de
+`openfoodfacts/openfoodfacts-server` (`html/images/logos/`). Se usa solo junto a la atribución,
+como fuente de los datos. No se encontró una política pública sobre el uso del logo (la wiki
+bloquea el acceso automático): antes de publicar en la Chrome Web Store, confirmarlo con
+`reuse@openfoodfacts.org`.
 
 ## 6. Privacidad
 
