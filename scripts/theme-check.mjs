@@ -1,7 +1,8 @@
 // Revisa el modo oscuro en coto.com.ar: abre inicio, una lista, una página de producto y
 // /carrito con la extensión construida y theme: "dark", baja hasta el final y busca:
 // - bloques claros: elementos visibles de más de 2.000 px² con fondo de luminancia > 0,6
-//   (no cuentan las imágenes, lo que está sobre la placa --g-plate ni los banners de publicidad);
+//   (no cuentan las imágenes, lo que está sobre la placa --g-plate, los banners de publicidad
+//   ni los rellenos de color fuerte, como el ámbar de "Más barato": son etiquetas, no superficies);
 // - textos con poco contraste contra su fondo efectivo: menos de 4,5:1 (3:1 en texto grande);
 // - el logo de Coto: dibujado en un canvas con su filtro, ningún píxel opaco es rojo.
 // Imprime cada hallazgo (componente de Coto, selector corto, tamaño y color) y sale con 1 si hay alguno.
@@ -101,6 +102,7 @@ function injection(badge, styles, initial) {
 // Corre en la página. Devuelve los bloques claros y los textos con poco contraste de
 // root (todo el documento o una parte, como el menú abierto).
 function findings({ rootSelector, ads, minArea, maxLum }) {
+  const MAX_CHROMA = 100; // 0-255: más que esto es un color de etiqueta (ámbar, amarillo), no un gris claro
   const root = rootSelector ? document.querySelector(rootSelector) : document.body;
   if (!root) return { light: [], text: [] };
   const rgba = (s) => {
@@ -159,6 +161,7 @@ function findings({ rootSelector, ads, minArea, maxLum }) {
     if (r.width * r.height <= minArea) continue;
     const bg = rgba(getComputedStyle(el).backgroundColor);
     if (!bg || bg.a < 0.5 || lum(bg) <= maxLum) continue;
+    if (Math.max(bg.r, bg.g, bg.b) - Math.min(bg.r, bg.g, bg.b) > MAX_CHROMA) continue; // color fuerte
     if (onPlate(el)) continue;
     light.push({ where: where(el), size: `${Math.round(r.width)}×${Math.round(r.height)}`, color: getComputedStyle(el).backgroundColor });
   }

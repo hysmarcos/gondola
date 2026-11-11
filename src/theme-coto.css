@@ -132,3 +132,95 @@
 [data-gondola-theme="dark"] header-category ::-webkit-scrollbar-thumb {
   background: var(--g-line-2);
 }
+
+/* ---------- Lista de productos ----------
+   Con el Diseño Góndola prendido, src/skin-list.css ya pinta la grilla con tokens. Estas reglas
+   cubren lo que la piel no toca y la lista de Coto tal cual (piel apagada). Las que chocarían
+   con un diseño distinto de la piel van bajo :not([data-gondola-skin]). */
+
+/* Columna de filtros: Coto le pone fondo blanco; queda sobre el fondo de la página. */
+[data-gondola-theme="dark"] #filtrosmenu {
+  background-color: transparent;
+  color: var(--g-ink);
+}
+
+/* Piel apagada: los links de Coto son rojos; en oscuro, el rojo de texto. */
+[data-gondola-theme="dark"]:not([data-gondola-skin]) #filtrosmenu a {
+  color: var(--g-red-text) !important;
+}
+
+[data-gondola-theme="dark"]:not([data-gondola-skin]) #filtrosmenu :is(h6, .filter-title) {
+  color: var(--g-ink) !important;
+}
+
+/* "También te podría interesar": título secundario y chips en relleno suave. */
+[data-gondola-theme="dark"] .related-searches .title {
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] .related-searches .chip {
+  background: var(--g-soft) !important;
+  color: var(--g-ink) !important;
+}
+
+/* Título, cantidad y orden. La piel pone los mismos tokens, pero Coto gana el empate. */
+[data-gondola-theme="dark"] .plp-header__title {
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] :is(.plp-header__count, .plp-header__sort-label) {
+  color: var(--g-ink2) !important;
+}
+
+/* El orden es un campo: fondo de página, borde y texto claro (la piel lo dibuja a su modo). */
+[data-gondola-theme="dark"]:not([data-gondola-skin]) .plp-header__sort .form-select {
+  border-color: var(--g-line-2) !important;
+  background-color: var(--g-bg) !important;
+  color: var(--g-ink) !important;
+}
+
+/* Tarjeta: superficie con borde fino (un anillo de box-shadow, como en la piel: no cambia el
+   tamaño) en lugar de la sombra de Coto, que lleva !important (de ahí la etiqueta del componente). */
+[data-gondola-theme="dark"] constructor-result-item .card-container {
+  background-color: var(--g-surface) !important;
+  box-shadow: 0 0 0 1px var(--g-line) !important;
+}
+
+/* Foto sobre la placa clara, con bordes redondos; la foto no lleva filtro. */
+[data-gondola-theme="dark"] .card-container .top-imagen-promos {
+  padding: 6px;
+  border-radius: 8px;
+  background-color: var(--g-plate) !important;
+}
+
+/* Nombre y precio: Coto los pinta en negro (el precio queda a la vista en las tarjetas sin
+   etiqueta de Góndola). */
+[data-gondola-theme="dark"] .card-container :is(.nombre-producto, .card-title) {
+  color: var(--g-ink) !important;
+}
+
+/* Piel apagada: el aviso de descuento y "Ver planes de cuotas" van en el rojo de texto. */
+[data-gondola-theme="dark"]:not([data-gondola-skin]) .card-container :is(.offer-crum, .bottom-botones > a) {
+  border-color: var(--g-red-text) !important;
+  color: var(--g-red-text) !important;
+}
+
+/* "Agregar": el rojo de compra del tema (texto blanco de Coto). */
+[data-gondola-theme="dark"] .card-container .bottom-botones .btn-primary {
+  border-color: var(--g-red) !important;
+  background-color: var(--g-red) !important;
+}
+
+/* Paginación: botones en superficie con borde; la página actual en rojo. */
+[data-gondola-theme="dark"] app-paginator .page-link {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface) !important;
+  color: var(--g-red-text) !important;
+}
+
+/* sin captura: la página actual solo se marca con más de una página de resultados */
+[data-gondola-theme="dark"] app-paginator .page-item.active .page-link {
+  border-color: var(--g-red) !important;
+  background-color: var(--g-red) !important;
+  color: #ffffff !important; /* fijo: blanco sobre el rojo de compra, como el texto de Coto */
+}

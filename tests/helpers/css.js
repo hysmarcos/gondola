@@ -45,11 +45,12 @@ export function selectors(css) {
 const STATE = "(?:hover|active|focus|focus-visible|focus-within|checked|disabled|visited)";
 
 // El selector sin los atributos de Góndola sobre <html> ([data-gondola-skin…],
-// [data-gondola-theme…], en cualquier orden), sin pseudo-elementos y sin estados.
+// [data-gondola-theme…] y :not([data-gondola-skin]), en cualquier orden), sin
+// pseudo-elementos y sin estados.
 // "" si el selector era solo el prefijo (los tokens de color, sobre <html>).
 export function bare(sel) {
   return sel
-    .replace(/^(?:\[data-gondola-(?:skin|theme)[^\]]*\])+\s*/, "")
+    .replace(/^(?:\[data-gondola-(?:skin|theme)[^\]]*\]|:not\(\[data-gondola-skin[^\]]*\]\))+\s*/, "")
     .replace(/::[\w-]+/g, "")
     .replace(new RegExp(`:not\\(:${STATE}\\)`, "g"), "")
     .replace(new RegExp(`:${STATE}(?![\\w-])`, "g"), "")

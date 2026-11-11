@@ -31,6 +31,7 @@ describe("bare", () => {
     expect(bare("[data-gondola-skin]")).toBe("");
     expect(bare('[data-gondola-skin="list"] .a:has(> .b)')).toBe(".a:has(> .b)");
     expect(bare('[data-gondola-skin="list"][data-gondola-theme="dark"] #f > a::before')).toBe("#f > a");
+    expect(bare('[data-gondola-theme="dark"]:not([data-gondola-skin]) .card a')).toBe(".card a");
   });
 });
 
