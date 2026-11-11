@@ -206,9 +206,10 @@ function themeRow(doc, value, storage) {
     });
     return el(doc, "label", {}, [radio, el(doc, "span", { textContent: label })]);
   });
-  return el(doc, "fieldset", { className: "setting theme" }, [
+  // El lector de pantalla lee la descripción al entrar al grupo.
+  return el(doc, "fieldset", { className: "setting theme", attrs: { "aria-describedby": "theme-desc" } }, [
     el(doc, "legend", { className: "setting-title", textContent: "Tema" }),
-    el(doc, "span", { className: "setting-desc", textContent: "Modo oscuro para todo el sitio de Coto. Automático sigue el tema de tu sistema." }),
+    el(doc, "span", { id: "theme-desc", className: "setting-desc", textContent: "Modo oscuro para todo el sitio de Coto. Automático sigue el tema de tu sistema." }),
     el(doc, "div", { className: "segmented" }, options),
   ]);
 }

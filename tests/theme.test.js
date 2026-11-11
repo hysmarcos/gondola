@@ -251,6 +251,17 @@ describe("popup: tema", () => {
     expect([...group.querySelectorAll("label")].map((l) => l.textContent.trim())).toEqual(["Claro", "Oscuro", "Automático"]);
   });
 
+  it("el grupo se describe con su texto (aria-describedby)", async () => {
+    await open();
+    const group = document.querySelector("fieldset.theme");
+    const id = group.getAttribute("aria-describedby");
+    expect(id).toBeTruthy();
+    const desc = document.getElementById(id);
+    expect(desc).not.toBeNull();
+    expect(group.contains(desc)).toBe(true);
+    expect(desc.textContent).toMatch(/^Modo oscuro para todo el sitio de Coto/);
+  });
+
   it("va en Apariencia, antes de la fila Diseño Góndola", async () => {
     await open();
     const screen = document.querySelector('[data-section="apariencia"].screen');
