@@ -148,3 +148,13 @@ describe("lookupLabels (página de producto)", () => {
     expect(lookupLabels(data("catv00001254"), KEY, "200")[KEY].drink).toBe(false);
   });
 });
+
+describe("amount: tamaño del envase en la etiqueta", () => {
+  it("kg o L del envase; sin dato da null", () => {
+    // Lista $100 y $200 por litro: el envase es de medio litro.
+    const labels = labelsFor([item("L", "Litro", 200), item("K", "Kilo", 400), item("U", "Unidad", 50)], "200");
+    expect(labels.L.amount).toBeCloseTo(0.5, 6);
+    expect(labels.K.amount).toBeCloseTo(0.25, 6);
+    expect(labels.U.amount).toBeNull();
+  });
+});

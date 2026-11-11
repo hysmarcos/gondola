@@ -1,4 +1,4 @@
-// Respuestas reales de Open Food Facts (API v2), tomadas el 2026-11-10.
+// Respuestas reales de Open Food Facts (API v2), tomadas el 2026-11-11.
 //   7790895000997: Coca-Cola 2,25 L (tabla cada 100 ml)
 //   7790040613706: galletitas con valores por porción
 //   7790040143524: Rumba 330 g: ficha sin tabla
@@ -7,6 +7,10 @@ export const OFF = {
  "7790895000997": {
   "code": "7790895000997",
   "product": {
+   "image_front_url": "https://images.openfoodfacts.org/images/products/779/089/500/0997/front_en.43.400.jpg",
+   "image_ingredients_url": "https://images.openfoodfacts.org/images/products/779/089/500/0997/ingredients_en.5.400.jpg",
+   "image_nutrition_url": "https://images.openfoodfacts.org/images/products/779/089/500/0997/nutrition_es.23.400.jpg",
+   "last_modified_t": 1792068673,
    "nutriments": {
     "added-sugars": 0,
     "added-sugars_100g": 0,
@@ -76,6 +80,7 @@ export const OFF = {
    "nutrition_data_per": "100ml",
    "nutrition_data_prepared_per": "100g",
    "product_name": "coca cola",
+   "serving_quantity": 200,
    "serving_size": "200ml"
   },
   "status": 1,
@@ -84,6 +89,10 @@ export const OFF = {
  "7790040613706": {
   "code": "7790040613706",
   "product": {
+   "image_front_url": "https://images.openfoodfacts.org/images/products/779/004/061/3706/front_es.67.400.jpg",
+   "image_ingredients_url": "https://images.openfoodfacts.org/images/products/779/004/061/3706/ingredients_en.15.400.jpg",
+   "image_nutrition_url": "https://images.openfoodfacts.org/images/products/779/004/061/3706/nutrition_en.20.400.jpg",
+   "last_modified_t": 1790183807,
    "nutriments": {
     "added-sugars": 0,
     "added-sugars_100g": 0,
@@ -228,6 +237,7 @@ export const OFF = {
    "nutrition_data": "on",
    "nutrition_data_prepared_per": "100g",
    "product_name": "Alfajor bon o bon",
+   "serving_quantity": 40,
    "serving_size": "1 alfajor (40 g)"
   },
   "status": 1,
@@ -236,6 +246,10 @@ export const OFF = {
  "7790040143524": {
   "code": "7790040143524",
   "product": {
+   "image_front_url": "https://images.openfoodfacts.org/images/products/779/004/014/3524/front_es.3.400.jpg",
+   "image_ingredients_url": "https://images.openfoodfacts.org/images/products/779/004/014/3524/ingredients_es.13.400.jpg",
+   "image_nutrition_url": "https://images.openfoodfacts.org/images/products/779/004/014/3524/nutrition_es.11.400.jpg",
+   "last_modified_t": 1787761399,
    "product_name": "7790040143524"
   },
   "status": 1,

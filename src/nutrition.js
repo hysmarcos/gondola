@@ -23,7 +23,12 @@ const FOOD_ROOTS = new Set(["catv00001254", "catv00001255", "catv00001256", "cat
 const MIN_NUTRIENTS = 3;
 
 export const offProductUrl = (ean) => `${OFF}/product/${ean}`;
-export const offApiUrl = (ean) => `${OFF}/api/v2/product/${ean}?fields=product_name,nutriments,serving_size`;
+const FIELDS = "product_name,nutriments,serving_size,serving_quantity,last_modified_t,image_front_url,image_nutrition_url,image_ingredients_url";
+export const offApiUrl = (ean) => `${OFF}/api/v2/product/${ean}?fields=${FIELDS}`;
+
+// Fotos del envase: solo https de los servidores de imágenes de Open Food Facts.
+const PHOTO = /^https:\/\/(images|static)\.openfoodfacts\.org\//;
+const photo = (url) => (typeof url === "string" && PHOTO.test(url) ? url : null);
 
 // Bebidas: su tabla va cada 100 ml aunque Coto las venda por unidad.
 const DRINKS = "catv00001256";
@@ -72,6 +77,9 @@ export function parseOff(json, ean) {
     per100,
     perServing: Object.keys(serving).length ? serving : null,
     servingSize: product.serving_size || null,
+    servingQty: value(product.serving_quantity, "g", false) || null,
+    updatedAt: Number(product.last_modified_t) > 0 ? Number(product.last_modified_t) * 1000 : null,
+    photos: { front: photo(product.image_front_url), nutrition: photo(product.image_nutrition_url), ingredients: photo(product.image_ingredients_url) },
     url: offProductUrl(ean),
   };
 }

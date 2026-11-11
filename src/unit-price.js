@@ -158,7 +158,8 @@ function measure(data, store, opts = {}) {
     if (!isConsumable(data)) return null;
     const size = sizeFromName(name);
     const amount = size && !size.multi ? size.amounts.at(-1) : null;
-    return amount >= MIN_AMOUNT ? { group: size.kind, value: price / amount, drained: false, note: null } : null;
+    if (!(amount >= MIN_AMOUNT)) return null;
+    return { group: size.kind, value: price / amount, drained: false, note: null, amount: size.kind === "kg" || size.kind === "L" ? amount : null };
   }
   const paper = unit.group === "m2" || unit.group === "m" ? paperMetric(data?.sku_display_name) : null;
   if (paper?.divisor) return { group: paper.group, value: price / paper.divisor, drained: false, note: paper.note };
@@ -204,6 +205,8 @@ function measure(data, store, opts = {}) {
     value: price / amount,
     drained,
     note: paper?.note ?? null,
+    // Tamaño del envase en kg o L (para la información nutricional por envase).
+    amount: unit.group === "kg" || unit.group === "L" ? amount : null,
   };
 }
 
@@ -220,6 +223,7 @@ export function unitPrice(data, store, promos = [], day = 0, opts = {}) {
     value,
     drained: m.drained,
     note: m.note,
+    amount: m.amount ?? null,
     take: takeQty(data, store, opts),
     bankValue: applies ? round2(value * (1 - promo.percent / 100)) : null,
     bankName: applies ? promo.bank : null,

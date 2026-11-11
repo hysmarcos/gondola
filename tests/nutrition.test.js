@@ -71,6 +71,43 @@ describe("isFood / nutriEligible", () => {
 
   it("URLs de la ficha y de la API", () => {
     expect(offProductUrl("123")).toBe("https://world.openfoodfacts.org/product/123");
-    expect(offApiUrl("123")).toBe("https://world.openfoodfacts.org/api/v2/product/123?fields=product_name,nutriments,serving_size");
+    expect(offApiUrl("123").startsWith("https://world.openfoodfacts.org/api/v2/product/123?fields=product_name,nutriments,serving_size")).toBe(true);
+  });
+});
+
+describe("primera ola: porción, fecha y fotos", () => {
+  const off = (extra) => ({ status: 1, product: { nutriments: { "energy-kcal_100g": 50, fat_100g: 1, sugars_100g: 2 }, ...extra } });
+
+  it("trae servingQty, updatedAt y las fotos de OFF", () => {
+    const n = parseOff(off({
+      serving_quantity: "30",
+      last_modified_t: 1773000000,
+      image_front_url: "https://images.openfoodfacts.org/images/products/1/front_es.4.400.jpg",
+      image_nutrition_url: "https://images.openfoodfacts.org/images/products/1/nutrition_es.6.400.jpg",
+    }), "1");
+    expect(n.servingQty).toBe(30);
+    expect(n.updatedAt).toBe(1773000000 * 1000);
+    expect(n.photos).toEqual({
+      front: "https://images.openfoodfacts.org/images/products/1/front_es.4.400.jpg",
+      nutrition: "https://images.openfoodfacts.org/images/products/1/nutrition_es.6.400.jpg",
+      ingredients: null,
+    });
+  });
+
+  it("descarta porciones raras y fotos de otros sitios", () => {
+    const n = parseOff(off({ serving_quantity: -3, image_front_url: "javascript:alert(1)", image_ingredients_url: "http://images.openfoodfacts.org/x.jpg", image_nutrition_url: "https://evil.example/x.jpg" }), "1");
+    expect(n.servingQty).toBeNull();
+    expect(n.updatedAt).toBeNull();
+    expect(n.photos).toEqual({ front: null, nutrition: null, ingredients: null });
+  });
+
+  it("el pedido a la API trae los campos nuevos", () => {
+    expect(offApiUrl("1")).toBe("https://world.openfoodfacts.org/api/v2/product/1?fields=product_name,nutriments,serving_size,serving_quantity,last_modified_t,image_front_url,image_nutrition_url,image_ingredients_url");
+  });
+
+  it("fixture real de Coca-Cola: trae fecha y foto del frente", () => {
+    const n = parseOff(OFF["7790895000997"], "7790895000997");
+    expect(n.updatedAt).toBeGreaterThan(0);
+    expect(n.photos.front).toMatch(/^https:\/\/images\.openfoodfacts\.org\//);
   });
 });
