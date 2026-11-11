@@ -22,12 +22,12 @@
 </p>
 
 <p align="center">
-  <img alt="20-second video: Coto's page without and with Góndola. Sort by price per kilo, the cheapest tagged, one clear price per card, and the same product at other stores." src="docs/img/readme/gondola-demo.gif" width="100%">
+  <img alt="18-second animation: Coto's page without and with Góndola. The list with the new design, sorted by price per liter; the product page with your bank and other stores; nutrition facts; and allergies in the list." src="docs/img/readme/gondola-demo.gif" width="100%">
 </p>
 
 <p align="center"><sub>Real captures of coto.com.ar. <a href="docs/img/readme/gondola-demo.mp4">Watch the MP4</a>.</sub></p>
 
-Góndola is a Chrome extension that upgrades your supermarket's website. It adds what the site lacks for buying cheap, without breaking what already works. It starts with [Coto Digital](https://www.coto.com.ar), the online store of a large Argentine supermarket chain. Carrefour, Día, Más and others come next, each as "Góndola for that store". *Góndola* is the Spanish word for a supermarket shelf.
+Góndola is a Chrome extension that upgrades your supermarket's website. It gives it a clearer design and adds what the site lacks for choosing well: the real price per kilo, your bank, other stores and nutrition facts. It does not break what already works. It starts with [Coto Digital](https://www.coto.com.ar), the online store of a large Argentine supermarket chain. Carrefour, Día, Más and others come next, each as "Góndola for that store". *Góndola* is the Spanish word for a supermarket shelf.
 
 The extension has no servers. Everything runs in your browser.
 

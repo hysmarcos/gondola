@@ -1,9 +1,11 @@
 // Arma las imágenes "antes y después" del README con las capturas de capture-readme.mjs.
-// Entrada: docs/img/readme/raw (pastas) y docs/img/readme/raw-aceites (aceites). Salida: docs/img/readme/*.png
+// Arma también la animación (gondola-demo.gif y .mp4) con ffmpeg.
+// Entrada: docs/img/readme/raw. Salida: docs/img/readme/
 // Uso: node scripts/readme-media.mjs   (CHROME_PATH=ruta a Chrome si Playwright no trae uno)
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { spawnSync } from "node:child_process";
 import { chromium } from "playwright";
 
 const DIR = "docs/img/readme";
@@ -44,40 +46,60 @@ const page = ({ title, sub, before, after, beforeNotes = [], afterNotes = [] }) 
   <section class="col"><span class="tag after">Con Góndola</span>${after}<ol>${afterNotes.map((n) => `<li><span>${n}</span></li>`).join("")}</ol></section>
 </div></body></html>`;
 
-// Recorta una captura de 2560 px de ancho a la zona de productos (sin menú ni filtros).
-const crop = (src, [x0, y0, x1, y1]) => {
-  const w = x1 - x0, h = y1 - y0;
-  return `<div class="crop" style="aspect-ratio: ${w} / ${h}"><img src="${src}" style="width: ${(2560 / w) * 100}%; margin-left: -${(x0 / w) * 100}%; margin-top: -${(y0 / w) * 100}%"></div>`;
-};
-const GRID = [660, 230, 2490, 1330];
-
 const shots = [
+  {
+    out: "orden",
+    title: "La lista de productos",
+    sub: "Leches: 93 productos. La misma página, sin Góndola y con Góndola.",
+    before: `<img class="shot" src="${await img("raw/grilla-antes.png")}">`,
+    after: `<img class="shot" src="${await img("raw/grilla-orden.png")}">`,
+    beforeNotes: ["Tres productos por fila y varios precios para leer en cada uno.", "Solo ordena por relevancia, nombre o precio del paquete."],
+    afterNotes: ["<b>Diseño Góndola</b>: cuatro por fila, con el precio, el botón y los textos a la misma altura.", "<b>Nueva opción</b> en \"Ordenar por\": precio por kg/L, de menor a mayor.", "<b>Más barato de la categoría</b>, marcado en la foto.", "<b>Tu banco</b>: el precio con la promo de tu tarjeta, si Coto la aplica."],
+  },
   {
     out: "tarjeta",
     title: "La tarjeta de cada producto",
-    sub: "Mismo producto, misma página. Panzotti con 2x1.",
+    sub: "Mismo producto, misma página. Leche con 25% llevando 2.",
     before: `<img class="shot card" src="${await img("raw/tarjeta-antes.png")}">`,
     after: `<img class="shot card" src="${await img("raw/tarjeta-despues.png")}">`,
-    beforeNotes: ["Seis precios distintos para leer.", "El precio por kilo es el de lista: no cuenta el 2x1."],
-    afterNotes: ["<b>Un precio grande</b>: lo que pagás por unidad llevando 2, y el original tachado.", "<b>Precio por kilo real</b>, con la oferta: $9.597/kg, no $13.331.", "Compara con otros súper (acá es marca propia de Coto)."],
+    beforeNotes: ["Cuatro precios distintos para leer.", "El precio por litro es el de lista: no cuenta la oferta."],
+    afterNotes: ["<b>Un precio grande</b>: lo que pagás por unidad con la oferta, y el original tachado.", "<b>Precio por litro real</b>, con la oferta: $2.429/L, no $3.244.", "Una línea dice si conviene en otro súper."],
   },
   {
-    out: "orden",
-    title: "Ordenar por precio por kilo",
-    sub: "Pastas rellenas: 79 productos de distinto tamaño.",
-    before: `${crop(await img("raw/grilla-antes.png"), GRID)}`,
-    after: `${crop(await img("raw/grilla-orden.png"), GRID)}`,
-    beforeNotes: ["Solo ordena por relevancia, nombre o precio del paquete.", "Un paquete de 500 g y uno de 1 kg no se comparan a simple vista."],
-    afterNotes: ["<b>Nueva opción</b> en \"Ordenar por\": precio por kg/L, de menor a mayor.", "<b>Más barato de la categoría</b>, marcado en la foto.", "<b>Tu banco hoy</b>: el precio con la promo de tu tarjeta, si Coto la aplica."],
+    out: "producto",
+    title: "La página de producto",
+    sub: "Todo lo que hace falta para decidir, al lado del botón Agregar.",
+    before: `<img class="shot" src="${await img("raw/pdp-antes.png")}">`,
+    after: `<img class="shot" src="${await img("raw/pdp-despues.png")}">`,
+    beforeNotes: ["El precio por litro es el de lista.", "No dice si tu banco aplica ni cuánto sale en otro súper."],
+    afterNotes: ["<b>Caja de compra</b> fija: precio, precio por litro real y el botón Agregar de Coto.", "<b>Con tu banco</b>: el precio con la promo, o por qué no aplica.", "<b>El mismo producto en otros súper</b>, con el link.", "Un resumen de calorías, azúcares y sodio."],
+  },
+  {
+    out: "nutricion",
+    title: "Información nutricional",
+    sub: "Datos de Open Food Facts, por código de barras.",
+    before: `<img class="shot" src="${await img("raw/pdp-info-antes.png")}">`,
+    after: `<img class="shot" src="${await img("raw/pdp-nutricion-despues.png")}">`,
+    beforeNotes: ["Coto no muestra la tabla nutricional."],
+    afterNotes: ["<b>Tabla nutricional</b> cada 100 o por porción, con el % de valor diario.", "<b>Sin TACC</b> (dato de Coto), alérgenos, ingredientes y NOVA.", "Cuánto <b>rinde</b>: precio cada 100 g de proteína."],
   },
   {
     out: "comparar",
     title: "El mismo producto en otros súper",
-    sub: "Aceite de girasol Natura 1,5 L, por código de barras.",
-    before: `<img class="shot card" src="${await img("raw-aceites/tarjeta-antes.png")}">`,
-    after: `<img class="shot card" src="${await img("raw-aceites/comparar-despues.png")}">`,
+    sub: "Por código de barras, en Carrefour, Día y Más.",
+    before: `<img class="shot card" src="${await img("raw/tarjeta-antes.png")}">`,
+    after: `<img class="shot card" src="${await img("raw/comparar-despues.png")}">`,
     beforeNotes: ["Para comparar, hay que buscar producto por producto en otra pestaña."],
-    afterNotes: ["<b>Una palabra</b> dice si conviene: Mejor precio, Igual o Más barato en otro súper.", "Al pasar el mouse, <b>el detalle</b>: precio, diferencia y link a cada súper.", "Busca por código de barras en Carrefour, Día y Más."],
+    afterNotes: ["<b>Una línea</b> dice si conviene: Mejor precio, Igual o Más barato en otro súper.", "Al tocarla, <b>el detalle</b>: precio, diferencia y link a cada súper."],
+  },
+  {
+    out: "alergias",
+    title: "Tus alergias, en la lista",
+    sub: "Perfil de ejemplo: alergia a la leche y celiaquía.",
+    before: `<img class="shot" src="${await img("raw/grilla-antes.png")}">`,
+    after: `<img class="shot" src="${await img("raw/grilla-perfil.png")}">`,
+    beforeNotes: ["Hay que abrir cada producto y leer el envase."],
+    afterNotes: ["<b>Tiene leche</b>: el producto declara un alérgeno de tu perfil.", "<b>Alergias: sin dato</b>: Open Food Facts no tiene el dato. Sin etiqueta no significa que sea seguro.", "Tu perfil queda solo en tu navegador."],
   },
 ];
 
@@ -91,4 +113,49 @@ for (const s of shots) {
   await tab.screenshot({ path: `${DIR}/${s.out}.png`, fullPage: true });
   console.log(`${DIR}/${s.out}.png`);
 }
+
+// Animación del README: una placa por captura, de antes a después.
+const SLIDE = `
+* { box-sizing: border-box; margin: 0; }
+body { width: 1280px; height: 720px; overflow: hidden; background: #f3f2ee; font-family: Poppins, "Segoe UI", system-ui, sans-serif; color: #0b0b0b; display: grid; grid-template-rows: 84px 1fr; }
+header { display: flex; align-items: center; gap: 14px; padding: 0 32px; background: #14284b; color: #fff; }
+header svg { width: 40px; height: 40px; flex: none; }
+h1 { font-size: 26px; font-weight: 700; flex: 1; }
+.tag { padding: 7px 18px; border-radius: 999px; font-size: 18px; font-weight: 600; }
+.tag.before { background: #e6e5df; color: #2b2b29; }
+.tag.after { background: #ffc233; color: #14284b; }
+main { padding: 22px 32px; display: grid; place-items: center; min-height: 0; height: 636px; }
+img { display: block; border-radius: 14px; background: #fff; box-shadow: 0 14px 40px rgba(20, 40, 75, 0.18); }
+img.wide { width: 100%; height: 592px; object-fit: cover; object-position: top; }
+img.tall { height: 592px; }
+`;
+const slides = [
+  ["La lista de productos", "before", "raw/grilla-antes.png", "wide"],
+  ["Ordenada por precio por litro, con tu banco", "after", "raw/grilla-orden.png", "wide"],
+  ["La página de producto", "before", "raw/pdp-antes.png", "wide"],
+  ["Precio real, tu banco y otros súper", "after", "raw/pdp-despues.png", "wide"],
+  ["Información nutricional y Sin TACC", "after", "raw/pdp-nutricion-despues.png", "wide"],
+  ["El mismo producto en otros súper", "after", "raw/comparar-despues.png", "tall"],
+  ["Tus alergias, en la lista", "after", "raw/grilla-perfil.png", "wide"],
+];
+await tab.setViewportSize({ width: 1280, height: 720 });
+for (const [i, [title, kind, src, fit]] of slides.entries()) {
+  const file = resolve(`${TMP}/placa-${i}.html`);
+  await writeFile(file, `<!doctype html><html lang="es"><meta charset="utf-8"><style>${SLIDE}</style><body><header>${icon}<h1>${title}</h1><span class="tag ${kind}">${kind === "before" ? "Antes · coto.com.ar" : "Con Góndola"}</span></header><main><img class="${fit}" src="${await img(src)}"></main></body></html>`);
+  await tab.goto(pathToFileURL(file).href);
+  await tab.waitForLoadState("load");
+  await tab.screenshot({ path: `${TMP}/placa-${i}.png`, clip: { x: 0, y: 0, width: 1280, height: 720 } });
+}
 await browser.close();
+
+// Necesita ffmpeg en el PATH. Sin ffmpeg quedan las imágenes y no se toca la animación.
+const SECONDS = 2.6;
+const run = (args) => spawnSync("ffmpeg", ["-y", "-loglevel", "error", ...args], { stdio: "inherit" });
+const input = ["-framerate", String(1 / SECONDS), "-i", `${TMP}/placa-%d.png`];
+if (spawnSync("ffmpeg", ["-version"]).status === 0) {
+  run([...input, "-vf", "fps=30,format=yuv420p", "-c:v", "libx264", "-crf", "20", "-movflags", "+faststart", `${DIR}/gondola-demo.mp4`]);
+  run([...input, "-vf", "fps=2,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=160[p];[b][p]paletteuse=dither=bayer:bayer_scale=4", `${DIR}/gondola-demo.gif`]);
+  console.log(`${DIR}/gondola-demo.mp4`, `${DIR}/gondola-demo.gif`);
+} else {
+  console.log("No encontré ffmpeg: no rehíce la animación.");
+}

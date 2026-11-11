@@ -22,18 +22,18 @@
 </p>
 
 <p align="center">
-  <img alt="Video de 20 segundos: la página de Coto sin Góndola y con Góndola. Orden por precio por kilo, el más barato marcado, un precio claro en cada tarjeta y el mismo producto en otros súper." src="docs/img/readme/gondola-demo.gif" width="100%">
+  <img alt="Animación de 18 segundos: la página de Coto sin Góndola y con Góndola. La lista con el diseño nuevo y ordenada por precio por litro, la página de producto con tu banco y otros súper, la información nutricional y las alergias en la lista." src="docs/img/readme/gondola-demo.gif" width="100%">
 </p>
 
 <p align="center"><sub>Capturas reales de coto.com.ar. <a href="docs/img/readme/gondola-demo.mp4">Ver el video en MP4</a>.</sub></p>
 
-Góndola es una extensión de Chrome que mejora la web de tu supermercado. Agrega lo que le falta para comprar barato, sin romper lo que ya funciona. Empieza por [Coto Digital](https://www.coto.com.ar). Después vienen Carrefour, Día, Más y otros, cada uno como "Góndola para ese súper".
+Góndola es una extensión de Chrome que mejora la web de tu supermercado. Le da un diseño más claro y le agrega lo que le falta para elegir bien: el precio real por kilo, tu banco, otros súper y la información nutricional. No rompe lo que ya funciona. Empieza por [Coto Digital](https://www.coto.com.ar). Después vienen Carrefour, Día, Más y otros, cada uno como "Góndola para ese súper".
 
 La extensión no tiene servidores. Todo pasa en tu navegador.
 
 ## En 30 segundos
 
-La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y hoy?
+La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y hoy? ¿Y qué tiene adentro?
 
 > [!TIP]
 > En Coto, abrí una categoría, por ejemplo pastas rellenas. En "Ordenar por", elegí **Precio por kg/L: menor a mayor**. Arriba queda el que más rinde por kilo, ya con la oferta, el 2x1 y tu banco.
@@ -62,19 +62,31 @@ La pregunta: ¿cuál de estos productos me conviene de verdad, con mi tarjeta y 
 
 ## Antes y después
 
-La misma página de Coto, sin Góndola y con Góndola. Son capturas reales del 9 de noviembre de 2026, sin sesión iniciada.
+La misma página de Coto, sin Góndola y con Góndola. Son capturas reales del 11 de noviembre de 2026, sin sesión iniciada.
 
-**La tarjeta de cada producto.** Un precio grande con el original tachado, y el precio por kilo real, con la oferta.
+**La lista de productos.** Un diseño más claro, con todo a la misma altura. Una opción nueva en "Ordenar por" y el más barato de la categoría, marcado.
 
-![Antes y después de la tarjeta de un producto con 2x1](docs/img/readme/tarjeta.png)
+![Antes y después de la lista de leches: con Góndola, cuatro por fila y ordenada por precio por litro](docs/img/readme/orden.png)
 
-**Ordenar por precio por kilo.** Una opción nueva en "Ordenar por" y el más barato de la categoría, marcado.
+**La tarjeta de cada producto.** Un precio grande con el original tachado, y el precio por litro real, con la oferta.
 
-![Antes y después de la grilla de pastas rellenas, ordenada por precio por kilo](docs/img/readme/orden.png)
+![Antes y después de la tarjeta de una leche con 25% llevando 2](docs/img/readme/tarjeta.png)
 
-**El mismo producto en otros súper.** Una palabra dice si conviene. Al pasar el mouse, el precio y el link de cada súper.
+**La página de producto.** El precio real, tu banco y otros súper, al lado del botón Agregar.
 
-![Antes y después de la comparación del aceite Natura 1,5 L con Carrefour, Día y Más](docs/img/readme/comparar.png)
+![Antes y después de la página de producto de una leche](docs/img/readme/producto.png)
+
+**Información nutricional.** La tabla de Open Food Facts, Sin TACC, alérgenos, ingredientes y NOVA.
+
+![Antes y después de la parte de abajo de la página de producto: con Góndola aparece la tabla nutricional](docs/img/readme/nutricion.png)
+
+**El mismo producto en otros súper.** Una línea dice si conviene. Al tocarla, el precio y el link de cada súper.
+
+![Antes y después de la comparación de una leche con Carrefour, Día y Más](docs/img/readme/comparar.png)
+
+**Tus alergias, en la lista.** Con tu perfil cargado, cada tarjeta de comida marca lo que declara.
+
+![Antes y después de la lista de leches con un perfil de alergia a la leche y celiaquía](docs/img/readme/alergias.png)
 
 > [!NOTE]
 > Los precios cambian todos los días. Estas imágenes muestran cómo se ve, no el precio de hoy.
@@ -207,8 +219,9 @@ npm test
 | `npm run fixtures` | Baja respuestas reales de la API de Coto a `tests/fixtures/` |
 | `npm run fixtures:vtex` | Baja respuestas reales de Carrefour, Día y Más a `tests/fixtures/` |
 | `npm run fixtures:off` | Baja respuestas reales de Open Food Facts a `tests/fixtures/off.js` |
-| `node scripts/capture-readme.mjs` | Captura Coto sin y con Góndola para el README (abre Chrome: no toques la ventana) |
-| `node scripts/readme-media.mjs` | Arma las imágenes de antes y después en `docs/img/readme/` |
+| `node scripts/capture-readme.mjs` | Captura Coto sin Góndola y con la extensión real (corré antes `npm run build`; abre Chrome: no toques la ventana) |
+| `node scripts/readme-media.mjs` | Arma las imágenes de antes y después y la animación en `docs/img/readme/` (la animación necesita ffmpeg) |
+| `node scripts/store-media.mjs` | Arma las imágenes de la Chrome Web Store en `docs/store/` |
 | `node scripts/dev-server.mjs` | Servidor local en `http://127.0.0.1:8765` para las vistas previas |
 
 </details>
