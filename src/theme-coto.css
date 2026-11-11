@@ -302,6 +302,13 @@
    abajo de cada banner, los atajos, las promos bancarias y la línea de tiempo del retiro. Los
    carruseles de productos ya los cubren las reglas de mini-product-card. */
 
+/* sin captura: las capturas guardan las imágenes sin src. Entre bloques, el CMS de Coto pone
+   como separador imágenes blancas (Espacio.jpg, espacioprueba.jpg), invisibles sobre blanco: en
+   oscuro serían franjas blancas. Se ocultan sin cambiar su lugar. */
+[data-gondola-theme="dark"] dynamic-loader img:is([src$="/Espacio.jpg"], [src$="/espacioprueba.jpg"]) {
+  opacity: 0;
+}
+
 /* La franja gris de abajo de cada banner del carrusel (Coto la deja vacía). */
 [data-gondola-theme="dark"] app-swiper .carousel-caption-html {
   background-color: var(--g-surface) !important;
