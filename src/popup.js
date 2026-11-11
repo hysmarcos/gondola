@@ -21,7 +21,7 @@ const SETTINGS = [
   { key: "notifyPromo", title: "Avisar promos por cantidad", text: "Un aviso corto cuando el producto tiene promo por llevar más." },
   { key: "markBest", title: "Marcar el más barato", text: "Cartel \"Más barato de la categoría\" en el producto que más conviene por kg, litro o unidad." },
   { key: "compareStores", title: "Comparar con otros súper", text: "Un botón dice si Coto tiene el mejor precio o en qué súper está más barato." },
-  { key: "nutrition", title: "Información nutricional", text: "En la página de un producto, la tabla nutricional de Open Food Facts, si existe." },
+  { key: "nutrition", title: "Información nutricional", text: "La tabla nutricional de Open Food Facts en el producto, el resumen del carrito y las etiquetas de alergias en la lista." },
 ];
 
 const HELP = [
@@ -31,7 +31,7 @@ const HELP = [
   ["Ordenar por precio por kg/L", "Nueva opción en \"Ordenar por\" de cada categoría y búsqueda."],
   ["Información nutricional", "Tabla de Open Food Facts por código de barras, cargada por la comunidad. Si falta, podés cargarla vos."],
   ["Sin TACC", "Lo que marca Coto. Si el producto menciona trigo, avena, cebada o centeno, te avisa. Verificá siempre el símbolo oficial en el envase."],
-  ["Mi perfil", "En Ajustes. Destaca lo que te importa en cada producto. En la lista, marca los productos que declaran tus alergias y avisa si Open Food Facts no tiene datos de alérgenos. Sin etiqueta no significa que sea seguro. Queda solo en tu navegador. No es consejo médico."],
+  ["Mi perfil", "En Ajustes. Destaca lo que te importa en cada producto. En la lista, con \"Diseño Góndola\" e \"Información nutricional\" prendidos, marca los productos que declaran tus alergias y avisa si Open Food Facts no tiene datos de alérgenos. Sin etiqueta no significa que sea seguro. Queda solo en tu navegador. No es consejo médico."],
   ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
 ];
 

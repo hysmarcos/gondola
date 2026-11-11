@@ -31,7 +31,8 @@ async function open(page, url, ready) {
   await page.waitForTimeout(3000);
 }
 
-// Devuelve body.outerHTML limpio. keep: función que, en la lista, elige las tarjetas a conservar.
+// Devuelve body.outerHTML limpio. cards: true en la lista; se conservan hasta MAX_CARDS
+// tarjetas, primero las que tienen selector de cantidad.
 function snapshot(page, { cards }) {
   return page.evaluate(({ drop, cards, max, stepper }) => {
     const body = document.body.cloneNode(true);
@@ -54,6 +55,25 @@ function snapshot(page, { cards }) {
   }, { drop: DROP, cards, max: MAX_CARDS, stepper: STEPPER });
 }
 
+// Con sesión, la página puede traer datos de la persona fuera del encabezado: correos, el
+// saludo, la dirección de envío o la cuenta. Después de guardar se muestran esas líneas.
+const PERSONAL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+|\bHola\b|Env[ií]o a|Mi cuenta/i;
+
+function warnPersonal() {
+  console.log("ATENCIÓN: con sesión iniciada, la página puede traer datos tuyos fuera del encabezado (dirección, sucursal, carrito). Revisá los archivos antes de hacer commit.");
+}
+
+// Muestra las líneas del archivo guardado que parecen datos de la persona (un trozo de cada una).
+function reportPersonal(file, html) {
+  const hits = html.split("\n").map((line, i) => [i + 1, line]).filter(([, line]) => PERSONAL.test(line));
+  if (!hits.length) return console.log(`${file}: sin correos ni "Hola", "Envío a" o "Mi cuenta".`);
+  console.log(`${file}: ${hits.length} línea(s) para revisar antes de hacer commit:`);
+  for (const [n, line] of hits) {
+    const at = line.search(PERSONAL);
+    console.log(`  línea ${n}: …${line.slice(Math.max(0, at - 60), at + 80).replace(/\s+/g, " ")}…`);
+  }
+}
+
 await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch({ channel: process.env.CHROME_PATH ? undefined : "chrome", executablePath: process.env.CHROME_PATH || undefined, headless: false });
 const context = await browser.newContext({ viewport: VIEW, locale: "es-AR" });
@@ -74,7 +94,9 @@ const listHtml = await snapshot(page, { cards: true });
 const kept = (listHtml.match(/class="[^"]*\bproducto-card\b/g) ?? []).length;
 const stepperSeen = await page.locator(STEPPER).count();
 const firstProduct = await page.locator('a[href*="_/R-"]').first().getAttribute("href");
+if (wait) warnPersonal();
 await writeFile(`${OUT}/lista.html`, listHtml);
+if (wait) reportPersonal(`${OUT}/lista.html`, listHtml);
 
 // Producto
 let pdpUrl = PDP_URL;
@@ -88,7 +110,9 @@ if (!ok || (res && res.status() >= 400)) {
 await page.waitForSelector("product-add-show-remove", { timeout: 15000 });
 await page.waitForTimeout(3000);
 const pdpHtml = await snapshot(page, { cards: false });
+if (wait) warnPersonal();
 await writeFile(`${OUT}/pdp.html`, pdpHtml);
+if (wait) reportPersonal(`${OUT}/pdp.html`, pdpHtml);
 await browser.close();
 
 const kb = (s) => (Buffer.byteLength(s) / 1024).toFixed(1) + " KB";

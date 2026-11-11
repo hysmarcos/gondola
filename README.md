@@ -104,7 +104,7 @@ La web de Coto sirve para comprar, pero no para comparar:
 | Información nutricional | En la página de un producto de comida o bebida, la tabla nutricional de [Open Food Facts](https://world.openfoodfacts.org), si existe. Si falta, un link para cargarla. Suma Sin TACC (dato de Coto, con aviso si menciona trigo, avena, cebada o centeno), alérgenos, ingredientes, aditivos y NOVA. Se apaga en Ajustes. |
 | Mi perfil | En Ajustes elegís si sos celíaco/a, si cuidás el sodio o el azúcar, y tus alergias. La página de cada producto te muestra "Para vos". Queda solo en tu navegador. No es consejo médico. |
 | Nutrición del carrito | En el carrito, el total de kcal, azúcares y sodio de tu compra. |
-| Alergias en la lista | Con el diseño Góndola prendido y tu perfil con celiaquía o alguna alergia, las tarjetas de comida marcan los productos que declaran tus alergias, o dicen que no hay datos de alérgenos. Si no hay etiqueta, no significa que sea seguro. |
+| Alergias en la lista | Con el diseño Góndola y la información nutricional prendidos, y tu perfil con celiaquía o alguna alergia, las tarjetas de comida marcan los productos que declaran tus alergias, o dicen que no hay datos de alérgenos. Si no hay etiqueta, no significa que sea seguro. |
 
 Todo lo de Coto sigue funcionando: agregar, cantidades, carrito y pago. La extensión solo agrega elementos. No borra ninguno.
 
@@ -145,7 +145,7 @@ Estas pruebas buscan dónde falla la extensión:
 | | Prueba | Pregunta | Resultado |
 |:---:|---|---|---|
 | ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 534 tests con respuestas guardadas de Coto, Carrefour, Día, Más y Open Food Facts |
-| ✅ | Coto sigue funcionando | ¿Agregar, cantidades y carrito andan igual? | Sí. La extensión agrega elementos y oculta partes con un atributo. No borra nada de Coto. |
+| ✅ | Coto sigue funcionando | ¿Agregar, cantidades y carrito andan igual? | Sí. La extensión agrega elementos y oculta partes con un atributo (con el diseño Góndola, también "Ver planes de cuotas" en las tarjetas). Con el diseño Góndola pone `data-gondola-skin` en `<html>` y oculta con CSS las estrellas fijas de la página de producto. No borra nada de Coto. |
 | ✅ | Promos bancarias | ¿Muestra un descuento que Coto no aplica? | No. Respeta los días, los topes y las exclusiones de la API de Coto. |
 | ⚠️ | Otros súper | ¿El precio es el de tu sucursal? | No siempre. Usa la zona por defecto de cada web y no incluye descuentos bancarios. |
 | ⚠️ | Cambios en Coto | ¿Sigue andando si Coto cambia su web? | Depende del cambio. Si la API cambia, la extensión deja de mostrar datos en vez de mostrar datos falsos. |

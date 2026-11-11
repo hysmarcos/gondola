@@ -73,7 +73,7 @@ The same Coto page, without and with Góndola. Real captures from November 9, 20
 | Nutrition facts | On a food or drink product page, the nutrition table from [Open Food Facts](https://world.openfoodfacts.org), if it exists. If it is missing, a link to add it. Adds gluten-free status (Coto's data, with a warning if it mentions wheat, oats, barley or rye), allergens, ingredients, additives and NOVA. Can be turned off. |
 | My profile | In Settings you choose if you are celiac, watch sodium or sugar, and your allergies. Each product page shows "Para vos" (for you). It stays in your browser. It is not medical advice. |
 | Cart nutrition | In the cart, the total kcal, sugars and sodium of your purchase. |
-| Allergies in the list | With the Góndola design on and coeliac or at least one allergy in your profile, food cards mark the products that declare your allergies, or say there is no allergen data. No tag does not mean safe. |
+| Allergies in the list | With the Góndola design and nutrition facts on, and coeliac or at least one allergy in your profile, food cards mark the products that declare your allergies, or say there is no allergen data. No tag does not mean safe. |
 
 Everything on Coto keeps working: add to cart, quantities, cart and checkout. The extension only adds elements. It never removes any.
 
@@ -108,7 +108,7 @@ flowchart LR
 | | Test | Question | Result |
 |:---:|---|---|---|
 | ✅ | Tests with real data | Are price, size and order right? | 534 tests with saved responses from Coto, Carrefour, Día, Más and Open Food Facts |
-| ✅ | Coto keeps working | Do add, quantities and cart behave the same? | Yes. The extension adds elements and hides parts with an attribute. It removes nothing from Coto. |
+| ✅ | Coto keeps working | Do add, quantities and cart behave the same? | Yes. The extension adds elements and hides parts with an attribute (with the Góndola design, also "Ver planes de cuotas" on list cards). With the Góndola design it sets `data-gondola-skin` on `<html>` and hides with CSS the fixed rating stars on the product page. It removes nothing from Coto. |
 | ✅ | Bank promos | Does it show a discount Coto does not apply? | No. It follows the days, caps and exclusions of Coto's API. |
 | ⚠️ | Other stores | Is it the price at your branch? | Not always. It uses each site's default area and leaves out bank discounts. |
 | ⚠️ | Coto changes | Does it keep working if Coto changes its site? | It depends. If the API changes, the extension stops showing data instead of showing wrong data. |
