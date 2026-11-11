@@ -296,3 +296,140 @@
   background-color: var(--g-soft);
   color: var(--g-ink);
 }
+
+/* ---------- Inicio ----------
+   Los banners quedan como son (spec: fuera de alcance). Se pinta lo que los rodea: la franja de
+   abajo de cada banner, los atajos, las promos bancarias y la línea de tiempo del retiro. Los
+   carruseles de productos ya los cubren las reglas de mini-product-card. */
+
+/* La franja gris de abajo de cada banner del carrusel (Coto la deja vacía). */
+[data-gondola-theme="dark"] app-swiper .carousel-caption-html {
+  background-color: var(--g-surface) !important;
+}
+
+/* Atajos (Descuentos, Ofertas, Catálogos, Sucursales): bloque del CMS con fondo y texto puestos
+   en línea con !important, que ninguna hoja puede pisar. El color va con lo que esos estilos no
+   fijan: un box-shadow interno que tapa el fondo (sigue el radio y no cambia el tamaño) y
+   -webkit-text-fill-color para el texto. Los íconos rojos quedan como son. */
+[data-gondola-theme="dark"] #coto-atajos-inline {
+  box-shadow: inset 0 0 0 100vmax var(--g-surface) !important;
+}
+
+[data-gondola-theme="dark"] #coto-atajos-inline .cai-hover-card .cai-link {
+  box-shadow: inset 0 0 0 100vmax var(--g-surface-2), 0 0 0 1px var(--g-line) !important;
+  -webkit-text-fill-color: var(--g-ink);
+}
+
+/* La leyenda chica de legales (Coto la escribe en gris oscuro, en línea) y su link. */
+[data-gondola-theme="dark"] dynamic-loader h5 > :is(span, strong) {
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] dynamic-loader h5 a {
+  color: var(--g-red-text) !important;
+}
+
+/* Promos bancarias ("Descuentos en COTO"): el recuadro con borde de línea, títulos claros y el
+   día elegido en texto claro (la raya roja de abajo es de Coto). */
+[data-gondola-theme="dark"] promociones-vigentes > div {
+  border-color: var(--g-line) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes .promo-title {
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes .promo-subtitle {
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes .day-tab-button {
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes .day-tab-button.active {
+  color: var(--g-ink) !important;
+}
+
+/* Cada promo es una tarjeta: superficie con borde. El logo del banco va sobre la placa clara,
+   como las fotos. */
+[data-gondola-theme="dark"] promociones-vigentes .promo-card {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes .promo-card__logo {
+  border-radius: 8px;
+  background-color: var(--g-plate) !important;
+}
+
+/* Días de la promo: el día que aplica, en relleno suave con el rojo de texto; los que no
+   aplican, apagados (Coto los pone en gris claro, que sobre oscuro resaltaría). */
+[data-gondola-theme="dark"] promociones-vigentes .promo-card__days > span {
+  color: var(--g-ink3) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes .promo-card__days .active {
+  background-color: var(--g-soft) !important;
+  color: var(--g-red-text) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes .promo-card__content > h4 {
+  color: var(--g-red-text) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes .promo-card__detail {
+  color: var(--g-ink2) !important;
+}
+
+/* "Online": la etiqueta azul clara pasa al azul del tema. */
+[data-gondola-theme="dark"] promociones-vigentes .tag-digital {
+  background-color: var(--g-blue-soft) !important;
+  color: var(--g-blue) !important;
+}
+
+[data-gondola-theme="dark"] promociones-vigentes :is(.view-more-link, .btn-red-coto-link) {
+  color: var(--g-red-text) !important;
+}
+
+/* "Retirá tu compra en 3 simples pasos": tarjeta en superficie, línea y círculos oscuros con su
+   borde rojo, títulos en el rojo de texto. */
+[data-gondola-theme="dark"] .coto-card-timeline-white {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface) !important;
+}
+
+[data-gondola-theme="dark"] .coto-tm-titulo {
+  color: var(--g-ink) !important;
+}
+
+[data-gondola-theme="dark"] .coto-tm-linea::before {
+  background-color: var(--g-line) !important;
+}
+
+[data-gondola-theme="dark"] .coto-tm-circulo {
+  background-color: var(--g-surface) !important;
+}
+
+[data-gondola-theme="dark"] .coto-tm-paso:hover .coto-tm-circulo {
+  background-color: var(--g-red) !important;
+}
+
+[data-gondola-theme="dark"] .coto-tm-info h3 {
+  color: var(--g-red-text) !important;
+}
+
+[data-gondola-theme="dark"] .coto-tm-info p {
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] .coto-tm-link {
+  border-color: var(--g-line) !important;
+  color: var(--g-ink2) !important;
+}
+
+[data-gondola-theme="dark"] .coto-tm-link:hover {
+  border-color: var(--g-red-text) !important;
+  background-color: var(--g-soft) !important;
+  color: var(--g-red-text) !important;
+}
