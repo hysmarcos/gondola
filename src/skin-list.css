@@ -4,6 +4,8 @@
    nombre, el precio y el botón quedan a la misma altura en toda la fila.
    Nodos de Coto: div.producto-card (celda) > constructor-result-item > .card-container >
    [.top-imagen-promos (foto y cucardas), .centro-precios (nombre, precios, .bottom-botones)].
+   Las reglas de la tarjeta van bajo .producto-card (la celda de la grilla): una
+   .card-container fuera de la grilla queda como la dibuja Coto.
    En los nodos de Coto, lo que choca con sus estilos (componentes de Angular con
    selectores largos, y utilidades de Bootstrap con !important: text-center, d-flex,
    align-items-center, justify-content-*) lleva !important. */
@@ -51,7 +53,7 @@
 
 /* ---------- 1. Foto: cuadrada, fondo suave, etiquetas arriba a la izquierda ---------- */
 
-[data-gondola-skin="list"] .card-container > .top-imagen-promos {
+[data-gondola-skin="list"] .producto-card .card-container > .top-imagen-promos {
   position: relative;
   flex: none;
   justify-content: center !important;
@@ -63,7 +65,7 @@
   background-color: var(--g-soft);
 }
 
-[data-gondola-skin="list"] .top-imagen-promos > a {
+[data-gondola-skin="list"] .producto-card .top-imagen-promos > a {
   display: flex;
   align-items: center !important;
   justify-content: center !important;
@@ -72,7 +74,7 @@
 }
 
 /* Las fotos de Coto tienen fondo blanco: con multiply toman el fondo suave. */
-[data-gondola-skin="list"] .top-imagen-promos .product-image {
+[data-gondola-skin="list"] .producto-card .top-imagen-promos .product-image {
   width: 100% !important;
   height: 100% !important;
   object-fit: contain;
@@ -80,7 +82,7 @@
 }
 
 /* Etiquetas y cucardas flotan sobre la foto: no cambian el alto. */
-[data-gondola-skin="list"] .top-imagen-promos > .promos {
+[data-gondola-skin="list"] .producto-card .top-imagen-promos > .promos {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -92,7 +94,7 @@
   pointer-events: none;
 }
 
-[data-gondola-skin="list"] .top-imagen-promos .coto-unit-tags {
+[data-gondola-skin="list"] .producto-card .top-imagen-promos .coto-unit-tags {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -100,8 +102,8 @@
   max-width: 100%;
 }
 
-[data-gondola-skin="list"] .top-imagen-promos .coto-unit-tags > div,
-[data-gondola-skin="list"] .top-imagen-promos .cucarda-promo {
+[data-gondola-skin="list"] .producto-card .top-imagen-promos .coto-unit-tags > div,
+[data-gondola-skin="list"] .producto-card .top-imagen-promos .cucarda-promo {
   max-width: 100%;
   margin: 0 !important;
   padding: 4px 8px !important;
@@ -122,7 +124,7 @@
 }
 
 [data-gondola-skin="list"] .coto-unit-tags > .coto-unit-offer,
-[data-gondola-skin="list"] .top-imagen-promos .cucarda-promo {
+[data-gondola-skin="list"] .producto-card .top-imagen-promos .cucarda-promo {
   background-color: var(--g-red) !important;
   color: #fff !important;
 }
@@ -138,7 +140,7 @@
 
 /* Etiquetas "para vos" (alergias y TACC del perfil): una fila de 26 px abajo de la foto, sobre
    ella. Flotan: no cambian el alto de la tarjeta. Lo que no entra se corta con "…". */
-[data-gondola-skin="list"] .top-imagen-promos > .coto-unit-foryou {
+[data-gondola-skin="list"] .producto-card .top-imagen-promos > .coto-unit-foryou {
   position: absolute;
   right: 8px;
   bottom: 8px;
@@ -191,7 +193,7 @@
 
 /* ---------- 2. Nombre: 2 líneas en 36 px ---------- */
 
-[data-gondola-skin="list"] .card-container > .centro-precios {
+[data-gondola-skin="list"] .producto-card .card-container > .centro-precios {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -202,7 +204,7 @@
   text-align: left;
 }
 
-[data-gondola-skin="list"] .card-container .nombre-producto {
+[data-gondola-skin="list"] .producto-card .card-container .nombre-producto {
   display: -webkit-box !important;
   flex: none;
   height: 36px;
@@ -222,7 +224,7 @@
    badge.js dibuja los hijos en el orden precio, detalle, comparador, unidad; la grilla
    los ubica sin moverlos. */
 
-[data-gondola-skin="list"] .card-container .coto-unit-price {
+[data-gondola-skin="list"] .producto-card .card-container .coto-unit-price {
   display: grid;
   flex: none;
   grid-template-areas:
@@ -479,7 +481,7 @@
 
 /* ---------- 6. Acción: "Agregar" o el selector de cantidad, abajo de todo ---------- */
 
-[data-gondola-skin="list"] .card-container .bottom-botones {
+[data-gondola-skin="list"] .producto-card .card-container .bottom-botones {
   display: flex;
   flex: none;
   flex-direction: column;
@@ -491,12 +493,12 @@
   padding: 8px 0 0;
 }
 
-[data-gondola-skin="list"] .bottom-botones > product-add-show-remove {
+[data-gondola-skin="list"] .producto-card .bottom-botones > product-add-show-remove {
   display: block;
   width: 100% !important;
 }
 
-[data-gondola-skin="list"] .bottom-botones > product-add-show-remove > div {
+[data-gondola-skin="list"] .producto-card .bottom-botones > product-add-show-remove > div {
   width: 100%;
   margin: 0;
   padding: 0;
@@ -511,7 +513,7 @@
    margen: 4 + 30 = 34 px bajo el botón. badge.css pone a esta línea (data-coto-unit-dim) una
    sola línea con "…": por eso se repite white-space y text-overflow. */
 
-[data-gondola-skin="list"] .card-container .centro-precios small.text-center:last-child {
+[data-gondola-skin="list"] .producto-card .card-container .centro-precios small.text-center:last-child:not([data-coto-unit-hide]) {
   display: block !important;
   align-self: stretch;
   height: 30px;
@@ -526,7 +528,7 @@
   white-space: normal;
 }
 
-[data-gondola-skin="list"] .card-container[data-coto-unit-card] .centro-precios > :has(> small.text-center:last-child) {
+[data-gondola-skin="list"] .producto-card .card-container[data-coto-unit-card] .centro-precios > :has(> small.text-center:last-child) {
   order: 1;
   align-items: stretch !important;
   margin: 4px 0 0;
@@ -538,7 +540,7 @@
    debajo (4 px de margen + 30 px de la línea = 34 px): así queda a la altura del de sus
    vecinas. */
 
-[data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .centro-precios small {
+[data-gondola-skin="list"] .producto-card .card-container:not([data-coto-unit-card]) .centro-precios small {
   margin: 0 !important;
   color: var(--g-ink2);
   font-size: 12px;
@@ -546,12 +548,12 @@
   text-align: left !important;
 }
 
-[data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .centro-precios > div {
+[data-gondola-skin="list"] .producto-card .card-container:not([data-coto-unit-card]) .centro-precios > div {
   align-items: stretch !important;
   text-align: left !important;
 }
 
-[data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .centro-precios h4.card-title {
+[data-gondola-skin="list"] .producto-card .card-container:not([data-coto-unit-card]) .centro-precios h4.card-title {
   margin: 0 !important;
   color: var(--g-ink);
   font-size: 20px !important;
@@ -561,7 +563,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-[data-gondola-skin="list"] .card-container:not([data-coto-unit-card]) .bottom-botones {
+[data-gondola-skin="list"] .producto-card .card-container:not([data-coto-unit-card]) .bottom-botones {
   margin-bottom: 34px;
 }
 
