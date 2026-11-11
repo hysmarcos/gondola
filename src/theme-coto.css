@@ -650,3 +650,80 @@
   border-radius: 8px;
   background-color: var(--g-plate) !important;
 }
+
+/* ---------- Menús desplegables, ventanas, globos y avisos ----------
+   Los de Bootstrap y ng-bootstrap que usa Coto. Las ventanas (ngb-modal-window) se abren al
+   hacer algo, como "Agregar" sin sesión ("Seleccioná Aceptar e ingresá…"): no hay captura. */
+
+/* Menú desplegable genérico: más claro que la página, con borde y sin sombra. El de categorías
+   y el mini carrito tienen sus reglas, más específicas. */
+[data-gondola-theme="dark"] .dropdown-menu {
+  border-color: var(--g-line);
+  background-color: var(--g-surface-2);
+  box-shadow: none;
+  color: var(--g-ink);
+}
+
+[data-gondola-theme="dark"] .dropdown-item {
+  color: var(--g-ink);
+}
+
+[data-gondola-theme="dark"] :is(.dropdown-item:hover, .dropdown-item:focus) {
+  background-color: var(--g-soft);
+  color: var(--g-ink);
+}
+
+/* sin captura: las ventanas, los globos y el panel lateral solo existen abiertos. Coto los pinta
+   blancos: pasan a la superficie de ventana, con borde y sin sombra. */
+[data-gondola-theme="dark"] :is(.modal-content, .popover, .offcanvas) {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface-2) !important;
+  box-shadow: none !important;
+  color: var(--g-ink);
+}
+
+/* sin captura: ventanas abiertas */
+[data-gondola-theme="dark"] .modal-content :is(.modal-header, .modal-footer) {
+  border-color: var(--g-line) !important;
+}
+
+/* sin captura: ventanas y globos abiertos. Títulos y textos que Coto fija oscuros. */
+[data-gondola-theme="dark"] :is(.modal-content .card-title, .popover-body) {
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: ventanas abiertas. Texto apagado y la cruz de cerrar: texto secundario. */
+[data-gondola-theme="dark"] .modal-content :is(.text-muted, .close) {
+  color: var(--g-ink2) !important;
+  text-shadow: none !important;
+}
+
+/* sin captura: ventanas abiertas. "Cancelar" / "No, en otro momento": el rojo de texto. */
+[data-gondola-theme="dark"] .modal-content a.back {
+  color: var(--g-red-text) !important;
+}
+
+/* sin captura: ventanas abiertas. "Aceptar" y los demás botones rojos: el rojo de compra. */
+[data-gondola-theme="dark"] .modal-content .btn-primary {
+  border-color: var(--g-red) !important;
+  background-color: var(--g-red) !important;
+}
+
+/* sin captura: globos abiertos. Cabecera del globo en relleno suave. */
+[data-gondola-theme="dark"] .popover-header {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-soft) !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: globo propio de Coto (borde rojo, que queda), abierto. */
+[data-gondola-theme="dark"] .popover-custom {
+  background-color: var(--g-surface-2) !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: los avisos (ngx-toastr) aparecen unos segundos, como el "Ups!" de /carrito sin
+   sesión. Sus rellenos de color con texto blanco se leen bien; solo se va el halo gris. */
+[data-gondola-theme="dark"] .toast-container .ngx-toastr {
+  box-shadow: none !important;
+}
