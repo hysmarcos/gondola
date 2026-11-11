@@ -439,18 +439,20 @@
   background: #fff;
 }
 
-.coto-unit-offview-photo {
-  flex: 1;
+/* Coto da a toda imagen de la foto grande "width: 100%; height: auto" (.gallery-wrap
+   .img-big-wrap img): estas reglas son más específicas para ganarle. */
+.gallery-wrap .img-big-wrap .coto-unit-offview-photo {
+  flex: 1 1 0;
   min-height: 0;
   width: 100%;
+  height: 0;
+  max-height: none;
   object-fit: contain;
+  cursor: default;
 }
 
 .coto-unit-offview-note {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
+  display: block;
   margin: 0;
   padding: 8px 12px;
   background: #e6f1fb;
@@ -460,9 +462,13 @@
   text-align: left;
 }
 
-.coto-unit-offview-icon {
+.gallery-wrap .img-big-wrap .coto-unit-offview-icon {
+  display: inline-block;
   width: 18px;
   height: 18px;
+  margin-right: 6px;
+  vertical-align: -4px;
+  cursor: default;
 }
 
 .coto-unit-offview-note a {
