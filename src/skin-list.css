@@ -138,8 +138,11 @@
   color: var(--g-navy);
 }
 
-/* Etiquetas "para vos" (alergias y TACC del perfil): una fila de 26 px abajo de la foto, sobre
-   ella. Flotan: no cambian el alto de la tarjeta. Lo que no entra se corta con "…". */
+/* Etiquetas "para vos" (alergias y TACC del perfil): abajo de la foto, sobre ella. Flotan: no
+   cambian el alto de la tarjeta. Nunca se achican: si las dos no entran en una fila, la
+   segunda baja a otra (la caja crece hacia arriba desde el borde de abajo, como mucho dos
+   filas, porque son como mucho dos etiquetas). El orden del documento es el de prioridad:
+   la primera queda a la izquierda o arriba. */
 [data-gondola-skin="list"] .producto-card .top-imagen-promos > .coto-unit-foryou {
   position: absolute;
   right: 8px;
@@ -147,18 +150,16 @@
   left: 8px;
   z-index: 1;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-content: flex-end;
+  align-items: flex-start;
   gap: 4px;
-  height: 26px;
-  overflow: hidden;
   pointer-events: none;
 }
 
-/* Cualquiera de las dos se achica (y se corta con "…") si no entran: comparten la fila en
-   lugar de dejar a la segunda en una tira. */
+/* Solo una etiqueta más ancha que toda la foto se corta con "…" (último recurso). */
 [data-gondola-skin="list"] .coto-unit-foryou > span {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: none;
   max-width: 100%;
   padding: 4px 8px;
   overflow: hidden;

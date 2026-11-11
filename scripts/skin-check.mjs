@@ -8,7 +8,8 @@
 //   SHOTS=<carpeta>: guarda una captura de la lista, arriba de todo, por tamaño.
 //   ONLY=1280x900: mide un solo tamaño.
 //   PROFILE=<JSON>: pone esas claves de perfil en el storage de mentira (por ejemplo
-//   {"profileAllergens":["milk"]}) y cuenta las etiquetas "para vos" de la lista.
+//   {"profileAllergens":["milk"]}) y cuenta las etiquetas "para vos" de la lista. Falla si
+//   alguna está cortada; dice cuántas tarjetas las tienen en dos filas y si tapan las de arriba.
 //   URL=<dirección de coto.com.ar>: mide esa página en lugar de las dos de siempre.
 //   INTERACT=1: además, en Leches a 1280 x 900, aplica un filtro, cambia el orden y pasa de
 //   página, para ver que la piel no le quitó nada a Coto.
@@ -577,10 +578,31 @@ try {
         await page.evaluate(() => scrollTo(0, 0));
         await page.waitForTimeout(500);
         if (process.env.PROFILE) console.log(`  etiquetas para vos: ${await page.evaluate(() => document.querySelectorAll(".coto-unit-foryou > span").length)} en ${await page.evaluate(() => document.querySelectorAll(".coto-unit-foryou").length)} tarjetas`);
+        // Etiquetas "para vos": ninguna se corta (si no entran, bajan a otra fila). Y si la caja
+        // de dos filas llega a tapar las etiquetas de arriba (más barato, oferta), se avisa con
+        // las medidas.
+        const tagProblems = [];
+        if (process.env.PROFILE) {
+          const t = await page.evaluate(() => {
+            const cut = [];
+            const overlap = [];
+            for (const box of document.querySelectorAll(".coto-unit-foryou")) {
+              for (const s of box.children) if (s.scrollWidth > s.clientWidth + 0.5) cut.push(`"${s.textContent}" (${s.scrollWidth} > ${s.clientWidth} px)`);
+              const top = box.closest(".top-imagen-promos")?.querySelector(".coto-unit-tags");
+              if (!top || !top.getClientRects().length) continue;
+              const a = box.getBoundingClientRect();
+              const b = top.getBoundingClientRect();
+              if (a.top < b.bottom) overlap.push(`para vos desde ${Math.round(a.top - b.top)} px, etiquetas de arriba hasta ${Math.round(b.height)} px (foto de ${Math.round(box.parentElement.getBoundingClientRect().height)} px)`);
+            }
+            return { cut, overlap, rows2: [...document.querySelectorAll(".coto-unit-foryou")].filter((b) => b.children.length > 1 && b.children[0].getBoundingClientRect().top !== b.children[1].getBoundingClientRect().top).length };
+          });
+          for (const c of t.cut) tagProblems.push(`etiqueta para vos cortada: ${c}`);
+          console.log(`  en dos filas: ${t.rows2} tarjetas; tapan las etiquetas de arriba: ${t.overlap.length ? t.overlap.join("; ") : "ninguna"}`);
+        }
         const all = rows(await page.evaluate(measure));
         const unlabelled = all.flat().filter((c) => !c.labelled).length;
         unlabelledSeen += unlabelled;
-        const problems = all.flatMap(check);
+        const problems = [...all.flatMap(check), ...tagProblems];
         // Sin tarjetas o con una sola fila no hay nada que comparar: no es un "pasa".
         if (all.flat().length === 0) problems.push("no se midió ninguna tarjeta");
         else if (all.length < 2) problems.push(`solo hay ${all.length} fila: no alcanza para comparar filas`);

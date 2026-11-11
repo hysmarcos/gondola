@@ -83,11 +83,18 @@ function ruleBody(css, selector) {
   return null;
 }
 
-it("etiquetas para vos de la tarjeta: cada una se puede achicar, así dos comparten la fila", () => {
-  const body = ruleBody(readFileSync("src/skin-list.css", "utf8"), '[data-gondola-skin="list"] .coto-unit-foryou > span');
-  expect(body).toMatch(/flex:\s*0 1 auto/);
-  expect(body).toMatch(/min-width:\s*0/);
-  expect(body).toMatch(/text-overflow:\s*ellipsis/);
+it("etiquetas para vos de la tarjeta: no se achican, la caja pasa a otra fila y no recorta", () => {
+  const css = readFileSync("src/skin-list.css", "utf8");
+  const tag = ruleBody(css, '[data-gondola-skin="list"] .coto-unit-foryou > span');
+  expect(tag).toMatch(/flex:\s*none/);
+  // Último recurso: una etiqueta más ancha que toda la foto se corta con "…".
+  expect(tag).toMatch(/max-width:\s*100%/);
+  expect(tag).toMatch(/text-overflow:\s*ellipsis/);
+  const box = ruleBody(css, '[data-gondola-skin="list"] .producto-card .top-imagen-promos > .coto-unit-foryou');
+  expect(box).toMatch(/flex-wrap:\s*wrap/);
+  expect(box).toMatch(/bottom:\s*8px/);
+  expect(box).not.toMatch(/(?<![\w-])height\s*:/);
+  expect(box).not.toMatch(/overflow\s*:\s*hidden/);
 });
 
 it("ninguna regla oculta todos los links de .bottom-botones (cuotas va con data-coto-unit-hide)", () => {
