@@ -2,7 +2,9 @@
 // /carrito con la extensión construida y theme: "dark", baja hasta el final y busca:
 // - bloques claros: elementos visibles de más de 2.000 px² con fondo de luminancia > 0,6
 //   (no cuentan las imágenes, lo que está sobre la placa --g-plate, los banners de publicidad
-//   ni los rellenos de color fuerte, como el ámbar de "Más barato": son etiquetas, no superficies);
+//   ni los rellenos chicos (menos de 20.000 px²) de color fuerte, como el ámbar de "Más barato":
+//   son etiquetas, no superficies). El fondo es el que se ve: un box-shadow interno que cubre
+//   la caja cuenta como fondo, y el texto se mide con -webkit-text-fill-color si lo hay;
 // - textos con poco contraste contra su fondo efectivo: menos de 4,5:1 (3:1 en texto grande);
 // - el logo de Coto: dibujado en un canvas con su filtro, ningún píxel opaco es rojo.
 // Imprime cada hallazgo (componente de Coto, selector corto, tamaño y color) y sale con 1 si hay alguno.
@@ -45,6 +47,7 @@ const svc = services();
 // root (todo el documento o una parte, como el menú abierto).
 function findings({ rootSelector, ads, minArea, maxLum }) {
   const MAX_CHROMA = 100; // 0-255: más que esto es un color de etiqueta (ámbar, amarillo), no un gris claro
+  const MAX_TAG_AREA = 20000; // px²: una etiqueta es chica; más grande ya es un panel
   const root = rootSelector ? document.querySelector(rootSelector) : document.body;
   if (!root) return { light: [], text: [] };
   const rgba = (s) => {
@@ -57,6 +60,18 @@ function findings({ rootSelector, ads, minArea, maxLum }) {
   const lum = (c) => 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
   const over = (top, bottom) => ({ r: top.r * top.a + bottom.r * (1 - top.a), g: top.g * top.a + bottom.g * (1 - top.a), b: top.b * top.a + bottom.b * (1 - top.a), a: 1 });
   const ratio = (x, y) => { const [h, l] = [lum(x), lum(y)].sort((p, q) => q - p); return (h + 0.05) / (l + 0.05); };
+  // Fondo pintado: un box-shadow interno que cubre toda la caja tapa el background (así se
+  // pinta lo que Coto fija en línea con !important); si no hay, el background-color.
+  const fill = (el, cs) => {
+    const r = el.getBoundingClientRect();
+    for (const layer of cs.boxShadow.split(/,(?![^(]*\))/)) {
+      if (!/\binset\b/.test(layer)) continue;
+      const color = layer.match(/rgba?\([^)]+\)/)?.[0];
+      const spread = parseFloat(layer.replace(/rgba?\([^)]+\)/, "").match(/-?[\d.]+px/g)?.[3] ?? "0");
+      if (color && spread * 2 >= Math.min(r.width, r.height)) return color;
+    }
+    return cs.backgroundColor;
+  };
   // Color de --g-plate ya resuelto, para reconocer lo que va sobre la placa.
   const probe = document.createElement("div");
   probe.style.background = "var(--g-plate)";
@@ -86,8 +101,9 @@ function findings({ rootSelector, ads, minArea, maxLum }) {
     const layers = [];
     for (let e = el; e; e = e.parentElement) {
       const cs = getComputedStyle(e);
-      if (cs.backgroundImage !== "none") return null;
-      const c = rgba(cs.backgroundColor);
+      const painted = fill(e, cs);
+      if (painted === cs.backgroundColor && cs.backgroundImage !== "none") return null;
+      const c = rgba(painted);
       if (c && c.a > 0) layers.push(c);
       if (c && c.a >= 1) break;
     }
@@ -101,11 +117,13 @@ function findings({ rootSelector, ads, minArea, maxLum }) {
     if (/^(IMG|PICTURE|VIDEO|CANVAS|IFRAME|SVG|svg|path)$/.test(el.tagName) || el.closest(ads) || !shown(el)) continue;
     const r = el.getBoundingClientRect();
     if (r.width * r.height <= minArea) continue;
-    const bg = rgba(getComputedStyle(el).backgroundColor);
+    const painted = fill(el, getComputedStyle(el));
+    const bg = rgba(painted);
     if (!bg || bg.a < 0.5 || lum(bg) <= maxLum) continue;
-    if (Math.max(bg.r, bg.g, bg.b) - Math.min(bg.r, bg.g, bg.b) > MAX_CHROMA) continue; // color fuerte
+    // Color fuerte y chico: una etiqueta. Un panel grande amarillo claro sí cuenta.
+    if (r.width * r.height < MAX_TAG_AREA && Math.max(bg.r, bg.g, bg.b) - Math.min(bg.r, bg.g, bg.b) > MAX_CHROMA) continue;
     if (onPlate(el)) continue;
-    light.push({ where: where(el), size: `${Math.round(r.width)}×${Math.round(r.height)}`, color: getComputedStyle(el).backgroundColor });
+    light.push({ where: where(el), size: `${Math.round(r.width)}×${Math.round(r.height)}`, color: painted });
   }
 
   const text = [];
@@ -119,7 +137,9 @@ function findings({ rootSelector, ads, minArea, maxLum }) {
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) continue; // texto solo para lectores de pantalla
     const cs = getComputedStyle(el);
-    const fg = rgba(cs.color);
+    // El color con que se dibuja el texto: -webkit-text-fill-color, si lo hay, gana a color.
+    const ink = cs.webkitTextFillColor || cs.color;
+    const fg = rgba(ink);
     const bg = backdrop(el);
     if (!fg || !bg) continue;
     const size = parseFloat(cs.fontSize);
@@ -128,7 +148,7 @@ function findings({ rootSelector, ads, minArea, maxLum }) {
     const c = ratio(over(fg, bg), bg);
     if (c >= min) continue;
     const toRgb = (x) => `rgb(${[x.r, x.g, x.b].map(Math.round).join(", ")})`;
-    text.push({ where: where(el), size: `${Math.round(r.width)}×${Math.round(r.height)}`, color: `${cs.color} sobre ${toRgb(bg)}`, ratio: c.toFixed(2), text: walker.currentNode.textContent.trim().slice(0, 30) });
+    text.push({ where: where(el), size: `${Math.round(r.width)}×${Math.round(r.height)}`, color: `${ink} sobre ${toRgb(bg)}`, ratio: c.toFixed(2), text: walker.currentNode.textContent.trim().slice(0, 30) });
   }
   return { light, text };
 }
