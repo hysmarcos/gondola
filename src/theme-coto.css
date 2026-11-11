@@ -467,3 +467,111 @@
 [data-gondola-theme="dark"] login-main :is(.show-pass, a.back) {
   color: var(--g-red-text) !important;
 }
+
+/* ---------- Carrito (/carrito) y mini carrito ----------
+   Sin sesión /carrito lleva al ingreso, así que no hay captura: los selectores salen de las
+   plantillas de Coto (shopping-cart-main, card-product, cart-float, card-product-float,
+   product-quantity) y de los que ya usa src/cart-ui.js. Solo superficies, textos y bordes;
+   el dueño los revisa con sesión. */
+
+/* sin captura: carrito, requiere sesión. Tarjeta de la lista de productos del carrito. */
+[data-gondola-theme="dark"] shopping-cart-main .card {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface) !important;
+  box-shadow: none !important;
+}
+
+/* sin captura: carrito, requiere sesión. Recuadro del total (Coto: gris claro con !important). */
+[data-gondola-theme="dark"] shopping-cart-main .card-body-container {
+  background-color: var(--g-surface-2) !important;
+  color: var(--g-ink);
+}
+
+/* sin captura: carrito, requiere sesión. Textos que Coto fija en negro (nombre del producto,
+   total, cantidades del mini carrito). */
+[data-gondola-theme="dark"] :is(shopping-cart-main, card-product) .text-dark,
+[data-gondola-theme="dark"] card-product a.title,
+[data-gondola-theme="dark"] .dropdown-carrito :is(.titulo-producto, .roar-total, .precio-unit) {
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: carrito, requiere sesión. Avisos rojos ("Eliminar", sin stock): el rojo de texto. */
+[data-gondola-theme="dark"] :is(shopping-cart-main, card-product) .text-danger {
+  color: var(--g-red-text) !important;
+}
+
+/* sin captura: carrito, requiere sesión. Fotos del carrito y del mini carrito sobre la placa. */
+[data-gondola-theme="dark"] card-product .c__item-img,
+[data-gondola-theme="dark"] .dropdown-carrito .imagen-producto {
+  border-radius: 8px;
+  background-color: var(--g-plate) !important;
+}
+
+/* sin captura: el mini carrito se abre con sesión y productos. Es un menú: más claro que la
+   página, borde de línea (Coto lo pone casi negro) y sin sombra. */
+[data-gondola-theme="dark"] cart-float .dropdown-carrito {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface-2) !important;
+  box-shadow: none !important;
+}
+
+/* sin captura: mini carrito. Cada producto: separador de línea; al pasar el mouse, relleno suave
+   (Coto: blanco). */
+[data-gondola-theme="dark"] .dropdown-carrito .producto-carrito {
+  border-color: var(--g-line) !important;
+  background-color: transparent !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: mini carrito */
+[data-gondola-theme="dark"] .dropdown-carrito .producto-carrito:hover {
+  background-color: var(--g-soft) !important;
+}
+
+/* sin captura: mini carrito. Aviso de promo (gris claro) y la raya del total. */
+[data-gondola-theme="dark"] .dropdown-carrito .offer-promo {
+  background-color: var(--g-soft) !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: mini carrito */
+[data-gondola-theme="dark"] .dropdown-carrito .precio-carrito {
+  border-color: var(--g-line) !important;
+}
+
+/* sin captura: mini carrito. "Vaciar" es un botón secundario claro: superficie con borde. */
+[data-gondola-theme="dark"] .dropdown-carrito .btn-empty {
+  border-color: var(--g-line-2) !important;
+  background-color: var(--g-surface) !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: el selector de cantidad (- 1 +) solo aparece con sesión, en la lista, el
+   producto, el carrito y el mini carrito. Botones claros de Bootstrap y el campo: como campo. */
+[data-gondola-theme="dark"] product-quantity .input-spinner :is(.btn, .item-quantity) {
+  border-color: var(--g-line-2) !important;
+  background-color: var(--g-bg) !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: ventana "Atención" del carrito (al validar la compra). Coto la pinta blanca con
+   borde rojo; el borde queda. */
+[data-gondola-theme="dark"] .atencion-modal {
+  background-color: var(--g-surface-2) !important;
+}
+
+/* sin captura: ventana "Atención" del carrito */
+[data-gondola-theme="dark"] :is(.atencion-title, .atencion-text, .atencion-subheader-text, .atencion-list li, .atencion-product-item) {
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: ventana "Atención" del carrito. Botón secundario: rojo de texto sobre la ventana. */
+[data-gondola-theme="dark"] .atencion-button {
+  background-color: var(--g-surface-2) !important;
+  color: var(--g-red-text) !important;
+}
+
+/* sin captura: ventana "Atención" del carrito */
+[data-gondola-theme="dark"] .atencion-button:hover {
+  background-color: var(--g-soft) !important;
+}

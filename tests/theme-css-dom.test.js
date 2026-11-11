@@ -11,7 +11,9 @@ import { rules, bare } from "./helpers/css.js";
 const FILE = "src/theme-coto.css";
 const PREFIX = '[data-gondola-theme="dark"]';
 const CAPTURAS = ["lista", "pdp", "header", "footer", "home", "ingresar"];
-const MAX_SIN_CAPTURA = 15;
+// El carrito y el mini carrito necesitan sesión (sin ella /carrito lleva al ingreso), así que
+// sus reglas no tienen captura posible: el tope sube de 15 por ellas.
+const MAX_SIN_CAPTURA = 22;
 const SIN_CAPTURA = /^\/\*\s*sin captura:\s*\S/;
 
 const docs = CAPTURAS.map((f) => new JSDOM(readFileSync(`tests/fixtures/dom/${f}.html`, "utf8")).window.document);
