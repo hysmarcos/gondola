@@ -47,7 +47,8 @@ const SIZES = [
   // Zoom del navegador al 150 %: la ventana de 1280 × 900 deja 853 × 600 px de CSS.
   { name: "1280x900 zoom 1,5", viewport: { width: 853, height: 600 }, scale: 1.5, columns: 2 },
 ].filter((s) => !process.env.ONLY || s.name === process.env.ONLY);
-const CSS = ["src/badge.css", "src/skin.css", "src/skin-list.css", "src/skin-pdp.css"];
+// Los mismos CSS y en el mismo orden que manifest.json: los tokens --g-* viven en src/theme.css.
+const CSS = ["src/theme.css", "src/badge.css", "src/skin.css", "src/skin-list.css", "src/skin-pdp.css", "src/theme-coto.css"];
 const PDP = { name: "PDP Leche Protein (PLU 508911)", url: process.env.PDP_URL || `${BASE}/productos/leche-protein-la-serenisima-1l/_/R-00508911-00508911-200` };
 const PDP_SIZE = { name: "1280x900", viewport: { width: 1280, height: 900 }, scale: 1 };
 const BUY_WIDTH = 380; // caja de compra (spec 5.1), más o menos 2 px
