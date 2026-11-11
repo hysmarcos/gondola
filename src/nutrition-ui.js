@@ -2,6 +2,7 @@
 // Los datos llegan de Open Food Facts a través del service worker.
 import qrcode from "qrcode-generator";
 import { NUTRIENTS, offProductUrl } from "./nutrition.js";
+import { paintGallery } from "./nutrition-gallery.js";
 
 const ROOT = "coto-unit-nutri";
 const num = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 1 });
@@ -261,10 +262,12 @@ export function createNutritionUi(doc, { request, onUpdate, iconUrl = null }) {
 
   // Dibuja o borra según la etiqueta de este momento: una respuesta vieja nunca se dibuja
   // sobre otro producto. section: { host, after } (junto a la descripción) o null.
-  function paint(container, anchor, label, enabled, section = null) {
+  // gallery: { thumbs, big } de la galería de Coto, o null.
+  function paint(container, anchor, label, enabled, section = null, gallery = null) {
     const ean = enabled && label?.nutri && label.ean ? String(label.ean) : null;
     const r = ean ? results.get(ean) : undefined;
     const keep = ean && r !== undefined && r !== "error";
+    paintGallery(doc, gallery, keep ? ean : null, keep ? r : null, iconUrl);
     for (const node of ours(container, section)) {
       // Otro producto, o cambió el modo (con sección / desplegable): se borra.
       const wrongMode = section ? node.classList.contains(ROOT) : !node.classList.contains(ROOT);

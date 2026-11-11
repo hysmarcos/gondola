@@ -427,3 +427,23 @@ describe("primera ola de mejoras", () => {
     });
   });
 });
+
+describe("galería: paint pasa las fotos a la galería de Coto", () => {
+  it("con datos agrega las miniaturas; al apagar el ajuste las borra", async () => {
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div>
+      <div class="img-big-wrap"></div><div class="thumbs-wrap"><div class="item-thumb"></div></div>`;
+    const container = document.querySelector(".mt-4");
+    const anchor = document.getElementById("a");
+    const gallery = { thumbs: document.querySelector(".thumbs-wrap"), big: document.querySelector(".img-big-wrap") };
+    const N = { per100: { kcal: 42, carbs: 4, sugars: 4 }, perServing: null, url: "https://world.openfoodfacts.org/product/1",
+      photos: { front: "https://images.openfoodfacts.org/f.400.jpg", nutrition: null, ingredients: "https://images.openfoodfacts.org/i.400.jpg" } };
+    const ui = createNutritionUi(document, { request: async () => N, onUpdate: () => {} });
+    const label = { ean: "1", nutri: true, group: "L" };
+    ui.paint(container, anchor, label, true, null, gallery);
+    await new Promise((r) => setTimeout(r, 0));
+    ui.paint(container, anchor, label, true, null, gallery);
+    expect(gallery.thumbs.querySelectorAll(".coto-unit-offthumb")).toHaveLength(2);
+    ui.paint(container, anchor, label, false, null, gallery);
+    expect(gallery.thumbs.querySelectorAll(".coto-unit-offthumb")).toHaveLength(0);
+  });
+});

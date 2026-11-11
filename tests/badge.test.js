@@ -259,6 +259,18 @@ describe("página de producto", () => {
     expect(section.host).toBe(doc.querySelector(".col-12.mt-3.mb-5"));
   });
 
+  it("la galería de Coto se pasa a la información nutricional", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const html = `<article class="gallery-wrap"><div class="img-big-wrap"></div><div class="thumbs-wrap"></div></article>` + pdp;
+    const { doc, send } = setup(html, `/productos/papel/${key}`, { nutrition });
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m", ean: "1", nutri: true }) } });
+    await tick();
+    const gallery = calls.at(-1)[5];
+    expect(gallery.thumbs).toBe(doc.querySelector(".thumbs-wrap"));
+    expect(gallery.big).toBe(doc.querySelector(".img-big-wrap"));
+  });
+
   it("refresh vuelve a pintar la información nutricional", async () => {
     const calls = [];
     const nutrition = { paint: (...args) => calls.push(args) };

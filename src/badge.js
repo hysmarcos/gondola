@@ -409,9 +409,12 @@ export function installBadges(win, doc, deps = {}) {
     // La tabla nutricional va junto a "Descripción del producto", si la página la tiene.
     const desc = doc.querySelector(".pdp-description");
     const section = desc?.parentElement ? { host: desc.parentElement, after: desc } : null;
+    // Fotos de Open Food Facts: en la galería de fotos de Coto, si está.
+    const thumbs = doc.querySelector(".gallery-wrap .thumbs-wrap");
+    const gallery = thumbs ? { thumbs, big: doc.querySelector(".gallery-wrap .img-big-wrap") } : null;
     if (!wrap) {
       const box = paintBox(price.parentElement, price, label, "pdp");
-      nutrition?.paint(price.parentElement, box ?? price, label, state.nutrition, section);
+      nutrition?.paint(price.parentElement, box ?? price, label, state.nutrition, section, gallery);
       return;
     }
     // La caja va después de las líneas cortas que siguen al precio ("Precio regular", "sin
@@ -424,7 +427,7 @@ export function installBadges(win, doc, deps = {}) {
     const box = paintBox(wrap, after, label, "pdp");
     if (box && box.previousElementSibling !== after) after.after(box);
     // Información nutricional: debajo de la caja (o del precio si no hay caja).
-    nutrition?.paint(wrap, box ?? after, label, state.nutrition, section);
+    nutrition?.paint(wrap, box ?? after, label, state.nutrition, section, gallery);
     const onSale = /oferta|%\s*dto/i.test(block.textContent);
     for (const line of wrap.children) {
       if (line === block || line === box) continue;

@@ -339,10 +339,13 @@
 }
 
 .coto-unit-nutri-more {
+  align-self: center;
+  margin: 0;
   padding: 0;
   border: 0;
   background: none;
   font: inherit;
+  line-height: inherit;
   color: #0c447c;
   text-decoration: underline;
   cursor: pointer;
@@ -396,6 +399,75 @@
 .coto-unit-nutri-photos a,
 .coto-unit-nutri-meta a {
   color: #0c447c;
+  text-decoration: underline;
+}
+
+/* Fotos de Open Food Facts en la galería de Coto: miniaturas con el ícono de OFF. */
+.coto-unit-offthumb {
+  position: relative;
+}
+
+.coto-unit-offthumb-photo {
+  object-fit: contain;
+  background: #fff;
+}
+
+.coto-unit-offthumb-badge {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  padding: 1px;
+  border-radius: 50%;
+  background: #fff;
+  pointer-events: none;
+}
+
+.coto-unit-offthumb--active {
+  outline: 2px solid #0c447c;
+  outline-offset: -2px;
+}
+
+/* Visor encima de la foto grande de Coto, con el aviso de que la foto no es de Coto. */
+.coto-unit-offview {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.coto-unit-offview-photo {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+}
+
+.coto-unit-offview-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 0;
+  padding: 8px 12px;
+  background: #e6f1fb;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #0c447c;
+  text-align: left;
+}
+
+.coto-unit-offview-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.coto-unit-offview-note a {
+  color: #0c447c;
+  font-weight: 600;
   text-decoration: underline;
 }
 
