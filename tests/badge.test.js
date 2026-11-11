@@ -240,9 +240,23 @@ describe("página de producto", () => {
     expect(last[1]).toBe(box);
     expect(last[2]).toMatchObject({ ean: "7790895000997", nutri: true });
     expect(last[3]).toBe(true);
+    // Sin "Descripción del producto" no hay sección: desplegable en la columna.
+    expect(last[4]).toBeNull();
     send({ type: "settings", selected: [], day: 1, nutrition: false });
     await tick();
     expect(calls.at(-1)[3]).toBe(false);
+  });
+
+  it("con Descripción del producto, la sección va junto a ella", async () => {
+    const calls = [];
+    const nutrition = { paint: (...args) => calls.push(args) };
+    const withDesc = pdp + `<div class="col-12 mt-3 mb-5"><div class="mb-3 pdp-description"><h4>Descripción del producto</h4></div><div class="pdp-characteristics"></div></div>`;
+    const { doc, send } = setup(withDesc, `/productos/papel/${key}`, { nutrition });
+    send({ type: "labels", labels: { [key]: L(109.33, { group: "rollo10m", ean: "1", nutri: true }) } });
+    await tick();
+    const section = calls.at(-1)[4];
+    expect(section.after).toBe(doc.querySelector(".pdp-description"));
+    expect(section.host).toBe(doc.querySelector(".col-12.mt-3.mb-5"));
   });
 
   it("refresh vuelve a pintar la información nutricional", async () => {

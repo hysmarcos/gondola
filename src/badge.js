@@ -406,9 +406,12 @@ export function installBadges(win, doc, deps = {}) {
     while (block.parentElement && !block.parentElement.matches(".mt-4") && block !== doc.body) block = block.parentElement;
     const wrap = block.parentElement?.matches(".mt-4") ? block.parentElement : null;
     const label = state.labels[key];
+    // La tabla nutricional va junto a "Descripción del producto", si la página la tiene.
+    const desc = doc.querySelector(".pdp-description");
+    const section = desc?.parentElement ? { host: desc.parentElement, after: desc } : null;
     if (!wrap) {
       const box = paintBox(price.parentElement, price, label, "pdp");
-      nutrition?.paint(price.parentElement, box ?? price, label, state.nutrition);
+      nutrition?.paint(price.parentElement, box ?? price, label, state.nutrition, section);
       return;
     }
     // La caja va después de las líneas cortas que siguen al precio ("Precio regular", "sin
@@ -421,7 +424,7 @@ export function installBadges(win, doc, deps = {}) {
     const box = paintBox(wrap, after, label, "pdp");
     if (box && box.previousElementSibling !== after) after.after(box);
     // Información nutricional: debajo de la caja (o del precio si no hay caja).
-    nutrition?.paint(wrap, box ?? block, label, state.nutrition);
+    nutrition?.paint(wrap, box ?? after, label, state.nutrition, section);
     const onSale = /oferta|%\s*dto/i.test(block.textContent);
     for (const line of wrap.children) {
       if (line === block || line === box) continue;

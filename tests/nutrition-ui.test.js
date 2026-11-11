@@ -210,3 +210,106 @@ describe("bebidas vendidas por unidad", () => {
     expect(c.querySelector("summary").textContent).toContain("cada 100 g");
   });
 });
+
+describe("diseño A: resumen en la columna y sección junto a la descripción", () => {
+  let container, anchor, host, desc, ui;
+  const ICON = "chrome-extension://x/assets/off/off-logo-icon-light.svg";
+  const N3 = { per100: { kcal: 42, carbs: 11, sugars: 11, sodiumMg: 6 }, perServing: { kcal: 149 }, servingSize: "354 ml", url: "https://world.openfoodfacts.org/product/7790895000232" };
+  const label = (ean = "7790895000232", extra = {}) => ({ ean, nutri: true, drink: true, group: "L", ...extra });
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+
+  beforeEach(() => {
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div><div id="cuotas"></div></div>
+      <div class="col-12 mt-3 mb-5"><div class="mb-3 pdp-description"><h4>Descripción del producto</h4></div><div class="pdp-characteristics"></div></div>`;
+    container = document.querySelector(".mt-4");
+    anchor = document.getElementById("a");
+    desc = document.querySelector(".pdp-description");
+    host = desc.parentElement;
+  });
+
+  async function draw(result, lab = label()) {
+    ui = createNutritionUi(document, { request: async () => result, onUpdate: () => {}, iconUrl: ICON });
+    const section = { host, after: desc };
+    ui.paint(container, anchor, lab, true, section);
+    await settle();
+    ui.paint(container, anchor, lab, true, section);
+    return section;
+  }
+
+  it("con tabla: una línea de resumen en la columna y la tabla en la sección", async () => {
+    await draw(N3);
+    const sum = container.querySelector(".coto-unit-nutri-sum");
+    expect(anchor.nextElementSibling).toBe(sum);
+    expect(sum.querySelector(".coto-unit-nutri-text").textContent).toBe("42 kcal · 11 g azúcares · 6 mg sodio · cada 100 ml");
+    expect(sum.querySelector("img").getAttribute("src")).toBe(ICON);
+    expect(sum.querySelector("button").textContent).toBe("Ver tabla");
+    const sec = host.querySelector(".coto-unit-nutri-section");
+    expect(desc.nextElementSibling).toBe(sec);
+    expect(sec.querySelector("h4").textContent).toBe("Información nutricional");
+    expect(sec.querySelector("h4 img").getAttribute("src")).toBe(ICON);
+    expect(sec.querySelector("h4 img").alt).toBe("Open Food Facts");
+    expect(sec.querySelector("table")).not.toBeNull();
+    expect(sec.querySelector("details")).toBeNull();
+    expect(sec.textContent).toContain("Fuente: Open Food Facts, datos cargados por la comunidad.");
+    expect(host.hasAttribute("data-coto-unit-nutri-host")).toBe(true);
+  });
+
+  it("Ver tabla lleva a la sección sin cambiar la URL", async () => {
+    await draw(N3);
+    const sec = host.querySelector(".coto-unit-nutri-section");
+    let scrolled = false;
+    sec.scrollIntoView = () => (scrolled = true);
+    container.querySelector(".coto-unit-nutri-sum button").click();
+    expect(scrolled).toBe(true);
+  });
+
+  it("missing: sin resumen; la sección dice cómo cargarla", async () => {
+    await draw("missing");
+    expect(container.querySelector(".coto-unit-nutri-sum")).toBeNull();
+    const sec = host.querySelector(".coto-unit-nutri-section");
+    expect(sec.querySelector("h4").textContent).toBe("Información nutricional");
+    expect(sec.textContent).toContain("Sin información nutricional. Podés cargarla en Open Food Facts");
+  });
+
+  it("resumen solo con los datos que hay; sin kcal, azúcares ni sodio no hay resumen", async () => {
+    await draw({ ...N3, per100: { kcal: 42, fat: 0, carbs: 11 } }, label("1", { drink: false, group: "kg" }));
+    expect(container.querySelector(".coto-unit-nutri-text").textContent).toBe("42 kcal · cada 100 g");
+    document.body.innerHTML = `<div class="mt-4"><div id="a"></div></div><div><div class="pdp-description"></div></div>`;
+    container = document.querySelector(".mt-4"); anchor = document.getElementById("a"); desc = document.querySelector(".pdp-description"); host = desc.parentElement;
+    await draw({ ...N3, per100: { fat: 0, carbs: 11, proteins: 1 } });
+    expect(container.querySelector(".coto-unit-nutri-sum")).toBeNull();
+    expect(host.querySelector(".coto-unit-nutri-section table")).not.toBeNull();
+  });
+
+  it("apagar el ajuste o pasar a otro producto borra resumen, sección y marca del contenedor", async () => {
+    const section = await draw(N3);
+    ui.paint(container, anchor, label(), false, section);
+    expect(container.querySelector(".coto-unit-nutri-sum")).toBeNull();
+    expect(host.querySelector(".coto-unit-nutri-section")).toBeNull();
+    expect(host.hasAttribute("data-coto-unit-nutri-host")).toBe(false);
+    ui.paint(container, anchor, label(), true, section);
+    expect(host.querySelector(".coto-unit-nutri-section")).not.toBeNull();
+    ui.paint(container, anchor, label("999"), true, section);
+    expect(host.querySelector(".coto-unit-nutri-section")).toBeNull();
+    expect(container.querySelector(".coto-unit-nutri-sum")).toBeNull();
+  });
+
+  it("repintar el mismo producto no duplica ni reemplaza los nodos", async () => {
+    const section = await draw(N3);
+    const sum = container.querySelector(".coto-unit-nutri-sum");
+    const sec = host.querySelector(".coto-unit-nutri-section");
+    ui.paint(container, anchor, label(), true, section);
+    expect(container.querySelectorAll(".coto-unit-nutri-sum")).toHaveLength(1);
+    expect(container.querySelector(".coto-unit-nutri-sum")).toBe(sum);
+    expect(host.querySelector(".coto-unit-nutri-section")).toBe(sec);
+  });
+
+  it("sin sección (página sin descripción) usa el desplegable en la columna", async () => {
+    ui = createNutritionUi(document, { request: async () => N3, onUpdate: () => {}, iconUrl: ICON });
+    ui.paint(container, anchor, label(), true, null);
+    await settle();
+    ui.paint(container, anchor, label(), true, null);
+    expect(container.querySelector("details.coto-unit-nutri")).not.toBeNull();
+    expect(container.querySelector(".coto-unit-nutri-sum")).toBeNull();
+  });
+});

@@ -16,6 +16,7 @@ let badges = null;
 const nutrition = createNutritionUi(document, {
   request: (ean) => chrome.runtime.sendMessage({ type: "nutrition", ean }).catch(() => "error"),
   onUpdate: () => badges?.refresh(),
+  iconUrl: chrome.runtime.getURL("assets/off/off-logo-icon-light.svg"),
 });
 
 badges = installBadges(window, document, { logoUrl: logo, compare, nutrition });

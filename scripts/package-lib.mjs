@@ -12,6 +12,7 @@ const INCLUDE = [
   /^assets\/icon\/icon\.svg$/,
   /^assets\/banks\/[\w.-]+\.png$/,
   /^assets\/fonts\/[\w.-]+\.(woff2|txt)$/,
+  /^assets\/off\/[\w.-]+\.svg$/,
 ];
 
 export function packageFiles(all) {
