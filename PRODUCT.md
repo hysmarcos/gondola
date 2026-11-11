@@ -21,7 +21,7 @@ It works inside Coto's own pages and uses Coto's own data (the price with any of
 ## Operating Context
 - Runs on coto.com.ar: category lists, search, offers, product page, carousels, mini-cart, /carrito.
 - Popup (toolbar button): the user picks bank cards and the shopping day, and the theme (Claro / Oscuro / Automático). More menus will come, so the popup has tabs.
-- Settings are stored with chrome.storage.local only.
+- Settings are stored with chrome.storage.local only. The one exception is the resolved theme ("light" or "dark"), which src/theme.js also caches in coto.com.ar's localStorage under gondola-theme so the page does not flash white on load; Coto's scripts can read it, but it reveals nothing the data-gondola-theme attribute on <html> does not already show.
 
 ## Capabilities and Constraints
 - Never removes or breaks Coto's native UI or behavior; it only adds nodes and data-coto-unit-* attributes (data-coto-unit-hide also hides "Ver planes de cuotas" on list cards when the Góndola design is on). With the design on, it also sets data-gondola-skin on <html> and hides with CSS the product page's fixed rating stars and empty spacer divs. The Góndola skin restyles the list and product pages with CSS; never re-parents Coto's controls.
