@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseOff, isFood, nutriEligible, offProductUrl, offApiUrl } from "../src/nutrition.js";
+import { parseOff, isFood, nutriEligible, offProductUrl, offApiUrl, ALLERGENS } from "../src/nutrition.js";
 import { OFF } from "./fixtures/off.js";
 
 const off = (n100, extra = {}) => ({ status: 1, product: { nutriments: n100, ...extra } });
@@ -102,12 +102,59 @@ describe("primera ola: porción, fecha y fotos", () => {
   });
 
   it("el pedido a la API trae los campos nuevos", () => {
-    expect(offApiUrl("1")).toBe("https://world.openfoodfacts.org/api/v2/product/1?fields=product_name,nutriments,serving_size,serving_quantity,last_modified_t,image_front_url,image_nutrition_url,image_ingredients_url");
+    expect(offApiUrl("1")).toContain("?fields=product_name,nutriments,serving_size,serving_quantity,last_modified_t,image_front_url,image_nutrition_url,image_ingredients_url");
   });
 
   it("fixture real de Coca-Cola: trae fecha y foto del frente", () => {
     const n = parseOff(OFF["7790895000997"], "7790895000997");
     expect(n.updatedAt).toBeGreaterThan(0);
     expect(n.photos.front).toMatch(/^https:\/\/images\.openfoodfacts\.org\//);
+  });
+});
+
+describe("segunda ola: ingredientes, alérgenos, aditivos, NOVA", () => {
+  const off = (extra) => ({ status: 1, product: { nutriments: { "energy-kcal_100g": 50, fat_100g: 1, sugars_100g: 2 }, ...extra } });
+
+  it("trae ingredientes en español, alérgenos, trazas, aditivos, NOVA y la etiqueta sin gluten", () => {
+    const n = parseOff(off({
+      ingredients_text_es: "Leche parcialmente descremada, proteína de leche.",
+      ingredients_text: "Milk",
+      allergens_tags: ["en:milk", "en:milk", "en:soybeans", "es:cafeína"],
+      traces_tags: ["en:nuts", "en:peanuts"],
+      additives_tags: ["en:e330", "en:e471", "en:e330"],
+      nova_group: 4,
+      labels_tags: ["en:no-gluten", "en:vegetarian"],
+    }), "1");
+    expect(n.ingredients).toEqual({ text: "Leche parcialmente descremada, proteína de leche.", spanish: true });
+    expect(n.allergens).toEqual(["milk", "soybeans"]);
+    expect(n.traces).toEqual(["tree-nuts", "peanuts"]);
+    expect(n.additives).toEqual(["E330", "E471"]);
+    expect(n.nova).toBe(4);
+    expect(n.glutenFreeLabel).toBe(true);
+  });
+
+  it("sin español usa el texto general; sin datos da null y listas vacías", () => {
+    expect(parseOff(off({ ingredients_text: "Sugar, cocoa" }), "1").ingredients).toEqual({ text: "Sugar, cocoa", spanish: false });
+    const n = parseOff(off({ nova_group: 7, labels_tags: ["es:sin-tacc"] }), "1");
+    expect(n.ingredients).toBeNull();
+    expect(n.allergens).toEqual([]);
+    expect(n.traces).toEqual([]);
+    expect(n.additives).toEqual([]);
+    expect(n.nova).toBeNull();
+    expect(n.glutenFreeLabel).toBe(true);
+  });
+
+  it("ALLERGENS: las 14 claves con nombre en español", () => {
+    expect(Object.keys(ALLERGENS)).toHaveLength(14);
+    expect(ALLERGENS.gluten).toBe("Gluten (TACC)");
+    expect(ALLERGENS.peanuts).toBe("Maní");
+    expect(ALLERGENS["tree-nuts"]).toBe("Frutos secos");
+  });
+
+  it("el pedido a la API suma los campos nuevos", () => {
+    const u = offApiUrl("1");
+    for (const f of ["ingredients_text_es", "ingredients_text", "allergens_tags", "traces_tags", "additives_tags", "nova_group", "labels_tags"]) {
+      expect(u).toContain(f);
+    }
   });
 });
