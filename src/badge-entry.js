@@ -10,6 +10,7 @@ import { createNutritionUi } from "./nutrition-ui.js";
 import { installProfile } from "./profile.js";
 import { installSkin } from "./skin.js";
 import { installCotoMenu } from "./coto-menu.js";
+import { installQtyAnim } from "./qty-anim.js";
 
 // El tema va primero: tiene que correr antes de que la página se dibuje.
 installTheme(window, document, chrome.storage.local);
@@ -34,6 +35,8 @@ badges = installBadges(window, document, { logoUrl: logo, compare, nutrition });
 installCartUi(window, document, { logoUrl: logo, compare, nutrition: { request: nutritionRequest } });
 installSkin(window, document, chrome.storage.local, () => badges?.refresh());
 installPromoUi(window, document);
+// El número del contador de cantidad se anima al cambiar por un clic en − o +.
+installQtyAnim(window, document);
 // "Configurar Góndola" en el menú de perfil de Coto. Si la extensión se recargó, no hace nada.
 installCotoMenu(window, document, {
   iconUrl: chrome.runtime.getURL("assets/icon/icon.svg"),

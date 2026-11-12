@@ -56,6 +56,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important; /* Coto (.input-spinner) lo limita a 140 px: va del ancho de "Agregar" */
   height: 40px !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -70,19 +72,32 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 40px !important;
-  min-width: 40px;
-  height: 40px !important;
-  margin: 0 !important;
+  width: 32px !important;
+  min-width: 32px;
+  height: 32px !important;
+  margin: 0 4px !important;
   padding: 0 !important;
   border: 0 !important;
-  border-radius: 10px !important;
+  border-radius: 6px !important;
   background-color: transparent !important;
   box-shadow: none !important;
-  color: var(--g-red) !important;
+  color: var(--g-red-text) !important;
   font: 600 18px/1 Poppins, system-ui, sans-serif !important;
   text-transform: none !important;
-  transition: transform 160ms var(--g-out), background-color 150ms ease;
+  transition: transform 160ms var(--g-out), background-color 150ms ease, color 150ms ease;
+}
+
+/* El − y el + de Coto son dibujos con su gris escrito adentro: toman el color del botón. */
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor !important;
+}
+
+/* Botón apagado (Coto lo bloquea mientras manda el pedido): tenue y sin cambio al pasar el mouse. */
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button:disabled {
+  opacity: 0.4;
+  transform: none;
 }
 
 [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button:active {
@@ -105,9 +120,28 @@
   background: transparent !important;
   box-shadow: none !important;
   color: var(--g-ink) !important;
-  font: 600 13px/1 Poppins, system-ui, sans-serif !important;
+  font: 600 14px/1 Poppins, system-ui, sans-serif !important;
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+/* Cambio de número por un clic en − o +: src/qty-anim.js marca el campo. Al sumar, el número
+   nuevo entra desde abajo; al restar, desde arriba. Corto y con un desenfoque leve que disimula
+   el reemplazo. Escribir el número a mano no se anima. */
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove input[id^="input-prod"][data-gondola-qty] {
+  animation: gondola-qty-up 220ms var(--g-out);
+}
+
+[data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove input[id^="input-prod"][data-gondola-qty="down"] {
+  animation-name: gondola-qty-down;
+}
+
+@keyframes gondola-qty-up {
+  from { opacity: 0; transform: translateY(7px); filter: blur(2px); }
+}
+
+@keyframes gondola-qty-down {
+  from { opacity: 0; transform: translateY(-7px); filter: blur(2px); }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -115,8 +149,13 @@
     background-color: var(--g-red-d) !important;
   }
 
-  [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button:hover {
-    background-color: var(--g-danger-soft) !important;
+  [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button:not(:disabled):hover {
+    background-color: var(--g-red) !important;
+    color: #fff !important; /* fijo: signo blanco sobre el relleno rojo, como "Agregar" */
+  }
+
+  [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove :has(> input[id^="input-prod"]) > button:not(:disabled):active {
+    background-color: var(--g-red-d) !important;
   }
 }
 
@@ -127,6 +166,14 @@
     transform: none !important;
     animation: none !important;
   }
+
+  [data-gondola-skin] :is(.producto-card, app-product-detail aside.row) product-add-show-remove input[id^="input-prod"][data-gondola-qty] {
+    animation: gondola-qty-fade 150ms ease;
+  }
+}
+
+@keyframes gondola-qty-fade {
+  from { opacity: 0; }
 }
 
 /* ---------- Lo que Góndola oculta, se oculta ---------- */
