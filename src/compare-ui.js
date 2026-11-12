@@ -95,9 +95,7 @@ function deltaText(r) {
   return `${r.delta < 0 ? "−" : "+"}${Math.abs(r.delta)}%`;
 }
 
-function iconPlan(rows, logo) {
-  // Sin logo no se agrega la clave: el plan (y su firma) queda igual que antes de los logos.
-  const withLogo = (id) => (logo(id) ? { logo: logo(id) } : {});
+function iconPlan(rows, withLogo) {
   const state = compareStatus(rows);
   const first = rows[0];
   const text = pillText(state, rows);
@@ -126,15 +124,32 @@ function svgIcon(doc, paths) {
   return svg;
 }
 
-// El logo del súper, delante del nombre. Decorativo: el nombre ya está escrito al lado.
-function logoImg(doc, url) {
+// El logo del súper va en lugar de su nombre (ocupa menos). El nombre queda como texto
+// alternativo, para quien no ve la imagen, y como globo al pasar el mouse.
+function logoImg(doc, url, name) {
   const img = doc.createElement("img");
   img.className = `${CMP}-logo`;
   img.src = url;
-  img.alt = "";
-  img.width = 16;
-  img.height = 16;
+  img.alt = name;
+  img.title = name;
+  img.width = 18;
+  img.height = 18;
   return img;
+}
+
+// El súper de una fila: su logo (o su nombre, si no hay logo). Con link (solo https al mismo
+// súper, ver safeUrl), abre su página.
+function nameNode(doc, { name, logo, url }) {
+  const node = doc.createElement(url ? "a" : "span");
+  node.className = logo ? `${CMP}-name ${CMP}-name--logo` : `${CMP}-name`;
+  if (logo) node.append(logoImg(doc, logo, name));
+  else node.textContent = name;
+  if (url) {
+    node.setAttribute("href", url);
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer");
+  }
+  return node;
 }
 
 function el(doc, tag, cls, text) {
@@ -157,17 +172,7 @@ function buildIcon(doc, block, it) {
   pop.append(el(doc, "div", `${CMP}-head`, "Mismo producto en otros súper"));
   for (const r of it.rows) {
     const row = el(doc, "div", `${CMP}-row ${CMP}-row--${r.state}`);
-    let name;
-    if (r.url) {
-      name = el(doc, "a", `${CMP}-name`, r.name);
-      name.setAttribute("href", r.url);
-      name.setAttribute("target", "_blank");
-      name.setAttribute("rel", "noopener noreferrer");
-    } else {
-      name = el(doc, "span", `${CMP}-name`, r.name);
-    }
-    if (r.logo) name.prepend(logoImg(doc, r.logo));
-    row.append(name, el(doc, "span", `${CMP}-price`, r.price));
+    row.append(nameNode(doc, r), el(doc, "span", `${CMP}-price`, r.price));
     if (r.qty) row.append(el(doc, "span", `${CMP}-qty`, r.qty));
     if (r.delta) row.append(el(doc, "span", `${CMP}-delta`, r.delta));
     pop.append(row);
@@ -195,7 +200,9 @@ function wireToggle(block) {
 // Lo que se va a dibujar, como datos simples: sirve de firma para no tocar el DOM
 // si nada cambió (la página repinta en cada mutación).
 function plan(rows, variant, logo) {
-  if (variant === "icon") return [iconPlan(rows, logo)];
+  // Sin logo no se agrega la clave: el plan (y su firma) queda igual que antes de los logos.
+  const withLogo = (id) => (logo(id) ? { logo: logo(id) } : {});
+  if (variant === "icon") return [iconPlan(rows, withLogo)];
   if (variant !== "mini") {
     // La más barata de las que le ganan a Coto lleva --best (la PDP con la piel la resalta).
     const lower = rows.filter((r) => r.state === "lower");
@@ -203,6 +210,7 @@ function plan(rows, variant, logo) {
     return rows.map((r) => ({
       cls: `${CMP}-row ${CMP}-row--${r.state}${r === cheapest ? ` ${CMP}-row--best` : ""}`,
       name: r.name,
+      ...withLogo(r.id),
       price: r.unit === null ? ICON[r.state] : `${ICON[r.state]} ${formatMoney(r.unit)}`,
       label: r.unit === null ? `${r.name}: ${r.title ?? "consultando"}` : `${r.name}: ${formatMoney(r.unit)}, ${SAYS[r.state]}`,
       title: r.title,
@@ -216,15 +224,25 @@ function plan(rows, variant, logo) {
     const money = formatMoney(best.unit);
     // Si ese precio es llevando varios, se dice: sin eso el número engaña.
     const take = best.qty > 1 ? { text: ` (x${best.qty})`, label: `, llevando ${best.qty}` } : { text: "", label: "" };
+    // Con logo, el logo reemplaza al nombre al principio de la línea.
+    const mark = withLogo(best.id);
     return [
       {
         cls: `${CMP}-best ${CMP}-best--lower`,
-        text: `${best.name} ${money} ▼${take.text}`,
+        ...(mark.logo ? { logo: mark.logo, logoName: best.name, text: `${money} ▼${take.text}` } : { text: `${best.name} ${money} ▼${take.text}` }),
         label: `${best.name}: ${money}, más barato${take.label}`,
       },
     ];
   }
-  if (rows.some((r) => r.unit !== null)) return [{ cls: `${CMP}-best ${CMP}-best--higher`, text: "Coto el más barato" }];
+  if (rows.some((r) => r.unit !== null)) {
+    const mark = withLogo("coto");
+    return [
+      {
+        cls: `${CMP}-best ${CMP}-best--higher`,
+        ...(mark.logo ? { logo: mark.logo, logoName: "Coto", text: "el más barato", label: "Coto el más barato" } : { text: "Coto el más barato" }),
+      },
+    ];
+  }
   if (rows.some((r) => r.state === "pending")) return [{ cls: `${CMP}-best ${CMP}-best--pending`, text: "…" }];
   return null;
 }
@@ -238,21 +256,13 @@ function build(doc, items, block) {
     if (it.label) el.setAttribute("aria-label", it.label);
     if (it.title) el.setAttribute("title", it.title);
     if ("text" in it) {
-      el.textContent = it.text;
+      if (it.logo) el.append(logoImg(doc, it.logo, it.logoName), it.text);
+      else el.textContent = it.text;
     } else {
-      // Con link (solo https al mismo súper, ver safeUrl), el nombre abre su página.
-      const name = doc.createElement(it.url ? "a" : "span");
-      name.className = `${CMP}-name`;
-      name.textContent = it.name;
-      if (it.url) {
-        name.setAttribute("href", it.url);
-        name.setAttribute("target", "_blank");
-        name.setAttribute("rel", "noopener noreferrer");
-      }
       const price = doc.createElement("span");
       price.className = `${CMP}-price`;
       price.textContent = it.price;
-      el.append(name, price);
+      el.append(nameNode(doc, it), price);
     }
     nodes.push(el);
     if (it.qty) {
@@ -267,7 +277,6 @@ function build(doc, items, block) {
 
 // Crea o actualiza el bloque como último hijo de box. Sin filas, lo borra.
 // opts.logo(id) → URL del logo del súper ("coto", "carrefour"…) o null: sin logo, va solo el nombre.
-// Los logos van solo en el detalle de la pastilla (variant "icon").
 export function paintCompare(box, rows, variant = "", opts = {}) {
   const logo = (id) => opts.logo?.(id) ?? null;
   let block = box.querySelector(`:scope > .${CMP}`);

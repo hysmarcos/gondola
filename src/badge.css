@@ -1115,17 +1115,6 @@
   white-space: nowrap;
 }
 
-/* Logo del súper delante del nombre (16 px, esquinas apenas redondas). */
-.coto-unit-cmp-logo {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  margin-right: 6px;
-  border-radius: 4px;
-  object-fit: contain;
-  vertical-align: -3px;
-}
-
 .coto-unit-cmp-pop a.coto-unit-cmp-name {
   color: var(--g-blue);
   font-weight: 600;
@@ -1133,9 +1122,84 @@
   text-underline-offset: 2px;
 }
 
-.coto-unit-cmp-pop a.coto-unit-cmp-name::after {
-  content: " ↗";
+/* "Abre el sitio del súper": un cuadro con una flecha que sale, del color del link. Es una
+   máscara, así toma el color del texto en claro y en oscuro. */
+.coto-unit-cmp-pop a.coto-unit-cmp-name::after,
+a.coto-unit-cmp-name--logo::after {
+  content: "";
+  display: inline-block;
+  flex: none;
+  width: 11px;
+  height: 11px;
+  margin-left: 5px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0.75;
+  transition: opacity 150ms ease, transform 160ms var(--g-out);
+}
+
+/* ---------- Logo del súper en lugar del nombre ---------- */
+
+.coto-unit-cmp-logo {
+  display: block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+/* El logo y, si hay link, el ícono de abrir el sitio, en una línea. */
+.coto-unit-cmp-name--logo,
+.coto-unit-cmp-pop .coto-unit-cmp-name--logo {
+  display: inline-flex;
+  align-items: center;
+  overflow: visible;
+  color: var(--g-blue);
   text-decoration: none;
+}
+
+a.coto-unit-cmp-name--logo {
+  border-radius: 6px;
+}
+
+a.coto-unit-cmp-name--logo:focus-visible {
+  outline: 2px solid var(--g-navy);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.coto-unit-cmp-name--logo:hover::after {
+    opacity: 1;
+    transform: translate(1px, -1px);
+  }
+}
+
+/* Las filas (página de producto): el logo a la izquierda y el precio a la derecha, centrados. */
+.coto-unit-cmp-row:has(> .coto-unit-cmp-name--logo) {
+  align-items: center;
+}
+
+.coto-unit-box--pdp .coto-unit-cmp-logo {
+  width: 20px;
+  height: 20px;
+}
+
+/* Línea corta (carruseles y carrito): logo chico pegado al precio. */
+.coto-unit-cmp-best > .coto-unit-cmp-logo {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  border-radius: 3px;
+  vertical-align: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a.coto-unit-cmp-name--logo:hover::after {
+    transform: none;
+  }
 }
 
 .coto-unit-cmp-pop .coto-unit-cmp-price {

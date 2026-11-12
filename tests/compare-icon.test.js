@@ -94,32 +94,56 @@ describe("paintCompare: ícono con detalle al pasar el mouse", () => {
   });
 });
 
-describe("paintCompare: logos de los súper en el detalle", () => {
+describe("paintCompare: el logo del súper reemplaza al nombre", () => {
   const logo = (id) => (id === "mas" ? null : `chrome-extension://x/assets/stores/${id}.png`);
-  function paint(opts) {
+  const results = { carrefour: offer(1840, { url: "https://www.carrefour.com.ar/leche/p" }), dia: offer(2100), mas: "missing" };
+  function paint(variant, opts, res = results) {
     document.body.innerHTML = `<div id="box"></div>`;
     const box = document.getElementById("box");
-    const results = { carrefour: offer(1840, { url: "https://www.carrefour.com.ar/leche/p" }), dia: offer(2100), mas: "missing" };
-    paintCompare(box, compareRows(cmp, results), "icon", opts);
-    return [...box.querySelectorAll(".coto-unit-cmp-pop .coto-unit-cmp-name")];
+    paintCompare(box, compareRows(cmp, res), variant, opts);
+    return box;
   }
+  const names = (box) => [...box.querySelectorAll(".coto-unit-cmp-name")];
 
-  it("cada fila lleva su logo delante del nombre; el link sigue siendo el nombre", () => {
-    const names = paint({ logo });
-    expect(names.map((n) => n.textContent)).toEqual(["Coto", "Carrefour", "Día", "Más"]);
-    const src = names.map((n) => n.querySelector("img.coto-unit-cmp-logo")?.getAttribute("src") ?? null);
-    expect(src).toEqual([
+  it("detalle de la pastilla: logo con el nombre como texto alternativo; sin logo, el nombre", () => {
+    const list = names(paint("icon", { logo }));
+    expect(list.map((n) => n.querySelector("img.coto-unit-cmp-logo")?.getAttribute("alt") ?? n.textContent)).toEqual(["Coto", "Carrefour", "Día", "Más"]);
+    expect(list.map((n) => n.querySelector("img")?.getAttribute("src") ?? null)).toEqual([
       "chrome-extension://x/assets/stores/coto.png",
       "chrome-extension://x/assets/stores/carrefour.png",
       "chrome-extension://x/assets/stores/dia.png",
       null,
     ]);
-    // Decorativo: el nombre está escrito al lado.
-    expect(names[1].firstChild.getAttribute("alt")).toBe("");
-    expect(names[1].tagName).toBe("A");
+    // Con logo no se repite el nombre escrito; el link sigue abriendo el súper.
+    expect(list[1].textContent).toBe("");
+    expect(list[1].tagName).toBe("A");
+    expect(list[1].getAttribute("href")).toBe("https://www.carrefour.com.ar/leche/p");
+    expect(list[1].classList.contains("coto-unit-cmp-name--logo")).toBe(true);
+    expect(list[3].classList.contains("coto-unit-cmp-name--logo")).toBe(false);
   });
 
-  it("sin logos, las filas quedan solo con el nombre", () => {
-    expect(paint().some((n) => n.querySelector("img"))).toBe(false);
+  it("filas (página de producto): logo en lugar del nombre", () => {
+    const list = names(paint("", { logo }));
+    expect(list.map((n) => n.querySelector("img")?.getAttribute("alt") ?? n.textContent)).toEqual(["Carrefour", "Día", "Más"]);
+    expect(list[0].tagName).toBe("A");
+  });
+
+  it("línea corta (carruseles y carrito): logo + precio; la etiqueta para lectores sigue con el nombre", () => {
+    const best = paint("mini", { logo }).querySelector(".coto-unit-cmp-best");
+    expect(best.querySelector("img.coto-unit-cmp-logo").getAttribute("alt")).toBe("Carrefour");
+    expect(best.textContent).toBe("$1.840 ▼");
+    expect(best.getAttribute("aria-label")).toMatch(/^Carrefour: /);
+  });
+
+  it("línea corta cuando Coto gana: logo de Coto + \"el más barato\"", () => {
+    const best = paint("mini", { logo }, { carrefour: offer(2200), dia: "missing", mas: "missing" }).querySelector(".coto-unit-cmp-best");
+    expect(best.querySelector("img").getAttribute("alt")).toBe("Coto");
+    expect(best.textContent).toBe("el más barato");
+    expect(best.getAttribute("aria-label")).toBe("Coto el más barato");
+  });
+
+  it("sin logos, todo queda con el nombre escrito", () => {
+    expect(paint("icon").querySelector("img")).toBe(null);
+    expect(paint("mini").querySelector(".coto-unit-cmp-best").textContent).toBe("Carrefour $1.840 ▼");
   });
 });

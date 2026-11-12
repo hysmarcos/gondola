@@ -35,7 +35,7 @@ const nutrition = createNutritionUi(document, {
 // Logos de los súper del comparador: siempre empaquetados, nada se pide a otros sitios.
 const storeLogo = (id) => storeLogoUrl(id, (p) => chrome.runtime.getURL(p));
 badges = installBadges(window, document, { logoUrl: logo, storeLogo, compare, nutrition });
-installCartUi(window, document, { logoUrl: logo, compare, nutrition: { request: nutritionRequest } });
+installCartUi(window, document, { logoUrl: logo, storeLogo, compare, nutrition: { request: nutritionRequest } });
 installSkin(window, document, chrome.storage.local, () => badges?.refresh());
 installPromoUi(window, document);
 // El número del contador de cantidad se anima al cambiar por un clic en − o +.
