@@ -186,11 +186,11 @@
   box-shadow: inset 0 -1px 0 var(--g-line) !important;
 }
 
-/* Logo: la imagen original de Coto con su rojo llevado a negro; el blanco queda blanco. */
+/* Logo: la imagen original de Coto con su rojo llevado a negro; el blanco queda blanco. El
+   contraste es el justo para que el rojo llegue a negro: uno más fuerte endurece los bordes
+   suavizados del dibujo y se ven pixelados. Sin borde ni contorno: la imagen queda como es. */
 [data-gondola-theme="dark"] header .img-logo-coto {
-  filter: grayscale(1) contrast(4) !important;
-  outline: 1px solid var(--g-line);
-  border-radius: 8px;
+  filter: grayscale(1) contrast(1.8) !important;
 }
 
 /* "Ingresar" y los demás botones rojos de Coto: el rojo de compra del tema, texto blanco de Coto. */
@@ -211,9 +211,20 @@
 
 /* sin captura: con sesión. El botón del perfil (borde y texto gris oscuro). */
 [data-gondola-theme="dark"][data-gondola-theme] .btn-profile {
-  border-color: var(--g-line-2);
-  background-color: var(--g-surface-2);
-  color: var(--g-ink);
+  border-color: var(--g-ink2) !important;
+  background-color: var(--g-soft) !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: con sesión. La persona del botón del perfil, en texto claro (sea dibujo o imagen). */
+[data-gondola-theme="dark"][data-gondola-theme] .btn-profile svg path {
+  fill: var(--g-ink) !important;
+}
+
+/* sin captura: con sesión. Al pasar el mouse o con el foco, el borde del botón se aclara. */
+[data-gondola-theme="dark"][data-gondola-theme] .btn-profile:hover,
+[data-gondola-theme="dark"][data-gondola-theme] .btn-profile:focus-visible {
+  border-color: var(--g-ink) !important;
 }
 
 /* sin captura: con sesión. El número sobre la campana y el carrito (blanco con borde rojo). */
@@ -858,9 +869,7 @@
 
 /* sin captura: compra. El logo del encabezado, como el del sitio: rojo a negro. */
 [data-gondola-theme="dark"] header .brand-wrap :is(img.logo, .logo img) {
-  filter: grayscale(1) contrast(4) !important;
-  outline: 1px solid var(--g-line);
-  border-radius: 8px;
+  filter: grayscale(1) contrast(1.8) !important;
 }
 
 /* sin captura: compra. Links grises del encabezado y del pie ("Seguir comprando"). */

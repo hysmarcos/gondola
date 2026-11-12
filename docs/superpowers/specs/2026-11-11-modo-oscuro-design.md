@@ -122,9 +122,9 @@ selectores de Angular y a veces `!important`; donde chocan, la regla lleva `!imp
   queda oscura.
 - Por zona: encabezado y buscador, menú de categorías, inicio (carruseles y tarjetas), lista,
   producto, mini carrito, /carrito, pie, menús desplegables y ventanas.
-- Logo: `filter` sobre el `<img>` del logo de Coto (`grayscale(1) contrast(4)`: el rojo `#e20025` pasa a gris oscuro y el contraste lo lleva a
-  negro; el blanco queda blanco. Se verifica sobre la imagen real)
-  y un borde fino de `--g-line`.
+- Logo: `filter` sobre el `<img>` del logo de Coto (`grayscale(1) contrast(1.8)`: el rojo pasa a gris
+  oscuro y el contraste lo lleva a negro; el blanco queda blanco. Un contraste más fuerte endurece
+  los bordes y se ven pixelados). Sin borde ni contorno. Se verifica sobre la imagen real.
 - Antes de pintar se capturan los DOM reales del encabezado, inicio y carrito con
   `scripts/capture-dom.mjs`. Hoy solo hay capturas de la lista y del producto. Los selectores
   nuevos se anotan en `src/skin-dom.js` o en un archivo hermano.
