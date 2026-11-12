@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { createCompareClient } from "../src/compare-client.js";
 import { installCartUi } from "../src/cart-ui.js";
 import { analyzeCart } from "../src/cart.js";
 import { CART_LINES } from "./fixtures/cart.js";
@@ -237,6 +238,23 @@ describe("v5: comparar con otros súper en el carrito", () => {
     send({ type: "cart", analysis: withEan(), seq: 1 });
     await tick();
     expect(doc.querySelector(".coto-unit-cmp")).toBeNull();
+  });
+
+  it("si cambia la lista de súper se vuelve a pedir con la lista nueva (cliente real)", async () => {
+    const send = vi.fn(async (eans, list) => Object.fromEntries(eans.map((e) => [e, Object.fromEntries(list.map((id) => [id, "missing"]))])));
+    const compare = createCompareClient({ send, waitForStores: true, delayMs: 0, setTimer: (fn) => queueMicrotask(fn) });
+    const { send: post } = setup("/carrito", undefined, { compare });
+    post({ type: "settings", selected: [], day: 1, stores: ["carrefour"] });
+    post({ type: "cart", analysis: withEan(), seq: 1 });
+    await tick();
+    await tick();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0][1]).toEqual(["carrefour"]);
+    post({ type: "settings", selected: [], day: 1, stores: ["carrefour", "mas"] });
+    await tick();
+    await tick();
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1][1]).toEqual(["carrefour", "mas"]);
   });
 
   it("compareStores: false no pide ni pinta", async () => {

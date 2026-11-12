@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { installBadges, formatUnit, formatWhy, formatNote, formatBlocked, groupMark } from "../src/badge.js";
 import { createNutritionUi } from "../src/nutrition-ui.js";
+import { createCompareClient } from "../src/compare-client.js";
 
 const K = (n) => `_/R-0000000${n}-0000000${n}-200`;
 // Tarjetas con la estructura real de Coto (listas de categoría, 2026-11).
@@ -612,6 +613,27 @@ describe("v5: comparar con otros súper", () => {
     await tick();
     expect(doc.querySelectorAll(".coto-unit-cmp")).toHaveLength(2);
     expect(compare.asked).toEqual([EAN_A, EAN_B]);
+  });
+
+  it("si cambia la lista de súper se vuelve a pedir con la lista nueva (cliente real)", async () => {
+    const send = vi.fn(async (eans, list) => Object.fromEntries(eans.map((e) => [e, Object.fromEntries(list.map((id) => [id, "missing"]))])));
+    const compare = createCompareClient({ send, waitForStores: true, delayMs: 0, setTimer: (fn) => queueMicrotask(fn) });
+    const { send: post } = setup(offerCard(K(1)), undefined, { compare });
+    post({ type: "labels", labels: { [K(1)]: L(5177, { ean: EAN_A, cmp: CMP }) } });
+    await tick();
+    expect(send).not.toHaveBeenCalled();
+    post({ type: "settings", selected: [], day: 1, stores: ["carrefour"] });
+    await tick();
+    await tick();
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0][1]).toEqual(["carrefour"]);
+    expect(Object.keys(compare.peek(EAN_A))).toEqual(["carrefour"]);
+    post({ type: "settings", selected: [], day: 1, stores: ["carrefour", "mas"] });
+    await tick();
+    await tick();
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1][1]).toEqual(["carrefour", "mas"]);
+    expect(Object.keys(compare.peek(EAN_A))).toEqual(["carrefour", "mas"]);
   });
 
   it("con IntersectionObserver pide recién cuando la caja se ve, una sola vez", async () => {

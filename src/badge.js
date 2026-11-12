@@ -593,6 +593,8 @@ export function installBadges(win, doc, deps = {}) {
       state.day = Number(m.day) || 0;
       state.markBest = m.markBest !== false;
       const stores = Array.isArray(m.stores) ? storesFrom(m.stores) : STORES;
+      // El cliente se entera acá, antes de cualquier pedido: no depende de otro oyente.
+      compare?.setStores?.(stores.map((s) => s.id));
       // Cambió la lista de súper: lo pedido hasta ahora no vale, se pide de nuevo.
       if (stores.map((s) => s.id).join() !== state.stores.map((s) => s.id).join()) {
         requested.clear();

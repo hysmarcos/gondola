@@ -2,7 +2,6 @@
 import { installBadges } from "./badge.js";
 import { installBridge } from "./bridge.js";
 import { createCompareClient } from "./compare-client.js";
-import { enabledStores } from "./stores.js";
 import { installCartUi } from "./cart-ui.js";
 import { installPromoUi } from "./promo-ui.js";
 import { logoUrl } from "./logos.js";
@@ -14,27 +13,11 @@ import { installCotoMenu } from "./coto-menu.js";
 // Logos de bancos: los empaquetados salen de la extensión, los nuevos del sitio de Coto.
 const logo = (icono) => logoUrl(icono, (p) => chrome.runtime.getURL(p));
 
-// Qué súper se consultan: lo guardado en los ajustes. Si cambia la lista, lo ya resuelto no vale.
-let storeIds = enabledStores({}).map((s) => s.id);
-const storeKeys = ["compareStores", "storesOff"];
-const setStores = (s) => {
-  const next = enabledStores(s).map((st) => st.id);
-  if (next.join() === storeIds.join()) return;
-  storeIds = next;
-  compare.reset();
-};
-const storesReady = chrome.storage.local.get(storeKeys).then(setStores, () => {});
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== "local" || !storeKeys.some((k) => k in changes)) return;
-  chrome.storage.local.get(storeKeys).then(setStores, () => {});
-});
+// La lista de súper llega en el mensaje "settings" (badge.js y cart-ui.js se la pasan con
+// setStores): nada se consulta antes de saberla, y si cambia se vuelve a pedir.
 const compare = createCompareClient({
-  stores: () => storeIds,
-  // Espera a leer los ajustes: un súper apagado no se consulta ni la primera vez.
-  send: async (eans) => {
-    await storesReady;
-    return chrome.runtime.sendMessage({ type: "compare", eans, stores: storeIds });
-  },
+  waitForStores: true,
+  send: (eans, stores) => chrome.runtime.sendMessage({ type: "compare", eans, stores }),
 });
 
 // Información nutricional: si el service worker no responde (extensión recargada), es "error".
