@@ -45,24 +45,32 @@ function percentOf(title, terms) {
   return found.size === 1 ? [...found][0] : null;
 }
 
-// Devuelve { cap, at } (at = dónde empieza el texto del tope, para ubicar el período).
+// "compras mayores o iguales a $X" y variantes
+const MIN_WORDS = /COMPRAS\s+(?:MAYORES|IGUALES|SUPERIORES)\s+O\s+(?:IGUALES|MAYORES|SUPERIORES)\s+A\s+\$\s*([\d.]+)/i;
+
+// Devuelve { cap, capKnown, at } (at = dónde empieza el texto del tope, para ubicar el período).
+// capKnown false = no se encontró ni tope ni "sin tope".
+// Orden: tope del plan -> "sin tope" explícito -> primer tope genérico -> límite de descuento.
 function capOf(terms, percent) {
   if (percent != null) {
     const own = terms.match(new RegExp(String.raw`\b${percent}\s*%\s*DE\s+DESCUENTO\s+CON\s+TOPE\s+DE\s+\$\s*(\d{1,3}(?:\.\d{3})+|\d+)`, "i"));
-    if (own) return { cap: money(own[1]), at: own.index };
+    if (own) return { cap: money(own[1]), capKnown: true, at: own.index };
   }
-  if (/SIN\s+TOPE/i.test(terms)) return { cap: null, at: -1 };
-  const m = terms.match(/TOPE[^$]{0,80}\$\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
-  return m ? { cap: money(m[1]), at: m.index } : { cap: null, at: -1 };
+  if (/SIN\s+(?:TOPE|L[IÍ]MITE)/i.test(terms)) return { cap: null, capKnown: true, at: -1 };
+  const m = terms.match(/TOPE[^$]{0,80}\$\s*(\d{1,3}(?:\.\d{3})+|\d+)/i)
+    || terms.match(/L[IÍ]MITE DE DESCUENTO[^$]{0,60}\$\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
+  return m ? { cap: money(m[1]), capKnown: true, at: m.index } : { cap: null, capKnown: false, at: -1 };
 }
 
+// El período más cercano al tope: el de menor índice dentro de 120 caracteres.
 function capPeriodOf(terms, at) {
   if (at < 0) return null;
   const w = terms.slice(at, at + 120);
-  if (/SEMANA/i.test(w)) return "week";
-  if (/\bMES\b|MENSUAL/i.test(w)) return "month";
-  if (/TRANSACCI/i.test(w)) return "tx";
-  return null;
+  const found = [["week", /SEMANA/i], ["month", /\bMES\b|MENSUAL/i], ["tx", /TRANSACCI/i]]
+    .map(([p, re]) => [p, w.search(re)])
+    .filter(([, i]) => i >= 0)
+    .sort((x, y) => x[1] - y[1]);
+  return found.length ? found[0][0] : null;
 }
 
 export function parseDia(html) {
@@ -72,8 +80,8 @@ export function parseDia(html) {
     const title = String(c.__editorItemTitle || "").trim();
     const terms = String(c.terms || "");
     const percent = percentOf(title, terms);
-    const { cap, at } = capOf(terms, percent);
-    const min = terms.match(/M[IÍ]NIM[OA] DE COMPRA[^$]{0,30}\$\s*([\d.]+)/i) || terms.match(/PAGO M[IÍ]NIMO DE \$\s*([\d.]+)/i);
+    const { cap, capKnown, at } = capOf(terms, percent);
+    const min = terms.match(/M[IÍ]NIM[OA] DE COMPRA[^$]{0,30}\$\s*([\d.]+)/i) || terms.match(/PAGO M[IÍ]NIMO DE \$\s*([\d.]+)/i) || terms.match(MIN_WORDS);
     const days = c.daysToShow || {};
     const bank = (c.associatedBanks || [])[0];
     out.push({
@@ -83,6 +91,7 @@ export function parseDia(html) {
       title,
       percent,
       cap,
+      capKnown,
       capPeriod: cap == null ? null : capPeriodOf(terms, at),
       minPurchase: min ? money(min[1]) : null,
       days: DAYS.flatMap((d, i) => (days[d] ? [i] : [])),

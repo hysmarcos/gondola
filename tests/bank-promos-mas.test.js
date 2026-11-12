@@ -34,6 +34,17 @@ describe("parseMas", () => {
     expect(parseMas(null)).toEqual([]);
   });
 
+  it("capKnown: tope leído, sin tope explícito y tope no encontrado", () => {
+    expect(parseMas({ banks, promos: [row({ sub_title: "Tope: $9.500 semanal." })] })[0]).toMatchObject({ cap: 9500, capKnown: true });
+    expect(parseMas({ banks, promos: [row({ sub_title: "SIN TOPE" })] })[0]).toMatchObject({ cap: null, capKnown: true });
+    expect(parseMas({ banks, promos: [row({ sub_title: "Abona con tu tarjeta" })] })[0]).toMatchObject({ cap: null, capKnown: false });
+  });
+
+  it("mínimo de compra con 'compras iguales o superiores a' (sub_title o legal)", () => {
+    expect(parseMas({ banks, promos: [row({ sub_title: "Tope: $5.000. Para compras iguales o superiores a $75.000." })] })[0].minPurchase).toBe(75000);
+    expect(parseMas({ banks, promos: [row({ legal: "PARA COMPRAS MAYORES O IGUALES A $35.000." })] })[0].minPurchase).toBe(35000);
+  });
+
   it("humo con el fixture real", () => {
     const fx = JSON.parse(readFileSync(new URL("./fixtures/bank-mas.json", import.meta.url), "utf8"));
     const out = parseMas(fx);

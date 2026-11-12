@@ -46,6 +46,25 @@ describe("parseDia", () => {
     const p = parseDia(html([card({ __editorItemTitle: "Promo Z", associatedBanks: [], availableOn: { online: false } })]))[0];
     expect(p).toMatchObject({ bankLabel: "Promo Z", online: false });
   });
+  it("mínimo de compra con 'compras mayores o iguales a'", () => {
+    const modo = "TOPE DE REINTEGRO $20.000 POR BANCO, POR MES PARA COMPRAS MAYORES O IGUALES A $35.000";
+    expect(parseDia(html([card({ terms: modo })]))[0].minPurchase).toBe(35000);
+    expect(parseDia(html([card({ terms: "PARA COMPRAS IGUALES O SUPERIORES A $75.000" })]))[0].minPurchase).toBe(75000);
+  });
+  it("capKnown: tope leído, sin tope explícito y tope no encontrado", () => {
+    expect(parseDia(html([card({ terms: "TOPE DE $10.000 POR TRANSACCION" })]))[0]).toMatchObject({ cap: 10000, capKnown: true });
+    expect(parseDia(html([card({ terms: "SIN TOPE DE REINTEGRO" })]))[0]).toMatchObject({ cap: null, capKnown: true, capPeriod: null });
+    expect(parseDia(html([card({ terms: "20% DE REINTEGRO EN COMPRAS" })]))[0]).toMatchObject({ cap: null, capKnown: false, capPeriod: null });
+  });
+  it("lee 'límite de descuento' como tope", () => {
+    expect(parseDia(html([card({ __editorItemTitle: "Mercado Pago 10%", terms: "LÍMITE DE DESCUENTO POR CUENTA: $1.999.999" })]))[0]).toMatchObject({ cap: 1999999, capKnown: true });
+  });
+  it("SIN TOPE no pisa el tope del plan del título", () => {
+    expect(parseDia(html([card({ __editorItemTitle: "Naranja 25%", terms: NX + " PLAN BASE SIN TOPE." })]))[0]).toMatchObject({ cap: 9500, capKnown: true });
+  });
+  it("el período es el más cercano al tope", () => {
+    expect(parseDia(html([card({ terms: "TOPE DE REINTEGRO $10.000 POR TRANSACCION. HASTA 3 VECES POR MES" })]))[0].capPeriod).toBe("tx");
+  });
   it("descarta inactivas y HTML vacío", () => {
     expect(parseDia(html([card({ active: false })]))).toEqual([]);
     expect(parseDia("<html></html>")).toEqual([]);

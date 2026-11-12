@@ -4,12 +4,16 @@ const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", 
 // "9.500" -> 9500
 const money = (s) => Number(String(s).replace(/\./g, ""));
 
+// "compras mayores o iguales a $X" y variantes
+const MIN_WORDS = /compras\s+(?:mayores|iguales|superiores)\s+o\s+(?:iguales|mayores|superiores)\s+a\s+\$\s*([\d.]+)/i;
+
+// capKnown false = no se encontró ni tope ni "sin tope".
 function capOf(row) {
   const title = row.title || "";
   const sub = row.sub_title || "";
-  if (/sin tope/i.test(title) || /sin tope/i.test(sub)) return null;
+  if (/sin (?:tope|l[ií]mite)/i.test(title) || /sin (?:tope|l[ií]mite)/i.test(sub)) return { cap: null, capKnown: true };
   const m = sub.match(/tope[^$\d]{0,40}\$?\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
-  return m ? money(m[1]) : null;
+  return m ? { cap: money(m[1]), capKnown: true } : { cap: null, capKnown: false };
 }
 
 function capPeriodOf(sub) {
@@ -26,8 +30,8 @@ export function parseMas(data) {
   for (const row of data.promos) {
     if (!row || !row.active) continue;
     const sub = row.sub_title || "";
-    const min = sub.match(/m[ií]nimo de compra:?\s*\$\s*([\d.]+)/i);
-    const cap = capOf(row);
+    const min = sub.match(/m[ií]nimo de compra:?\s*\$\s*([\d.]+)/i) || sub.match(MIN_WORDS) || (row.legal || "").match(MIN_WORDS);
+    const { cap, capKnown } = capOf(row);
     out.push({
       id: String(row.id),
       store: "mas",
@@ -35,6 +39,7 @@ export function parseMas(data) {
       title: row.title || "",
       percent: typeof row.discount_percentage === "number" ? row.discount_percentage : null,
       cap,
+      capKnown,
       capPeriod: cap == null ? null : capPeriodOf(sub),
       minPurchase: min ? money(min[1]) : null,
       days: DAYS.flatMap((d, i) => (row[d] ? [i] : [])),
