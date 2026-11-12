@@ -221,6 +221,17 @@
   fill: var(--g-ink) !important;
 }
 
+/* sin captura: con sesión. En la computadora la persona es una imagen gris oscura de un solo
+   color: pasa a casi blanco. */
+[data-gondola-theme="dark"][data-gondola-theme] .btn-profile img {
+  filter: brightness(0) invert(0.92);
+}
+
+/* sin captura: con sesión. El camión de "Envío a" toma el color del texto: texto claro. */
+[data-gondola-theme="dark"][data-gondola-theme] .dropdown-addresses svg {
+  color: var(--g-ink) !important;
+}
+
 /* sin captura: con sesión. Al pasar el mouse o con el foco, el borde del botón se aclara. */
 [data-gondola-theme="dark"][data-gondola-theme] .btn-profile:hover,
 [data-gondola-theme="dark"][data-gondola-theme] .btn-profile:focus-visible {
@@ -787,6 +798,12 @@
 [data-gondola-theme="dark"] .dropdown-carrito .imagen-producto {
   border-radius: 8px;
   background-color: var(--g-plate) !important;
+}
+
+/* sin captura: carrito, requiere sesión. La papelera ("Vaciar Carro" y la de cada producto) y
+   el carrito de "Guardar Carro" son imágenes gris oscuro de un solo color: pasan a gris claro. */
+[data-gondola-theme="dark"] shopping-cart-main img:is([src*="icono-papelera"], [src*="icono-carrito"], [alt="Icono papelera"]) {
+  filter: brightness(0) invert(0.75);
 }
 
 /* sin captura: el mini carrito se abre con sesión y productos. Es un menú: más claro que la

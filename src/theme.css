@@ -97,6 +97,55 @@ html.gondola-theme-wave::view-transition-new(root) {
   to { clip-path: circle(150% at 100% 0%); }
 }
 
+/* ---------- Movimiento (en claro y en oscuro) ----------
+   Dos cosas chicas, para que el sitio responda mejor. Solo color y opacidad (más un leve cambio
+   de tamaño al abrir un menú): nada cambia de lugar. */
+
+/* Botones: el cambio de color al pasar el mouse es gradual. Va con fuerza cero (:where): donde
+   Coto ya define su propia transición, la suya queda. */
+:where(.btn, .button_primary_red, .button_primary_outline, .button_call, .btn-profile, .page-link,
+  .dropdown-item, .dropdown-profile-item, .day-tab-button, .coto-tm-link, .suscription-button,
+  .cio-submit-btn, .categorias-generales, .chip) {
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease,
+    box-shadow 150ms ease, fill 150ms ease;
+}
+
+/* Durante la onda del tema no hay transiciones: el tema nuevo ya llega con sus colores finales. */
+html.gondola-theme-wave * {
+  transition: none !important;
+}
+
+/* Menús del encabezado (mini carrito, avisos, "Envío a" y perfil): al abrirse aparecen con un
+   fundido corto y crecen apenas desde el botón que los abre. Solo al abrir: cerrar es inmediato.
+   Se usan scale y translate (no transform), porque Coto ubica el menú con transform. */
+:is(cart-float, header-notifications, header-user, header-address) .dropdown-menu.show {
+  transform-origin: top right;
+  transition: opacity 180ms cubic-bezier(0.23, 1, 0.32, 1), scale 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    translate 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+header-address .dropdown-menu.show {
+  transform-origin: top left;
+}
+
+@starting-style {
+  :is(cart-float, header-notifications, header-user, header-address) .dropdown-menu.show {
+    opacity: 0;
+    scale: 0.97;
+    translate: 0 -4px;
+  }
+}
+
+/* Con movimiento reducido queda solo el fundido. */
+@media (prefers-reduced-motion: reduce) {
+  @starting-style {
+    :is(cart-float, header-notifications, header-user, header-address) .dropdown-menu.show {
+      scale: 1;
+      translate: none;
+    }
+  }
+}
+
 /* Al imprimir, la página sale clara aunque el tema sea oscuro. */
 @media print {
   [data-gondola-theme="dark"] {
