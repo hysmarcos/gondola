@@ -93,3 +93,58 @@ describe("paintCompare: ícono con detalle al pasar el mouse", () => {
     expect(box.querySelector(".coto-unit-cmp-btn")).toBe(before);
   });
 });
+
+describe("paintCompare: el logo del súper reemplaza al nombre", () => {
+  const logo = (id) => (id === "mas" ? null : `chrome-extension://x/assets/stores/${id}.png`);
+  const results = { carrefour: offer(1840, { url: "https://www.carrefour.com.ar/leche/p" }), dia: offer(2100), mas: "missing" };
+  function paint(variant, opts, res = results) {
+    document.body.innerHTML = `<div id="box"></div>`;
+    const box = document.getElementById("box");
+    paintCompare(box, compareRows(cmp, res), variant, opts);
+    return box;
+  }
+  const names = (box) => [...box.querySelectorAll(".coto-unit-cmp-name")];
+
+  it("detalle de la pastilla: logo + nombre; sin logo, solo el nombre", () => {
+    const list = names(paint("icon", { logo }));
+    expect(list.map((n) => n.textContent)).toEqual(["Coto", "Carrefour", "Día", "Más"]);
+    expect(list.map((n) => n.querySelector("img.coto-unit-cmp-logo")?.getAttribute("src") ?? null)).toEqual([
+      "chrome-extension://x/assets/stores/coto.png",
+      "chrome-extension://x/assets/stores/carrefour.png",
+      "chrome-extension://x/assets/stores/dia.png",
+      null,
+    ]);
+    // El nombre está escrito al lado: el logo es decorativo. El link sigue abriendo el súper.
+    expect(list[1].querySelector("img").getAttribute("alt")).toBe("");
+    expect(list[1].querySelector(".coto-unit-cmp-label").textContent).toBe("Carrefour");
+    expect(list[1].tagName).toBe("A");
+    expect(list[1].getAttribute("href")).toBe("https://www.carrefour.com.ar/leche/p");
+    expect(list[3].classList.contains("coto-unit-cmp-name--logo")).toBe(false);
+  });
+
+  it("filas (página de producto): logo + nombre", () => {
+    const list = names(paint("", { logo }));
+    expect(list.map((n) => n.textContent)).toEqual(["Carrefour", "Día", "Más"]);
+    expect(list.map((n) => !!n.querySelector("img.coto-unit-cmp-logo"))).toEqual([true, true, false]);
+    expect(list[0].tagName).toBe("A");
+  });
+
+  it("línea corta (carruseles y carrito): logo + precio; la etiqueta para lectores sigue con el nombre", () => {
+    const best = paint("mini", { logo }).querySelector(".coto-unit-cmp-best");
+    expect(best.querySelector("img.coto-unit-cmp-logo").getAttribute("alt")).toBe("Carrefour");
+    expect(best.textContent).toBe("$1.840 ▼");
+    expect(best.getAttribute("aria-label")).toMatch(/^Carrefour: /);
+  });
+
+  it("línea corta cuando Coto gana: logo de Coto + \"el más barato\"", () => {
+    const best = paint("mini", { logo }, { carrefour: offer(2200), dia: "missing", mas: "missing" }).querySelector(".coto-unit-cmp-best");
+    expect(best.querySelector("img").getAttribute("alt")).toBe("Coto");
+    expect(best.textContent).toBe("el más barato");
+    expect(best.getAttribute("aria-label")).toBe("Coto el más barato");
+  });
+
+  it("sin logos, todo queda con el nombre escrito", () => {
+    expect(paint("icon").querySelector("img")).toBe(null);
+    expect(paint("mini").querySelector(".coto-unit-cmp-best").textContent).toBe("Carrefour $1.840 ▼");
+  });
+});

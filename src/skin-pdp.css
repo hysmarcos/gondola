@@ -31,8 +31,8 @@
 [data-gondola-skin="pdp"] app-product-detail aside.row > div {
   padding: 20px !important;
   border-radius: 16px;
-  background-color: #fff;
-  box-shadow: 0 0 0 1px var(--g-line), 0 8px 24px -12px rgba(20, 40, 75, 0.18);
+  background-color: var(--g-surface);
+  box-shadow: 0 0 0 1px var(--g-line), 0 8px 24px -12px rgba(20, 40, 75, 0.18); /* fijo: sombra teñida con el azul de la marca */
   color: var(--g-ink);
   font-family: Poppins, system-ui, sans-serif;
   font-size: 13px;
@@ -260,14 +260,14 @@
 [data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 .etiqueta-corta * {
   margin: 0 !important;
   padding: 0 !important;
-  color: #fff !important;
+  color: #fff !important; /* fijo: texto blanco sobre el relleno rojo */
   font: 600 11px/14px Poppins, system-ui, sans-serif !important;
   letter-spacing: 0;
 }
 
-/* "Llevando 2 25%Dto": la oferta de Coto, en rojo. */
+/* "Llevando 2 25%Dto": la oferta de Coto, en el rojo de texto (en oscuro, --g-red es un relleno). */
 [data-gondola-skin="pdp"] app-product-detail aside.row .mt-4 > div:has(.price) .text-success {
-  color: var(--g-red) !important;
+  color: var(--g-red-text) !important;
   font: 600 13px/18px Poppins, system-ui, sans-serif !important;
 }
 
@@ -410,6 +410,10 @@
   gap: 12px;
   padding: 3px 0;
   color: var(--g-ink);
+}
+
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-row:has(> .coto-unit-cmp-name--logo) {
+  align-items: center;
 }
 
 [data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-price {
@@ -632,6 +636,12 @@
   border-bottom: 3px solid var(--g-ink);
 }
 
+/* En oscuro --g-ink es casi blanco: las barras gruesas serían lo que más brilla en la página. */
+[data-gondola-skin="pdp"][data-gondola-theme="dark"] app-product-detail .pdp-characteristics > div:has(> .characteristics-columns):has(td, li) {
+  border-top-color: var(--g-ink2);
+  border-bottom-color: var(--g-ink2);
+}
+
 [data-gondola-skin="pdp"] app-product-detail .pdp-characteristics .characteristics-columns {
   display: block;
   margin: 0 !important;
@@ -737,7 +747,7 @@
   padding-left: 14px;
   border-right: 2px solid var(--g-ink);
   border-left: 2px solid var(--g-ink);
-  background-color: #fff;
+  background-color: var(--g-surface);
 }
 
 [data-gondola-skin="pdp"] .coto-unit-nutri-section[data-basis] > .coto-unit-nutri-title {
@@ -804,8 +814,8 @@
 }
 
 [data-gondola-skin="pdp"] .coto-unit-nutri-section[data-basis] .coto-unit-nutri-seg button[aria-pressed="true"] {
-  background-color: #fff;
-  box-shadow: 0 1px 2px rgba(20, 24, 29, 0.14);
+  background-color: var(--g-surface);
+  box-shadow: 0 1px 2px rgba(20, 24, 29, 0.14); /* fijo: sombra corta con la tinta, casi negra */
   color: var(--g-ink);
   font-weight: 600;
 }
@@ -993,7 +1003,7 @@
   padding: 2px 8px 2px 2px;
   border: 0;
   border-radius: 6px;
-  background-color: #fff;
+  background-color: var(--g-surface);
   box-shadow: 0 0 0 1px var(--g-line);
   font-weight: 500;
 }
@@ -1030,7 +1040,7 @@
   box-sizing: border-box;
   max-width: 480px;
   margin: 0;
-  border: 2px dashed #c3c8d2;
+  border: 2px dashed var(--g-line-2);
 }
 
 [data-gondola-skin="pdp"] .coto-unit-nutri-section[data-skin]:not([data-basis]) > .coto-unit-nutri-missing {

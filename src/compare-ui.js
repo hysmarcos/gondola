@@ -95,7 +95,7 @@ function deltaText(r) {
   return `${r.delta < 0 ? "−" : "+"}${Math.abs(r.delta)}%`;
 }
 
-function iconPlan(rows) {
+function iconPlan(rows, withLogo) {
   const state = compareStatus(rows);
   const first = rows[0];
   const text = pillText(state, rows);
@@ -105,8 +105,8 @@ function iconPlan(rows) {
     text,
     label: `${state === "worse" ? text : STATUS_TEXT[state]}. Ver comparación`,
     rows: [
-      { name: "Coto", url: null, state: "coto", price: formatMoney(first.cotoUnit), qty: first.cotoQty > 1 ? `x${first.cotoQty}` : null, delta: null },
-      ...rows.map((r) => ({ name: r.name, url: r.url, state: r.state, price: priceText(r), qty: r.qty > 1 ? `x${r.qty}` : null, delta: deltaText(r) })),
+      { name: "Coto", ...withLogo("coto"), url: null, state: "coto", price: formatMoney(first.cotoUnit), qty: first.cotoQty > 1 ? `x${first.cotoQty}` : null, delta: null },
+      ...rows.map((r) => ({ name: r.name, ...withLogo(r.id), url: r.url, state: r.state, price: priceText(r), qty: r.qty > 1 ? `x${r.qty}` : null, delta: deltaText(r) })),
     ],
   };
 }
@@ -122,6 +122,35 @@ function svgIcon(doc, paths) {
     svg.append(p);
   }
   return svg;
+}
+
+// El logo del súper. Solo (name): reemplaza al nombre en la línea corta de los carruseles y
+// del carrito; el nombre queda como texto alternativo y como globo al pasar el mouse. Junto
+// al nombre escrito (sin name): es decorativo.
+function logoImg(doc, url, name = "") {
+  const img = doc.createElement("img");
+  img.className = `${CMP}-logo`;
+  img.src = url;
+  img.alt = name;
+  if (name) img.title = name;
+  img.width = 18;
+  img.height = 18;
+  return img;
+}
+
+// El súper de una fila: su logo y su nombre (solo el nombre, si no hay logo). Con link (solo
+// https al mismo súper, ver safeUrl), abre su página.
+function nameNode(doc, { name, logo, url }) {
+  const node = doc.createElement(url ? "a" : "span");
+  node.className = logo ? `${CMP}-name ${CMP}-name--logo` : `${CMP}-name`;
+  if (logo) node.append(logoImg(doc, logo), el(doc, "span", `${CMP}-label`, name));
+  else node.textContent = name;
+  if (url) {
+    node.setAttribute("href", url);
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer");
+  }
+  return node;
 }
 
 function el(doc, tag, cls, text) {
@@ -144,16 +173,7 @@ function buildIcon(doc, block, it) {
   pop.append(el(doc, "div", `${CMP}-head`, "Mismo producto en otros súper"));
   for (const r of it.rows) {
     const row = el(doc, "div", `${CMP}-row ${CMP}-row--${r.state}`);
-    let name;
-    if (r.url) {
-      name = el(doc, "a", `${CMP}-name`, r.name);
-      name.setAttribute("href", r.url);
-      name.setAttribute("target", "_blank");
-      name.setAttribute("rel", "noopener noreferrer");
-    } else {
-      name = el(doc, "span", `${CMP}-name`, r.name);
-    }
-    row.append(name, el(doc, "span", `${CMP}-price`, r.price));
+    row.append(nameNode(doc, r), el(doc, "span", `${CMP}-price`, r.price));
     if (r.qty) row.append(el(doc, "span", `${CMP}-qty`, r.qty));
     if (r.delta) row.append(el(doc, "span", `${CMP}-delta`, r.delta));
     pop.append(row);
@@ -180,8 +200,10 @@ function wireToggle(block) {
 
 // Lo que se va a dibujar, como datos simples: sirve de firma para no tocar el DOM
 // si nada cambió (la página repinta en cada mutación).
-function plan(rows, variant) {
-  if (variant === "icon") return [iconPlan(rows)];
+function plan(rows, variant, logo) {
+  // Sin logo no se agrega la clave: el plan (y su firma) queda igual que antes de los logos.
+  const withLogo = (id) => (logo(id) ? { logo: logo(id) } : {});
+  if (variant === "icon") return [iconPlan(rows, withLogo)];
   if (variant !== "mini") {
     // La más barata de las que le ganan a Coto lleva --best (la PDP con la piel la resalta).
     const lower = rows.filter((r) => r.state === "lower");
@@ -189,6 +211,7 @@ function plan(rows, variant) {
     return rows.map((r) => ({
       cls: `${CMP}-row ${CMP}-row--${r.state}${r === cheapest ? ` ${CMP}-row--best` : ""}`,
       name: r.name,
+      ...withLogo(r.id),
       price: r.unit === null ? ICON[r.state] : `${ICON[r.state]} ${formatMoney(r.unit)}`,
       label: r.unit === null ? `${r.name}: ${r.title ?? "consultando"}` : `${r.name}: ${formatMoney(r.unit)}, ${SAYS[r.state]}`,
       title: r.title,
@@ -202,15 +225,25 @@ function plan(rows, variant) {
     const money = formatMoney(best.unit);
     // Si ese precio es llevando varios, se dice: sin eso el número engaña.
     const take = best.qty > 1 ? { text: ` (x${best.qty})`, label: `, llevando ${best.qty}` } : { text: "", label: "" };
+    // Con logo, el logo reemplaza al nombre al principio de la línea.
+    const mark = withLogo(best.id);
     return [
       {
         cls: `${CMP}-best ${CMP}-best--lower`,
-        text: `${best.name} ${money} ▼${take.text}`,
+        ...(mark.logo ? { logo: mark.logo, logoName: best.name, text: `${money} ▼${take.text}` } : { text: `${best.name} ${money} ▼${take.text}` }),
         label: `${best.name}: ${money}, más barato${take.label}`,
       },
     ];
   }
-  if (rows.some((r) => r.unit !== null)) return [{ cls: `${CMP}-best ${CMP}-best--higher`, text: "Coto el más barato" }];
+  if (rows.some((r) => r.unit !== null)) {
+    const mark = withLogo("coto");
+    return [
+      {
+        cls: `${CMP}-best ${CMP}-best--higher`,
+        ...(mark.logo ? { logo: mark.logo, logoName: "Coto", text: "el más barato", label: "Coto el más barato" } : { text: "Coto el más barato" }),
+      },
+    ];
+  }
   if (rows.some((r) => r.state === "pending")) return [{ cls: `${CMP}-best ${CMP}-best--pending`, text: "…" }];
   return null;
 }
@@ -224,21 +257,13 @@ function build(doc, items, block) {
     if (it.label) el.setAttribute("aria-label", it.label);
     if (it.title) el.setAttribute("title", it.title);
     if ("text" in it) {
-      el.textContent = it.text;
+      if (it.logo) el.append(logoImg(doc, it.logo, it.logoName), it.text);
+      else el.textContent = it.text;
     } else {
-      // Con link (solo https al mismo súper, ver safeUrl), el nombre abre su página.
-      const name = doc.createElement(it.url ? "a" : "span");
-      name.className = `${CMP}-name`;
-      name.textContent = it.name;
-      if (it.url) {
-        name.setAttribute("href", it.url);
-        name.setAttribute("target", "_blank");
-        name.setAttribute("rel", "noopener noreferrer");
-      }
       const price = doc.createElement("span");
       price.className = `${CMP}-price`;
       price.textContent = it.price;
-      el.append(name, price);
+      el.append(nameNode(doc, it), price);
     }
     nodes.push(el);
     if (it.qty) {
@@ -252,9 +277,11 @@ function build(doc, items, block) {
 }
 
 // Crea o actualiza el bloque como último hijo de box. Sin filas, lo borra.
-export function paintCompare(box, rows, variant = "") {
+// opts.logo(id) → URL del logo del súper ("coto", "carrefour"…) o null: sin logo, va solo el nombre.
+export function paintCompare(box, rows, variant = "", opts = {}) {
+  const logo = (id) => opts.logo?.(id) ?? null;
   let block = box.querySelector(`:scope > .${CMP}`);
-  const items = rows?.length ? plan(rows, variant) : null;
+  const items = rows?.length ? plan(rows, variant, logo) : null;
   if (!items) return block?.remove();
   const sig = JSON.stringify(items);
   if (!block) {

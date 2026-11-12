@@ -1,0 +1,193 @@
+/* Tema de Góndola: paleta clara y oscura en tokens --g-*, regla base, onda e impresión.
+   Los tokens viven en :root; [data-gondola-theme="dark"] (src/theme.js lo pone en <html>) los
+   redefine. En claro el atributo no existe y todo queda como siempre.
+   El orden importa: el bloque de tokens oscuro va antes que la regla base, y el de impresión
+   al final para ganar con igual especificidad (tests/theme-contrast.test.js los lee así). */
+
+:root {
+  --g-bg: #ffffff;
+  --g-surface: #ffffff;
+  --g-surface-2: #ffffff;
+  --g-soft: #f5f6f8;
+  --g-line: #e6e8ec;
+  --g-ink: #16181d;
+  --g-ink-soft: #444444;
+  --g-ink2: #5b616e;
+  --g-red: #e20025;
+  --g-red-d: #c4001f;
+  --g-red-text: #e20025;
+  --g-navy: #14284b;
+  --g-navy-fill: #14284b;
+  --g-navy-soft: #eef2f9;
+  --g-amber: #ffc233;
+  --g-amber-soft: #fff4d1;
+  --g-amber-ink: #6b4a00;
+  --g-green: #0a7a3d;
+  --g-green-soft: #e6f4ec;
+  --g-green-ink: #27500a;
+  --g-ink3: #8a9096;
+  --g-line-2: #c3c8d2;
+  --g-blue: #0c447c;
+  --g-blue-soft: #eef4fb;
+  --g-blue-line: #d6e4f2;
+  --g-danger: #a32d2d;
+  --g-danger-soft: #fff4f4;
+  --g-danger-fill: #b01f17;
+  --g-green-fill: #1d7a35;
+  --g-on-amber: #212529;
+  --g-orange: #b25e00;
+  --g-rust: #a5512d;
+  --g-navy-hover: #e1e8f4;
+  --g-plate: transparent;
+  --g-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+[data-gondola-theme="dark"] {
+  --g-bg: #0f1217;
+  --g-surface: #171b22;
+  --g-surface-2: #1f242d;
+  --g-soft: #1f242d;
+  --g-line: #2b313c;
+  --g-ink: #e6e9ee;
+  --g-ink-soft: #e6e9ee;
+  --g-ink2: #a3aab8;
+  --g-red: #d81e3a;
+  --g-red-d: #b8162f;
+  --g-red-text: #ff7084;
+  --g-navy: #8fb0f0;
+  --g-navy-fill: #2a4a86;
+  --g-navy-soft: #1a2540;
+  --g-amber: #ffc233;
+  --g-amber-soft: #3a2e0a;
+  --g-amber-ink: #ffd873;
+  --g-green: #4cc38a;
+  --g-green-soft: #12301f;
+  --g-green-ink: #4cc38a;
+  --g-ink3: #8a93a3;
+  --g-line-2: #3a4250;
+  --g-blue: #8fb0f0;
+  --g-blue-soft: #1a2540;
+  --g-blue-line: #2c3e5e;
+  --g-danger: #ff8a80;
+  --g-danger-soft: #3a1519;
+  --g-danger-fill: #b01f17;
+  --g-green-fill: #1d7a35;
+  --g-on-amber: #212529;
+  --g-orange: #ffbc70;
+  --g-rust: #e4b19b;
+  --g-navy-hover: #22305a;
+  --g-plate: #e9ebef;
+  color-scheme: dark;
+}
+
+/* Regla base: si una parte de Coto no está pintada, la página igual queda oscura. */
+html[data-gondola-theme="dark"],
+html[data-gondola-theme="dark"] body {
+  background-color: var(--g-bg) !important;
+  color: var(--g-ink);
+}
+
+/* Onda: el tema nuevo se abre en círculo desde la esquina superior derecha (View Transitions). */
+html.gondola-theme-wave::view-transition-old(root) { animation: none; }
+html.gondola-theme-wave::view-transition-new(root) {
+  animation: gondola-theme-wave 650ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes gondola-theme-wave {
+  from { clip-path: circle(0% at 100% 0%); }
+  to { clip-path: circle(150% at 100% 0%); }
+}
+
+/* ---------- Movimiento (en claro y en oscuro) ----------
+   Dos cosas chicas, para que el sitio responda mejor. Solo color y opacidad (más un leve cambio
+   de tamaño al abrir un menú): nada cambia de lugar. */
+
+/* Botones: el cambio de color al pasar el mouse es gradual. Va con fuerza cero (:where): donde
+   Coto ya define su propia transición, la suya queda. */
+:where(.btn, .button_primary_red, .button_primary_outline, .button_call, .btn-profile, .page-link,
+  .dropdown-item, .dropdown-profile-item, .day-tab-button, .coto-tm-link, .suscription-button,
+  .cio-submit-btn, .categorias-generales, .chip) {
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease,
+    box-shadow 150ms ease, fill 150ms ease;
+}
+
+/* Durante la onda del tema no hay transiciones: el tema nuevo ya llega con sus colores finales. */
+html.gondola-theme-wave * {
+  transition: none !important;
+}
+
+/* Menús del encabezado (mini carrito, avisos, "Envío a" y perfil): al abrirse aparecen con un
+   fundido corto y crecen apenas desde el botón que los abre. Solo al abrir: cerrar es inmediato.
+   Se usan scale y translate (no transform), porque Coto ubica el menú con transform. */
+:is(cart-float, header-notifications, header-user, header-address) .dropdown-menu.show {
+  transform-origin: top right;
+  transition: opacity 180ms cubic-bezier(0.23, 1, 0.32, 1), scale 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    translate 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+header-address .dropdown-menu.show {
+  transform-origin: top left;
+}
+
+@starting-style {
+  :is(cart-float, header-notifications, header-user, header-address) .dropdown-menu.show {
+    opacity: 0;
+    scale: 0.97;
+    translate: 0 -4px;
+  }
+}
+
+/* Con movimiento reducido queda solo el fundido. */
+@media (prefers-reduced-motion: reduce) {
+  @starting-style {
+    :is(cart-float, header-notifications, header-user, header-address) .dropdown-menu.show {
+      scale: 1;
+      translate: none;
+    }
+  }
+}
+
+/* Al imprimir, la página sale clara aunque el tema sea oscuro. */
+@media print {
+  [data-gondola-theme="dark"] {
+    --g-bg: #ffffff;
+    --g-surface: #ffffff;
+    --g-surface-2: #ffffff;
+    --g-soft: #f5f6f8;
+    --g-line: #e6e8ec;
+    --g-ink: #16181d;
+    --g-ink-soft: #444444;
+    --g-ink2: #5b616e;
+    --g-red: #e20025;
+    --g-red-d: #c4001f;
+    --g-red-text: #e20025;
+    --g-navy: #14284b;
+    --g-navy-fill: #14284b;
+    --g-navy-soft: #eef2f9;
+    --g-amber: #ffc233;
+    --g-amber-soft: #fff4d1;
+    --g-amber-ink: #6b4a00;
+    --g-green: #0a7a3d;
+    --g-green-soft: #e6f4ec;
+    --g-green-ink: #27500a;
+    --g-ink3: #8a9096;
+    --g-line-2: #c3c8d2;
+    --g-blue: #0c447c;
+    --g-blue-soft: #eef4fb;
+    --g-blue-line: #d6e4f2;
+    --g-danger: #a32d2d;
+    --g-danger-soft: #fff4f4;
+    --g-danger-fill: #b01f17;
+    --g-green-fill: #1d7a35;
+    --g-on-amber: #212529;
+    --g-orange: #b25e00;
+    --g-rust: #a5512d;
+    --g-navy-hover: #e1e8f4;
+    --g-plate: transparent;
+    color-scheme: light;
+  }
+  html[data-gondola-theme="dark"],
+  html[data-gondola-theme="dark"] body {
+    background-color: #ffffff !important;
+    color: var(--g-ink);
+  }
+}

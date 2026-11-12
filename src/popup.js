@@ -5,6 +5,7 @@ import { feedbackLinks, REPO } from "./feedback.js";
 import { STORES } from "./stores.js";
 import { el, icon, plural, switchInput } from "./popup-dom.js";
 import { cardsView } from "./popup-cards.js";
+import { normalizeTheme } from "./theme.js";
 
 const TABS = [
   { id: "tarjetas", label: "Tarjetas", icon: ["M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z", "M3 10h18", "M7 15h4"] },
@@ -33,6 +34,7 @@ const SETTINGS = [
 ];
 
 const HELP = [
+  ["Modo oscuro", "En Ajustes, sección Apariencia, elegí Claro, Oscuro o Automático. Cambia todo el sitio de Coto. La ventana de Góndola sigue clara."],
   ["Precio real para comparar", "El precio por kg, litro, unidad o 10 m de papel, ya con la oferta de Coto."],
   ["Hoy con tu banco", "El mismo precio con la promo de tu tarjeta, si Coto la aplica a ese producto."],
   ["Banco no aplica", "El producto ya está en oferta o Coto lo excluye de las promos bancarias."],
@@ -86,6 +88,26 @@ function storeRows(doc, s, storage) {
   });
 }
 
+// Tema del sitio: tres opciones excluyentes. Lo inválido vale "light".
+const THEMES = [["light", "Claro"], ["dark", "Oscuro"], ["auto", "Automático"]];
+
+function themeRow(doc, value, storage) {
+  const current = normalizeTheme(value);
+  const options = THEMES.map(([id, label]) => {
+    const radio = el(doc, "input", { type: "radio", name: "theme", value: id, checked: id === current });
+    radio.addEventListener("change", () => {
+      if (radio.checked) storage.set({ theme: id });
+    });
+    return el(doc, "label", {}, [radio, el(doc, "span", { textContent: label })]);
+  });
+  // El lector de pantalla lee la descripción al entrar al grupo.
+  return el(doc, "fieldset", { className: "setting theme", attrs: { "aria-describedby": "theme-desc" } }, [
+    el(doc, "legend", { className: "setting-title", textContent: "Tema" }),
+    el(doc, "span", { id: "theme-desc", className: "setting-desc", textContent: "Modo oscuro para todo el sitio de Coto. Automático sigue el tema de tu sistema." }),
+    el(doc, "div", { className: "segmented" }, options),
+  ]);
+}
+
 // Mi perfil: apagado por defecto. Queda en el navegador.
 function profileView(doc, s, storage, onChange = () => {}) {
   const chosen = new Set(Array.isArray(s.profileAllergens) ? s.profileAllergens : []);
@@ -133,6 +155,7 @@ function settingsView(doc, s, storage, meta = {}) {
     };
     if (sec.id === "perfil") body.append(...profileView(doc, s, storage, update));
     else {
+      if (sec.id === "apariencia") body.append(themeRow(doc, s.theme, storage));
       for (const item of SETTINGS.filter((x) => x.section === sec.id)) {
         const onChange = item.key === "compareStores" ? () => { update(); for (const b of body.querySelectorAll("[data-store] input")) b.disabled = !body.querySelector('input[name="compareStores"]').checked; } : update;
         body.append(settingRow(doc, item, s[item.key] !== false, storage, onChange));
@@ -208,7 +231,7 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 // storage: misma interfaz que en bridge.js.
 // meta: { version, logoUrl, welcomeUrl, tab, section, stores, storePromos }. tab y section abren
 // el popup en ese lugar. stores y storePromos son las promos de los otros súper (ver popup-cards.js).
-const KEYS = ["skin", "promos", "selectedPromoIds", "cards", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"];
+const KEYS = ["skin", "promos", "selectedPromoIds", "cards", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab", "theme"];
 
 // Devuelve { refreshCards() }: vuelve a dibujar solo la pestaña Tarjetas (cuando llegan las
 // promos), sin tocar las otras pestañas y con la búsqueda que estaba escrita.

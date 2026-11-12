@@ -194,10 +194,10 @@ function qrSvg(doc, url) {
   const bg = doc.createElementNS(NS, "rect");
   bg.setAttribute("width", "100%");
   bg.setAttribute("height", "100%");
-  bg.setAttribute("fill", "#fff");
+  bg.setAttribute("class", `${ROOT}-qr-bg`);
   const path = doc.createElementNS(NS, "path");
   path.setAttribute("d", d);
-  path.setAttribute("fill", "#000");
+  path.setAttribute("class", `${ROOT}-qr-dots`);
   svg.append(bg, path);
   return svg;
 }

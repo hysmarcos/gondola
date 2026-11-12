@@ -81,6 +81,8 @@ export function normName(text) {
 export function installCartUi(win, doc, deps = {}) {
   const logoUrl = deps.logoUrl ?? (() => null);
   const compare = deps.compare ?? null;
+  // deps.storeLogo(id) → URL del logo del súper para el comparador (o null).
+  const cmpOpts = { logo: deps.storeLogo ?? (() => null) };
   // Información nutricional de la compra: { request(ean) → Promise<Nutrition | "missing" | "error"> }.
   const nutrition = deps.nutrition ?? null;
   const nutriResults = new Map(); // ean -> resultado
@@ -160,7 +162,7 @@ export function installCartUi(win, doc, deps = {}) {
       target.setAttribute(EAN_ATTR, ean);
     }
     const results = compare.peek(ean);
-    paintCompare(target, compareRows(line.cmp, results, state.stores), "mini");
+    paintCompare(target, compareRows(line.cmp, results, state.stores), "mini", cmpOpts);
     if (!results) ask(ean);
   }
   const onCart = () => String(win.location?.pathname ?? "").startsWith("/carrito");
@@ -324,6 +326,7 @@ export function installCartUi(win, doc, deps = {}) {
       day: state.day,
       today: new Date().getDay(),
       cards: hasCards() && state.cc.promos !== undefined,
+      logo: cmpOpts.logo,
       onRefresh: () => state.analysis && ccWant(ccItems(state.analysis), true),
     });
   }
