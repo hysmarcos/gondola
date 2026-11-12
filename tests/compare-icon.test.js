@@ -105,26 +105,27 @@ describe("paintCompare: el logo del súper reemplaza al nombre", () => {
   }
   const names = (box) => [...box.querySelectorAll(".coto-unit-cmp-name")];
 
-  it("detalle de la pastilla: logo con el nombre como texto alternativo; sin logo, el nombre", () => {
+  it("detalle de la pastilla: logo + nombre; sin logo, solo el nombre", () => {
     const list = names(paint("icon", { logo }));
-    expect(list.map((n) => n.querySelector("img.coto-unit-cmp-logo")?.getAttribute("alt") ?? n.textContent)).toEqual(["Coto", "Carrefour", "Día", "Más"]);
-    expect(list.map((n) => n.querySelector("img")?.getAttribute("src") ?? null)).toEqual([
+    expect(list.map((n) => n.textContent)).toEqual(["Coto", "Carrefour", "Día", "Más"]);
+    expect(list.map((n) => n.querySelector("img.coto-unit-cmp-logo")?.getAttribute("src") ?? null)).toEqual([
       "chrome-extension://x/assets/stores/coto.png",
       "chrome-extension://x/assets/stores/carrefour.png",
       "chrome-extension://x/assets/stores/dia.png",
       null,
     ]);
-    // Con logo no se repite el nombre escrito; el link sigue abriendo el súper.
-    expect(list[1].textContent).toBe("");
+    // El nombre está escrito al lado: el logo es decorativo. El link sigue abriendo el súper.
+    expect(list[1].querySelector("img").getAttribute("alt")).toBe("");
+    expect(list[1].querySelector(".coto-unit-cmp-label").textContent).toBe("Carrefour");
     expect(list[1].tagName).toBe("A");
     expect(list[1].getAttribute("href")).toBe("https://www.carrefour.com.ar/leche/p");
-    expect(list[1].classList.contains("coto-unit-cmp-name--logo")).toBe(true);
     expect(list[3].classList.contains("coto-unit-cmp-name--logo")).toBe(false);
   });
 
-  it("filas (página de producto): logo en lugar del nombre", () => {
+  it("filas (página de producto): logo + nombre", () => {
     const list = names(paint("", { logo }));
-    expect(list.map((n) => n.querySelector("img")?.getAttribute("alt") ?? n.textContent)).toEqual(["Carrefour", "Día", "Más"]);
+    expect(list.map((n) => n.textContent)).toEqual(["Carrefour", "Día", "Más"]);
+    expect(list.map((n) => !!n.querySelector("img.coto-unit-cmp-logo"))).toEqual([true, true, false]);
     expect(list[0].tagName).toBe("A");
   });
 

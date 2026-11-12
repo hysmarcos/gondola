@@ -124,25 +124,26 @@ function svgIcon(doc, paths) {
   return svg;
 }
 
-// El logo del súper va en lugar de su nombre (ocupa menos). El nombre queda como texto
-// alternativo, para quien no ve la imagen, y como globo al pasar el mouse.
-function logoImg(doc, url, name) {
+// El logo del súper. Solo (name): reemplaza al nombre en la línea corta de los carruseles y
+// del carrito; el nombre queda como texto alternativo y como globo al pasar el mouse. Junto
+// al nombre escrito (sin name): es decorativo.
+function logoImg(doc, url, name = "") {
   const img = doc.createElement("img");
   img.className = `${CMP}-logo`;
   img.src = url;
   img.alt = name;
-  img.title = name;
+  if (name) img.title = name;
   img.width = 18;
   img.height = 18;
   return img;
 }
 
-// El súper de una fila: su logo (o su nombre, si no hay logo). Con link (solo https al mismo
-// súper, ver safeUrl), abre su página.
+// El súper de una fila: su logo y su nombre (solo el nombre, si no hay logo). Con link (solo
+// https al mismo súper, ver safeUrl), abre su página.
 function nameNode(doc, { name, logo, url }) {
   const node = doc.createElement(url ? "a" : "span");
   node.className = logo ? `${CMP}-name ${CMP}-name--logo` : `${CMP}-name`;
-  if (logo) node.append(logoImg(doc, logo, name));
+  if (logo) node.append(logoImg(doc, logo), el(doc, "span", `${CMP}-label`, name));
   else node.textContent = name;
   if (url) {
     node.setAttribute("href", url);

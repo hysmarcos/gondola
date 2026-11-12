@@ -483,6 +483,23 @@
   font-size: 12px;
 }
 
+/* Con los logos de los súper, las letras bajan un punto para que el nombre entre entero. */
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop:has(.coto-unit-cmp-logo) {
+  padding: 10px;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop:has(.coto-unit-cmp-logo) .coto-unit-cmp-name {
+  font-size: 11.5px;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop:has(.coto-unit-cmp-logo) .coto-unit-cmp-price {
+  font-size: 12px;
+}
+
+[data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop:has(.coto-unit-cmp-logo) .coto-unit-cmp-delta {
+  font-size: 11px;
+}
+
 [data-gondola-skin="list"] .coto-unit-cmprow .coto-unit-cmp-pop .coto-unit-cmp-qty {
   background-color: var(--g-amber-soft);
   color: var(--g-amber-ink);

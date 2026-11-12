@@ -1139,7 +1139,7 @@ a.coto-unit-cmp-name--logo::after {
   transition: opacity 150ms ease, transform 160ms var(--g-out);
 }
 
-/* ---------- Logo del súper en lugar del nombre ---------- */
+/* ---------- Logo del súper junto al nombre ---------- */
 
 .coto-unit-cmp-logo {
   display: block;
@@ -1150,14 +1150,59 @@ a.coto-unit-cmp-name--logo::after {
   object-fit: contain;
 }
 
-/* El logo y, si hay link, el ícono de abrir el sitio, en una línea. */
+/* El logo, el nombre y, si hay link, el ícono de abrir el sitio, en una línea. Si no entra,
+   se corta el nombre (el logo y el ícono quedan). */
 .coto-unit-cmp-name--logo,
 .coto-unit-cmp-pop .coto-unit-cmp-name--logo {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
   overflow: visible;
-  color: var(--g-blue);
-  text-decoration: none;
+}
+
+.coto-unit-cmp-name--logo > .coto-unit-cmp-logo {
+  margin-right: 6px;
+}
+
+/* Coto pone 15 px a todos los elementos (html, *): el nombre toma el tamaño de su fila. */
+.coto-unit-cmp-label {
+  font: inherit;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* En el detalle de la pastilla el espacio es justo: logo de 16 px y letras más chicas. */
+.coto-unit-cmp-pop .coto-unit-cmp-logo {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+}
+
+.coto-unit-cmp-pop:has(.coto-unit-cmp-logo) {
+  column-gap: 6px;
+  padding: 10px;
+}
+
+.coto-unit-cmp-pop:has(.coto-unit-cmp-logo) .coto-unit-cmp-name {
+  font-size: 11.5px;
+}
+
+.coto-unit-cmp-pop:has(.coto-unit-cmp-logo) .coto-unit-cmp-price {
+  font-size: 12px;
+}
+
+.coto-unit-cmp-pop:has(.coto-unit-cmp-logo) .coto-unit-cmp-delta {
+  min-width: 30px;
+  font-size: 11px;
+}
+
+.coto-unit-cmp-pop:has(.coto-unit-cmp-logo) a.coto-unit-cmp-name::after {
+  width: 10px;
+  height: 10px;
+  margin-left: 4px;
 }
 
 a.coto-unit-cmp-name--logo {
@@ -1182,8 +1227,8 @@ a.coto-unit-cmp-name--logo:focus-visible {
 }
 
 .coto-unit-box--pdp .coto-unit-cmp-logo {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 /* Línea corta (carruseles y carrito): logo chico pegado al precio. */

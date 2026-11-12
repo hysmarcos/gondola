@@ -412,6 +412,10 @@
   color: var(--g-ink);
 }
 
+[data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-row:has(> .coto-unit-cmp-name--logo) {
+  align-items: center;
+}
+
 [data-gondola-skin="pdp"] app-product-detail aside.row .coto-unit-box--pdp .coto-unit-cmp-price {
   font-weight: 500;
 }
