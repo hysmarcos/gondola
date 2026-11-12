@@ -867,119 +867,388 @@
 
 /* ---------- Carrito comparado ("Tu carrito en otros súper") ---------- */
 
-/* Misma caja que el resumen, debajo de él. */
+/* Debajo del resumen. El bloque no tiene caja propia: cada súper es su tarjeta. */
 .coto-unit-cc {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 10px 0;
-  padding: 12px 14px;
-  border: 1px solid #e8e8e8;
-  border-radius: 12px;
-  background: #fff;
-  font: 400 13px/1.35 Poppins, sans-serif;
-  color: #212529;
+  gap: 12px;
+  margin: 20px 0 10px;
+  font: 400 13px/1.4 Poppins, sans-serif;
+  color: var(--g-ink);
   font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Coto pone 15 px a todos los elementos (html, *): acá cada cosa hereda de su caja. */
+.coto-unit-cc * {
+  box-sizing: border-box;
+  font: inherit;
+  letter-spacing: normal;
 }
 
 .coto-unit-cc-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #51585e;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--g-ink);
+}
+
+/* La respuesta: dónde conviene comprar, con el logo del que gana. */
+.coto-unit-cc-verdict {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--g-navy-soft);
+}
+
+.coto-unit-cc-words {
+  min-width: 0;
 }
 
 .coto-unit-cc-answer {
   font-size: 16px;
   font-weight: 700;
+  line-height: 1.3;
+  color: var(--g-navy);
+  text-wrap: balance;
 }
 
 .coto-unit-cc-sub {
-  font-size: 12px;
-  color: #51585e;
+  margin-top: 1px;
+  color: var(--g-ink2);
 }
 
+/* Logos de los súper: sobre una placa clara en oscuro, con un borde fino. */
+.coto-unit-cc img.coto-unit-cc-logo {
+  display: block;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--g-plate);
+  object-fit: contain;
+  outline: 1px solid var(--g-line);
+  outline-offset: -1px;
+}
+
+.coto-unit-cc-verdict img.coto-unit-cc-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+
+.coto-unit-cc-col img.coto-unit-cc-logo {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+/* Un súper: tarjeta con borde y cabecera de otro tono. Se ve dónde empieza y dónde termina. */
 .coto-unit-cc-store {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
+  overflow: hidden;
+  border: 1px solid var(--g-line);
+  border-radius: 12px;
+  background: var(--g-surface);
 }
 
-.coto-unit-cc-store--off {
-  color: #6b7177;
-}
-
-.coto-unit-cc-head,
-.coto-unit-cc-row {
+.coto-unit-cc-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 10px 14px;
+  background: var(--g-soft);
+}
+
+.coto-unit-cc-store:not(.coto-unit-cc-store--off) > .coto-unit-cc-head {
+  border-bottom: 1px solid var(--g-line);
+}
+
+.coto-unit-cc-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.coto-unit-cc-names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .coto-unit-cc-name {
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
-.coto-unit-cc-delta,
-.coto-unit-cc-value {
+.coto-unit-cc-count {
+  font-size: 12px;
+  color: var(--g-ink2);
+}
+
+/* La diferencia contra Coto, en una pastilla. Mismos colores que la pastilla de cada
+   producto: ámbar si el otro súper es más barato, verde si Coto es más barato. */
+.coto-unit-cc-delta {
   flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.coto-unit-cc-delta {
-  font-weight: 600;
-}
-
-/* Mismos colores que la comparación por producto: rojo si el otro súper es más barato. */
 .coto-unit-cc--down {
-  color: #A32D2D;
+  background: var(--g-amber-soft);
+  color: var(--g-amber-ink);
 }
 
-.coto-unit-cc--up,
+.coto-unit-cc--up {
+  background: var(--g-green-soft);
+  color: var(--g-green);
+}
+
 .coto-unit-cc--eq {
-  color: #5F5E5A;
+  background: var(--g-line);
+  color: var(--g-ink2);
 }
 
-.coto-unit-cc-row {
-  font-size: 12px;
-  color: #51585e;
+/* Un súper que no respondió o no tiene nada en común: solo su cabecera y una línea. */
+.coto-unit-cc-off {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--g-soft);
+  color: var(--g-ink2);
 }
 
-.coto-unit-cc-row--note .coto-unit-cc-value {
-  white-space: normal;
-  text-align: right;
-  color: #6b7177;
+/* Tabla: nombre a la izquierda y dos columnas de precio (el súper y Coto) a la derecha.
+   Los productos y el desglose comparten las columnas. */
+.coto-unit-cc-table {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: none;
 }
 
-/* Coto le da estilo a todo button: estos son links de texto. */
-.coto-unit-cc-toggle,
-.coto-unit-cc-refresh {
-  all: unset;
-  align-self: flex-start;
-  cursor: pointer;
+.coto-unit-cc-table th,
+.coto-unit-cc-table td {
+  padding: 6px 14px;
+  border: 0;
+  background: none;
+  text-align: left;
+  vertical-align: baseline;
+  color: inherit;
+}
+
+.coto-unit-cc-table .coto-unit-cc-col {
+  width: 136px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #0c447c;
+  color: var(--g-ink2);
+  text-align: right;
+  vertical-align: middle;
 }
 
-.coto-unit-cc-toggle:hover,
-.coto-unit-cc-refresh:hover {
+.coto-unit-cc-table .coto-unit-cc-col--name {
+  width: auto;
+  text-align: left;
+}
+
+.coto-unit-cc-colname {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coto-unit-cc-items tr {
+  border-top: 1px solid var(--g-line);
+}
+
+.coto-unit-cc-items[hidden] {
+  display: none;
+}
+
+.coto-unit-cc-prod {
+  overflow-wrap: anywhere;
+}
+
+/* El nombre del producto abre su página en el otro súper. */
+.coto-unit-cc a.coto-unit-cc-item {
+  border-radius: 4px;
+  color: var(--g-blue);
   text-decoration: underline;
+  text-decoration-color: var(--g-blue-line);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms ease;
 }
 
-.coto-unit-cc-toggle:focus-visible,
-.coto-unit-cc-refresh:focus-visible {
-  outline: 2px solid #0c447c;
+.coto-unit-cc a.coto-unit-cc-item:focus-visible {
+  outline: 2px solid var(--g-blue);
   outline-offset: 2px;
 }
 
-.coto-unit-cc-list {
-  margin: 2px 0 0;
-  padding-left: 10px;
-  list-style: none;
+@media (hover: hover) and (pointer: fine) {
+  .coto-unit-cc a.coto-unit-cc-item:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+.coto-unit-cc-qty {
+  margin-left: 6px;
   font-size: 12px;
-  color: #51585e;
+  color: var(--g-ink2);
+  white-space: nowrap;
+}
+
+.coto-unit-cc-table td.coto-unit-cc-num {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--g-ink2);
+}
+
+/* El más barato de los dos, en negrita. */
+.coto-unit-cc-table td.coto-unit-cc-num--win {
+  font-weight: 700;
+  color: var(--g-ink);
+}
+
+/* Precio sin la oferta del otro súper: tachado, antes del que se paga. */
+.coto-unit-cc-was {
+  margin-right: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--g-ink3);
+  text-decoration: line-through;
+}
+
+/* Desglose: subtotal, tarjetas y total. */
+.coto-unit-cc-table tfoot tr:first-child {
+  border-top: 1px solid var(--g-line-2);
+}
+
+.coto-unit-cc-sum th {
+  color: var(--g-ink2);
+}
+
+.coto-unit-cc-table .coto-unit-cc-sum td.coto-unit-cc-num {
+  font-weight: 600;
+  color: var(--g-ink);
+}
+
+.coto-unit-cc-table .coto-unit-cc-sum--bank td.coto-unit-cc-num {
+  font-weight: 400;
+  color: var(--g-blue);
+}
+
+/* Con qué tarjeta: debajo del monto. */
+.coto-unit-cc-via {
+  display: block;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--g-ink2);
+  text-overflow: ellipsis;
+}
+
+.coto-unit-cc-sum--total {
+  border-top: 1px solid var(--g-line);
+}
+
+.coto-unit-cc-table .coto-unit-cc-sum--total th,
+.coto-unit-cc-table .coto-unit-cc-sum--total td.coto-unit-cc-num {
+  padding-top: 8px;
+  padding-bottom: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--g-ink);
+}
+
+.coto-unit-cc-table tfoot tr:last-child > * {
+  padding-bottom: 10px;
+}
+
+/* Por qué no se resta una promo en el otro súper. */
+.coto-unit-cc-note {
+  margin: 0;
+  padding: 8px 14px 10px;
+  border-top: 1px solid var(--g-line);
+  font-size: 12px;
+  color: var(--g-ink2);
+  text-wrap: pretty;
+}
+
+/* Lo que falta en ese súper: cerrado, al pie de la tarjeta. */
+.coto-unit-cc-missing {
+  padding: 4px 14px;
+  border-top: 1px solid var(--g-line);
+  background: var(--g-soft);
+}
+
+/* Coto le da estilo a todo button: estos son links de texto con una flecha. */
+.coto-unit-cc button.coto-unit-cc-toggle,
+.coto-unit-cc button.coto-unit-cc-refresh {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font: 600 12px/1.3 Poppins, sans-serif;
+  color: var(--g-blue);
+  transition: scale 140ms var(--g-out);
+}
+
+.coto-unit-cc button.coto-unit-cc-toggle::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  rotate: 45deg;
+  transition: rotate 150ms var(--g-out), margin-top 150ms var(--g-out);
+}
+
+.coto-unit-cc button.coto-unit-cc-toggle[aria-expanded="true"]::after {
+  margin-top: 3px;
+  rotate: -135deg;
+}
+
+.coto-unit-cc button.coto-unit-cc-toggle:active,
+.coto-unit-cc button.coto-unit-cc-refresh:active {
+  scale: 0.96;
+}
+
+.coto-unit-cc button.coto-unit-cc-toggle:focus-visible,
+.coto-unit-cc button.coto-unit-cc-refresh:focus-visible {
+  outline: 2px solid var(--g-blue);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .coto-unit-cc button.coto-unit-cc-toggle:hover,
+  .coto-unit-cc button.coto-unit-cc-refresh:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.coto-unit-cc-list {
+  margin: 0;
+  padding: 0 0 8px;
+  list-style: none;
+  color: var(--g-ink2);
 }
 
 .coto-unit-cc-list[hidden] {
@@ -987,14 +1256,7 @@
 }
 
 .coto-unit-cc-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.coto-unit-cc-link {
-  flex: none;
-  color: #0c447c;
+  padding: 3px 0;
 }
 
 .coto-unit-cc-foot {
@@ -1002,14 +1264,42 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
-  font-size: 11px;
-  color: #6b7177;
+  font-size: 12px;
+  color: var(--g-ink2);
 }
 
-.coto-unit-cc-foot .coto-unit-cc-refresh {
-  align-self: auto;
+/* Pantallas angostas: columnas de precio más chicas y la pastilla debajo del nombre. */
+@media (max-width: 560px) {
+  .coto-unit-cc-head {
+    flex-wrap: wrap;
+  }
+
+  .coto-unit-cc-table th,
+  .coto-unit-cc-table td {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .coto-unit-cc-table .coto-unit-cc-col {
+    width: 92px;
+  }
+
+  .coto-unit-cc-table .coto-unit-cc-col--name {
+    width: auto;
+  }
+
+  .coto-unit-cc-was {
+    display: block;
+    margin-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coto-unit-cc button.coto-unit-cc-toggle,
+  .coto-unit-cc button.coto-unit-cc-refresh,
+  .coto-unit-cc button.coto-unit-cc-toggle::after {
+    transition-duration: 0ms;
+  }
 }
 
 /* Mini-carrito: una sola línea de alto fijo, cortada si no entra. Está desde el primer
@@ -1020,14 +1310,14 @@
   height: 31px;
   margin-top: 6px;
   padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--g-line);
   line-height: 22px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: 12px;
   font-weight: 600;
-  color: #0c447c;
+  color: var(--g-blue);
   text-decoration: none;
 }
 
@@ -1037,7 +1327,7 @@
 
 .coto-unit-cc-mini--wait {
   font-weight: 400;
-  color: #8a9096;
+  color: var(--g-ink3);
 }
 
 /* Precio de Coto tachado en el mini-carrito: gris, para que no parezca el que se paga. */

@@ -86,7 +86,8 @@ function storeCmp(store, { analysis, results, promos, cards, day, rules }) {
     at: res.at,
     matched: pairs.length,
     of: lines.length,
-    common: pairs.map(({ line, r }) => ({ ean: line.ean, name: line.name, coto: line.total, other: r.total, url: r.url ?? null })),
+    // otherList: el precio del otro súper sin su oferta, si la tiene (va tachado).
+    common: pairs.map(({ line, r }) => ({ ean: line.ean, name: line.name, qty: line.qty, coto: line.total, other: r.total, otherList: r.list > r.total ? r.list : null, url: r.url ?? null })),
     missing,
     coto,
     other,

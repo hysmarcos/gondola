@@ -48,7 +48,7 @@ describe("compareCart: productos en común", () => {
     const r = run({ results: results({ ...LINE_RESULTS, 2: "missing", 3: { total: 100, onSale: false, url: "u3" } }) });
     const st = r.stores[0];
     expect(st).toMatchObject({ id: "dia", name: "Día", state: "ok", at: 1234, matched: 1, of: 4 });
-    expect(st.common).toEqual([{ ean: "1", name: "Yerba Mañanita", coto: 1000, other: 900, url: "u1" }]);
+    expect(st.common).toEqual([{ ean: "1", name: "Yerba Mañanita", qty: 1, coto: 1000, other: 900, otherList: null, url: "u1" }]);
     // Un dato dudoso sí está en el otro súper: lleva su enlace.
     expect(st.missing).toEqual([{ ean: "2", name: "Fideos", url: null }, { ean: "3", name: "Vino", url: "u3" }, { ean: null, name: "Pan", url: null }]);
   });

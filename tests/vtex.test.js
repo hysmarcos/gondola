@@ -149,12 +149,12 @@ describe("parseCartSimulation", () => {
 
   it("total, cantidad y promo de un item", () => {
     const json = { items: [{ id: "9", quantity: 2, availability: "available", sellingPrice: 150000, listPrice: 200000 }] };
-    expect(parseCartSimulation(json).get("9")).toEqual({ total: 3000, quantity: 2, onSale: true });
+    expect(parseCartSimulation(json).get("9")).toEqual({ total: 3000, quantity: 2, onSale: true, list: 4000 });
   });
 
   it("prefiere priceDefinition.total (promos por cantidad)", () => {
     const json = { items: [{ id: 9, quantity: 3, availability: "available", sellingPrice: 100000, listPrice: 100000, priceDefinition: { total: 250000 } }] };
-    expect(parseCartSimulation(json).get("9")).toEqual({ total: 2500, quantity: 3, onSale: false });
+    expect(parseCartSimulation(json).get("9")).toEqual({ total: 2500, quantity: 3, onSale: false, list: 3000 });
   });
 
   it("sin stock o sin datos no hay entrada", () => {

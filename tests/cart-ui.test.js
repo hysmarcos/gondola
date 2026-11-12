@@ -440,7 +440,8 @@ describe("carrito comparado", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(cc(doc).previousElementSibling.classList.contains("coto-unit-cart-box")).toBe(true);
     expect(cc(doc).textContent).toContain("Tu carrito en otros súper");
-    expect(storeBlock(doc, "dia").textContent).toContain("Día · 1 de 6 productos");
+    expect(storeBlock(doc, "dia").querySelector(".coto-unit-cc-name").textContent).toBe("Día");
+    expect(storeBlock(doc, "dia").querySelector(".coto-unit-cc-count").textContent).toBe("1 de 6 productos");
     expect(storeBlock(doc, "carrefour")).toBeNull();
   });
 
@@ -706,6 +707,7 @@ describe("carrito comparado", () => {
     send({ type: "settings", selected: [], day: 1, stores: ["dia"], cards: { naranjax: { plan: null } } });
     expect(cc(doc).textContent).toContain("Pagás $1.478 menos");
     expect(cc(doc).textContent).not.toContain("Con tus tarjetas");
+    expect(cc(doc).textContent).not.toContain("Tus tarjetas");
   });
 });
 

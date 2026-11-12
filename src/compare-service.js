@@ -161,7 +161,7 @@ export function createCompareService({ fetch, cache, stores = STORES, concurrenc
       // Se cruza por id: la respuesta puede venir en otro orden o con menos items.
       for (const { ean, hit, qty } of toSimulate) {
         const s = sim.get(hit.itemId);
-        lines[ean] = s && s.quantity === qty ? { total: s.total, onSale: s.onSale, url: hit.url } : "missing";
+        lines[ean] = s && s.quantity === qty ? { total: s.total, list: s.list ?? null, onSale: s.onSale, url: hit.url } : "missing";
       }
     }
     onStatus(store.id, true);

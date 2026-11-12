@@ -95,7 +95,9 @@ export function parseCartSimulation(json) {
     // priceDefinition.total ya trae las promos por cantidad; sin él, precio por unidad.
     const cents = item.priceDefinition?.total != null ? Number(item.priceDefinition.total) : Number(item.sellingPrice) * quantity;
     if (!(quantity >= 1) || !Number.isFinite(cents)) continue;
-    out.set(String(item.id), { total: cents / 100, quantity, onSale: Number(item.listPrice) > Number(item.sellingPrice) });
+    // list: lo que sale sin ninguna oferta, solo si es más que lo que se paga.
+    const full = Number(item.listPrice) * quantity;
+    out.set(String(item.id), { total: cents / 100, quantity, onSale: Number(item.listPrice) > Number(item.sellingPrice), list: full > cents ? full / 100 : null });
   }
   return out;
 }

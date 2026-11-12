@@ -278,7 +278,7 @@ describe("cartCompare", () => {
     expect(f.calls.every((c) => c.host === "diaonline.supermercadosdia.com.ar")).toBe(true);
     expect(f.calls[1].init.credentials).toBe("omit");
     expect(typeof r.dia.at).toBe("number");
-    expect(r.dia.lines[A]).toEqual({ total: 22, onSale: false, url: "/p/" + A });
+    expect(r.dia.lines[A]).toEqual({ total: 22, list: null, onSale: false, url: "/p/" + A });
     expect(r.dia.lines[B].total).toBe(21);
   });
 
