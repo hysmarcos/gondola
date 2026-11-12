@@ -1115,6 +1115,17 @@
   white-space: nowrap;
 }
 
+/* Logo del súper delante del nombre (16 px, esquinas apenas redondas). */
+.coto-unit-cmp-logo {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  border-radius: 4px;
+  object-fit: contain;
+  vertical-align: -3px;
+}
+
 .coto-unit-cmp-pop a.coto-unit-cmp-name {
   color: var(--g-blue);
   font-weight: 600;

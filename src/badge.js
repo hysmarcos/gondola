@@ -129,6 +129,8 @@ function setAttr(el, name, on) {
 // deps.compare: cliente de compare-client.js; sin él no se compara con otros súper.
 export function installBadges(win, doc, deps = {}) {
   const logoUrl = deps.logoUrl ?? (() => null);
+  // deps.storeLogo(id) → URL del logo del súper para el comparador (o null).
+  const cmpOpts = { logo: deps.storeLogo ?? (() => null) };
   const compare = deps.compare ?? null;
   const nutrition = deps.nutrition ?? null;
   const today = () => new Date().getDay();
@@ -210,7 +212,7 @@ export function installBadges(win, doc, deps = {}) {
     const old = box.querySelector(":scope > ." + CMP);
     if (old && old.classList.contains(`${CMP}--icon`) !== (variant === "icon")) old.remove();
     const results = compare.peek(ean);
-    paintCompare(box, compareRows(label.cmp, results), variant);
+    paintCompare(box, compareRows(label.cmp, results), variant, cmpOpts);
     // Las filas son de la PDP con la piel: la caja pasa a display: contents (sin caja propia,
     // un IntersectionObserver nunca la ve) y es el único producto de la página: se pide ya.
     if (results) return;

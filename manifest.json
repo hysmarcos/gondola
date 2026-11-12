@@ -64,6 +64,7 @@
       "resources": [
         "assets/icon/icon.svg",
         "assets/banks/*",
+        "assets/stores/*",
         "assets/off/*",
         "assets/allergens/*"
       ],

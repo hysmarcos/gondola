@@ -12,7 +12,7 @@ const REPO = [
   "src/theme.css", "src/theme-coto.css", "src/badge.css", "src/skin.css", "src/skin-list.css", "src/skin-pdp.css", "src/popup.css", "src/popup.js", "src/badge.js",
   "assets/icon/icon.svg", "assets/icon/icon-16.svg", "assets/icon/icon-16.png", "assets/icon/icon-32.png", "assets/icon/icon-48.png", "assets/icon/icon-128.png",
   "assets/banks/logo_icbc_1.png", "assets/banks/logo_galicia.png",
-  "assets/off/off-logo-icon-light.svg",
+  "assets/off/off-logo-icon-light.svg", "assets/stores/coto.png",
   "assets/allergens/milk.png",
   "assets/fonts/OFL.txt", "assets/fonts/poppins-latin-400-normal.woff2",
   "tests/package.test.js", "scripts/dev-server.mjs", "dist-dev/demo.min.js", "docs/img/readme/gondola-demo.gif", "site/index.html",

@@ -93,3 +93,33 @@ describe("paintCompare: ícono con detalle al pasar el mouse", () => {
     expect(box.querySelector(".coto-unit-cmp-btn")).toBe(before);
   });
 });
+
+describe("paintCompare: logos de los súper en el detalle", () => {
+  const logo = (id) => (id === "mas" ? null : `chrome-extension://x/assets/stores/${id}.png`);
+  function paint(opts) {
+    document.body.innerHTML = `<div id="box"></div>`;
+    const box = document.getElementById("box");
+    const results = { carrefour: offer(1840, { url: "https://www.carrefour.com.ar/leche/p" }), dia: offer(2100), mas: "missing" };
+    paintCompare(box, compareRows(cmp, results), "icon", opts);
+    return [...box.querySelectorAll(".coto-unit-cmp-pop .coto-unit-cmp-name")];
+  }
+
+  it("cada fila lleva su logo delante del nombre; el link sigue siendo el nombre", () => {
+    const names = paint({ logo });
+    expect(names.map((n) => n.textContent)).toEqual(["Coto", "Carrefour", "Día", "Más"]);
+    const src = names.map((n) => n.querySelector("img.coto-unit-cmp-logo")?.getAttribute("src") ?? null);
+    expect(src).toEqual([
+      "chrome-extension://x/assets/stores/coto.png",
+      "chrome-extension://x/assets/stores/carrefour.png",
+      "chrome-extension://x/assets/stores/dia.png",
+      null,
+    ]);
+    // Decorativo: el nombre está escrito al lado.
+    expect(names[1].firstChild.getAttribute("alt")).toBe("");
+    expect(names[1].tagName).toBe("A");
+  });
+
+  it("sin logos, las filas quedan solo con el nombre", () => {
+    expect(paint().some((n) => n.querySelector("img"))).toBe(false);
+  });
+});

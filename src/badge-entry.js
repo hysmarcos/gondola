@@ -6,6 +6,7 @@ import { createCompareClient } from "./compare-client.js";
 import { installCartUi } from "./cart-ui.js";
 import { installPromoUi } from "./promo-ui.js";
 import { logoUrl } from "./logos.js";
+import { storeLogoUrl } from "./stores.js";
 import { createNutritionUi } from "./nutrition-ui.js";
 import { installProfile } from "./profile.js";
 import { installSkin } from "./skin.js";
@@ -31,7 +32,9 @@ const nutrition = createNutritionUi(document, {
   skin: () => document.documentElement.getAttribute("data-gondola-skin") === "pdp",
 });
 
-badges = installBadges(window, document, { logoUrl: logo, compare, nutrition });
+// Logos de los súper del comparador: siempre empaquetados, nada se pide a otros sitios.
+const storeLogo = (id) => storeLogoUrl(id, (p) => chrome.runtime.getURL(p));
+badges = installBadges(window, document, { logoUrl: logo, storeLogo, compare, nutrition });
 installCartUi(window, document, { logoUrl: logo, compare, nutrition: { request: nutritionRequest } });
 installSkin(window, document, chrome.storage.local, () => badges?.refresh());
 installPromoUi(window, document);

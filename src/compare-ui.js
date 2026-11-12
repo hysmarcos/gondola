@@ -95,7 +95,9 @@ function deltaText(r) {
   return `${r.delta < 0 ? "−" : "+"}${Math.abs(r.delta)}%`;
 }
 
-function iconPlan(rows) {
+function iconPlan(rows, logo) {
+  // Sin logo no se agrega la clave: el plan (y su firma) queda igual que antes de los logos.
+  const withLogo = (id) => (logo(id) ? { logo: logo(id) } : {});
   const state = compareStatus(rows);
   const first = rows[0];
   const text = pillText(state, rows);
@@ -105,8 +107,8 @@ function iconPlan(rows) {
     text,
     label: `${state === "worse" ? text : STATUS_TEXT[state]}. Ver comparación`,
     rows: [
-      { name: "Coto", url: null, state: "coto", price: formatMoney(first.cotoUnit), qty: first.cotoQty > 1 ? `x${first.cotoQty}` : null, delta: null },
-      ...rows.map((r) => ({ name: r.name, url: r.url, state: r.state, price: priceText(r), qty: r.qty > 1 ? `x${r.qty}` : null, delta: deltaText(r) })),
+      { name: "Coto", ...withLogo("coto"), url: null, state: "coto", price: formatMoney(first.cotoUnit), qty: first.cotoQty > 1 ? `x${first.cotoQty}` : null, delta: null },
+      ...rows.map((r) => ({ name: r.name, ...withLogo(r.id), url: r.url, state: r.state, price: priceText(r), qty: r.qty > 1 ? `x${r.qty}` : null, delta: deltaText(r) })),
     ],
   };
 }
@@ -122,6 +124,17 @@ function svgIcon(doc, paths) {
     svg.append(p);
   }
   return svg;
+}
+
+// El logo del súper, delante del nombre. Decorativo: el nombre ya está escrito al lado.
+function logoImg(doc, url) {
+  const img = doc.createElement("img");
+  img.className = `${CMP}-logo`;
+  img.src = url;
+  img.alt = "";
+  img.width = 16;
+  img.height = 16;
+  return img;
 }
 
 function el(doc, tag, cls, text) {
@@ -153,6 +166,7 @@ function buildIcon(doc, block, it) {
     } else {
       name = el(doc, "span", `${CMP}-name`, r.name);
     }
+    if (r.logo) name.prepend(logoImg(doc, r.logo));
     row.append(name, el(doc, "span", `${CMP}-price`, r.price));
     if (r.qty) row.append(el(doc, "span", `${CMP}-qty`, r.qty));
     if (r.delta) row.append(el(doc, "span", `${CMP}-delta`, r.delta));
@@ -180,8 +194,8 @@ function wireToggle(block) {
 
 // Lo que se va a dibujar, como datos simples: sirve de firma para no tocar el DOM
 // si nada cambió (la página repinta en cada mutación).
-function plan(rows, variant) {
-  if (variant === "icon") return [iconPlan(rows)];
+function plan(rows, variant, logo) {
+  if (variant === "icon") return [iconPlan(rows, logo)];
   if (variant !== "mini") {
     // La más barata de las que le ganan a Coto lleva --best (la PDP con la piel la resalta).
     const lower = rows.filter((r) => r.state === "lower");
@@ -252,9 +266,12 @@ function build(doc, items, block) {
 }
 
 // Crea o actualiza el bloque como último hijo de box. Sin filas, lo borra.
-export function paintCompare(box, rows, variant = "") {
+// opts.logo(id) → URL del logo del súper ("coto", "carrefour"…) o null: sin logo, va solo el nombre.
+// Los logos van solo en el detalle de la pastilla (variant "icon").
+export function paintCompare(box, rows, variant = "", opts = {}) {
+  const logo = (id) => opts.logo?.(id) ?? null;
   let block = box.querySelector(`:scope > .${CMP}`);
-  const items = rows?.length ? plan(rows, variant) : null;
+  const items = rows?.length ? plan(rows, variant, logo) : null;
   if (!items) return block?.remove();
   const sig = JSON.stringify(items);
   if (!block) {
