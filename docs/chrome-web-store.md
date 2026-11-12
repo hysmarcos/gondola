@@ -53,11 +53,12 @@ QUÉ AGREGA
 • Diseño Góndola: un diseño nuevo para la lista de productos y la página de producto. Se apaga en el popup y vuelve el de Coto.
 • Ordenar por precio por kg/L: una opción nueva en "Ordenar por", en categorías y búsquedas.
 • Precio real en cada producto: el precio final con la mejor oferta, el original tachado y el precio por kilo, litro o unidad.
-• Tu banco: elegí tus tarjetas y el día. Ves el precio con la promo solo si Coto la aplica a ese producto.
+• Tu banco: elegí tus tarjetas (con su plan, si tiene) y el día. Valen para Coto y para los otros súper. Ves el precio con la promo solo si se aplica a ese producto.
 • Más barato de la categoría: una etiqueta en el producto que menos cuesta por kilo.
 • Promos 2x1 y 3x2: si agregás 1 de un 2x1, suma el segundo. Se apaga en Ajustes.
 • Carrito real: subtotal, descuentos de Coto, reintegro del banco con su tope y total final.
-• Otros súper: busca el mismo producto por código de barras en Carrefour, Día y Más, con el link.
+• Otros súper: busca el mismo producto por código de barras en Carrefour, Día y Más, con el link. Elegís con cuáles comparar en Ajustes. Las promos de banco de otros súper son solo de compra online; de Carrefour todavía no se pueden leer.
+• Carrito comparado: en el carrito y en el mini-carrito, el total de los productos que están en los dos súper, sin envío.
 • Información nutricional: en cada producto de comida, la tabla de Open Food Facts (cada 100 g, por porción y %VD), lo que rinde por proteína y por calorías, fotos del envase, ingredientes, alérgenos y NOVA.
 • Sin TACC: lo que marca Coto, con un aviso si el producto menciona trigo, avena, cebada o centeno. Verificá siempre el símbolo oficial en el envase.
 • Mi perfil: elegí si sos celíaco/a, si cuidás el sodio o el azúcar, y tus alergias. Cada producto te muestra lo que te importa. No es consejo médico.
@@ -67,7 +68,7 @@ QUÉ AGREGA
 PRIVACIDAD
 • Sin servidores propios, sin cuentas, sin publicidad y sin analítica.
 • Tus ajustes quedan en tu navegador.
-• Para comparar, solo envía el código de barras de los productos a las búsquedas públicas de Carrefour, Día y Más. Se apaga en Ajustes.
+• Para comparar, envía el código de barras de los productos a las búsquedas públicas de Carrefour, Día y Más. Con el carrito o el mini-carrito abierto, envía también las cantidades para simular la compra, y lee sus páginas públicas de promos. Sin cookies ni datos personales. Se apaga en Ajustes.
 • Para la información nutricional, solo envía el código de barras a Open Food Facts: el del producto de comida que abrís, los de tu carrito y, con el diseño Góndola prendido y celiaquía o alguna alergia en tu perfil, los de los productos de comida de la lista que se ven en pantalla. Se apaga en Ajustes.
 • Tu perfil (celíaco/a, sodio, azúcar, alergias) queda solo en tu navegador.
 
@@ -106,12 +107,12 @@ Mejorar la web de compras de Coto Digital (coto.com.ar) para comparar productos 
 |---|---|
 | `storage` | Guarda en el navegador las tarjetas, el día de compra y los ajustes que elige el usuario. |
 | Acceso a `www.coto.com.ar` (content scripts) | Agrega el precio por kilo, el orden por precio por kilo, las promos bancarias y el total real del carrito en las páginas de Coto. |
-| Acceso a `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar` y `www.masonline.com.ar` | Busca el mismo producto por código de barras en la búsqueda pública de cada súper para mostrar su precio. El usuario lo puede apagar. |
+| Acceso a `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar` y `www.masonline.com.ar` | Busca el mismo producto por código de barras en la búsqueda pública de cada súper para mostrar su precio, simula el carrito con las cantidades (solo con el carrito o el mini-carrito abierto) y lee sus páginas públicas de promos. Sin cookies ni datos personales. El usuario lo puede apagar. |
 | Acceso a `world.openfoodfacts.org` | Pide la tabla nutricional por código de barras a la base abierta Open Food Facts, del producto que el usuario abre y de los productos de su carrito. Con el diseño Góndola prendido y el perfil con celiaquía o alguna alergia, también la pide para los productos de comida de la lista que se ven en pantalla, para marcarles las alergias. El usuario lo puede apagar. |
 
 **¿Usa código remoto?** No. Todo el código va en el paquete.
 
-**Uso de datos.** Marcá solo **Contenido del sitio web**, con esta explicación: la extensión envía el código de barras (EAN) de los productos que el usuario ve en Coto a las búsquedas públicas de Carrefour, Día y Más, para mostrar el precio del mismo producto, y el de los productos de comida que abre o tiene en el carrito a Open Food Facts, para mostrar su tabla nutricional (con el diseño Góndola prendido y celiaquía o alguna alergia en el perfil, también el de los productos de comida de la lista que se ven, para marcar las alergias). No envía datos de la persona: ni nombre, ni cuenta, ni carrito, ni tarjetas. Todo lo demás pasa en el navegador.
+**Uso de datos.** Marcá solo **Contenido del sitio web**, con esta explicación: la extensión envía el código de barras (EAN) de los productos que el usuario ve en Coto a las búsquedas públicas de Carrefour, Día y Más, para mostrar el precio del mismo producto, y las cantidades del carrito, solo con el carrito o el mini-carrito abierto, para simular la compra, además de leer sus páginas públicas de promos (sin cookies), y el de los productos de comida que abre o tiene en el carrito a Open Food Facts, para mostrar su tabla nutricional (con el diseño Góndola prendido y celiaquía o alguna alergia en el perfil, también el de los productos de comida de la lista que se ven, para marcar las alergias). No envía datos de la persona: ni nombre, ni cuenta, ni tarjetas. Del carrito, solo códigos de barras y cantidades. Todo lo demás pasa en el navegador.
 
 Marcá las tres certificaciones:
 

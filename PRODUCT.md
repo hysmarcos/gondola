@@ -16,7 +16,7 @@ Góndola ("Góndola para Coto"). The goal is an improved version of each superma
 A Chrome extension (Manifest V3) that adds what Coto's site lacks for a careful shopper: sorting by price per kg/L/unit, a "real price to compare" on every product, bank promos that follow Coto's real rules, and a cart that shows what you will really pay. Success: the shopper picks the cheapest option without doing math, and Coto's own features (add, quantities, checkout) keep working.
 
 ## Positioning
-It works inside Coto's own pages and uses Coto's own data (the price with any offer, multi-buy promos, bank promos from Coto's API, exclusions from Coto's legal terms). To compare, it only sends barcodes (EAN) to the public APIs of Carrefour, Día and Más; no own servers, no personal data.
+It works inside Coto's own pages and uses Coto's own data (the price with any offer, multi-buy promos, bank promos from Coto's API, exclusions from Coto's legal terms). To compare, it sends barcodes (EAN) to the public APIs of Carrefour, Día and Más. To simulate the cart there, it also sends the cart quantities, only while the cart page or the mini-cart is open. It also reads their public promo pages (bank promos of Más and Día; Carrefour's cannot be read yet, so it is compared by price only). No cookies, no own servers, no personal data.
 
 ## Operating Context
 - Runs on coto.com.ar: category lists, search, offers, product page, carousels, mini-cart, /carrito.
@@ -27,6 +27,9 @@ It works inside Coto's own pages and uses Coto's own data (the price with any of
 - Never removes or breaks Coto's native UI or behavior; it only adds nodes and data-coto-unit-* attributes (data-coto-unit-hide also hides "Ver planes de cuotas" on list cards when the Góndola design is on). With the design on, it also sets data-gondola-skin on <html> and hides with CSS the product page's fixed rating stars and empty spacer divs. Restyles list and product pages with CSS; never re-parents Coto's controls.
 - Can change the quantity of an add-to-cart request only to complete NxM promos (2x1, 3x2, 6x4…), and the user can turn this off.
 - Host permissions only for Carrefour, Día and Más; no own servers.
+- The user chooses which of Carrefour, Día and Más to compare with, in Settings. One wallet of bank cards (with an optional plan) is valid for Coto and the other supermarkets.
+- A bank promo of another supermarket counts only for online purchases and is subtracted only when its number is clear and its terms are known; otherwise it is shown with a link.
+- The cart comparison covers only the products that exist in both supermarkets, and totals do not include shipping.
 
 ## Brand Commitments
 - Neutral base; Coto red only for buying and offers; blue and amber for what Góndola adds.

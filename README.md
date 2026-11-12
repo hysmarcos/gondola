@@ -112,7 +112,9 @@ La web de Coto sirve para comprar, pero no para comparar:
 | Más barato de la categoría | Marca con una etiqueta el producto que menos cuesta por kilo en toda la categoría. |
 | Promos NxM | Si agregás 1 de un 2x1, agrega el segundo solo. En un 3x2 te avisa cuántos faltan. Se apaga en Ajustes. |
 | Carrito real | Subtotal, descuentos de Coto, reintegro del banco con su tope y total final. |
-| Otros súper | Busca el mismo producto por código de barras en Carrefour, Día y Más. Un botón dice "Mejor precio" o "Más barato en Día", con los links. |
+| Otros súper | Busca el mismo producto por código de barras en Carrefour, Día y Más. Un botón dice "Mejor precio" o "Más barato en Día", con los links. Elegís con cuáles comparar en Ajustes. |
+| Carrito comparado | En el carrito y en el mini-carrito, compara el total de los productos que están en los dos súper, sin envío. Solo manda códigos de barras y cantidades. |
+| Tarjetas para todos los súper | Una sola lista de tarjetas, con su plan si tiene, vale para Coto y para los otros súper. Las promos de banco de otros súper son solo de compra online y se leen en Más y Día; Carrefour se compara solo por precio. |
 | Información nutricional | En la página de un producto de comida o bebida, la tabla nutricional de [Open Food Facts](https://world.openfoodfacts.org), si existe. Si falta, un link para cargarla. Suma Sin TACC (dato de Coto, con aviso si menciona trigo, avena, cebada o centeno), alérgenos, ingredientes, aditivos y NOVA. Se apaga en Ajustes. |
 | Mi perfil | En Ajustes elegís si sos celíaco/a, si cuidás el sodio o el azúcar, y tus alergias. La página de cada producto te muestra "Para vos". Queda solo en tu navegador. No es consejo médico. |
 | Nutrición del carrito | En el carrito, el total de kcal, azúcares y sodio de tu compra. |
@@ -160,7 +162,7 @@ Estas pruebas buscan dónde falla la extensión:
 | ✅ | Tests con datos reales | ¿El precio, el tamaño y el orden salen bien? | 597 tests con respuestas guardadas de Coto, Carrefour, Día, Más y Open Food Facts |
 | ✅ | Coto sigue funcionando | ¿Agregar, cantidades y carrito andan igual? | Sí. La extensión agrega elementos y oculta partes con un atributo (con el diseño Góndola, también "Ver planes de cuotas" en las tarjetas). Con el diseño Góndola pone `data-gondola-skin` en `<html>` y oculta con CSS las estrellas fijas de la página de producto. No borra nada de Coto. |
 | ✅ | Promos bancarias | ¿Muestra un descuento que Coto no aplica? | No. Respeta los días, los topes y las exclusiones de la API de Coto. |
-| ⚠️ | Otros súper | ¿El precio es el de tu sucursal? | No siempre. Usa la zona por defecto de cada web y no incluye descuentos bancarios. |
+| ⚠️ | Otros súper | ¿El precio es el de tu sucursal? | No siempre. Usa la zona por defecto de cada web. Resta una promo de banco solo si el número es claro y conocés sus términos; si no, la muestra con un link. |
 | ⚠️ | Cambios en Coto | ¿Sigue andando si Coto cambia su web? | Depende del cambio. Si la API cambia, la extensión deja de mostrar datos en vez de mostrar datos falsos. |
 
 ## 5. Privacidad y permisos
@@ -171,7 +173,7 @@ Góndola no junta datos personales, no tiene analítica y no tiene publicidad. L
 |---|---|
 | `storage` | Guardar tus tarjetas, el día y los ajustes en tu navegador |
 | `www.coto.com.ar` | Agregar el precio real, las promos y el carrito en las páginas de Coto |
-| `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar`, `www.masonline.com.ar` | Buscar el mismo producto por código de barras. Se apaga en Ajustes. |
+| `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar`, `www.masonline.com.ar` | Buscar el mismo producto por código de barras, simular el carrito con sus cantidades y leer sus páginas públicas de promos. Sin cookies ni datos personales. Se apaga en Ajustes. |
 | `world.openfoodfacts.org` | Traer la tabla nutricional del producto que abrís, de los productos de tu carrito y, solo con el diseño Góndola prendido y celiaquía o alguna alergia en tu perfil, de los productos de comida de la lista que se ven en pantalla. Solo se manda el código de barras, sin cookies. Se apaga en Ajustes. |
 
 ## 6. Cómo está armado

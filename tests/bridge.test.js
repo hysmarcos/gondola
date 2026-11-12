@@ -252,6 +252,14 @@ describe("popup", () => {
     expect(st.data.autoPromo).toBe(false);
   });
 
+  it("la ayuda aclara las promos de otros súper y ya no dice que no tienen descuentos bancarios", async () => {
+    await open(fakeStorage({ promos: PROMOS }));
+    const help = document.querySelector('[data-view="ayuda"]').textContent;
+    expect(help).toContain("Las promos de otros súper son solo de compra online. Los totales no incluyen envío. Si los términos de una promo cambiaron, no se resta.");
+    expect(help).not.toContain("Sin descuentos bancarios");
+    expect(document.body.textContent).not.toContain("Sin descuentos bancarios");
+  });
+
   const storeRow = (id) => document.querySelector(`[data-store="${id}"]`);
 
   it("elige con qué súper comparar", async () => {

@@ -40,7 +40,10 @@ const HELP = [
   ["Información nutricional", "Tabla de Open Food Facts por código de barras, cargada por la comunidad. Si falta, podés cargarla vos."],
   ["Sin TACC", "Lo que marca Coto. Si el producto menciona trigo, avena, cebada o centeno, te avisa. Verificá siempre el símbolo oficial en el envase."],
   ["Mi perfil", "En Ajustes, sección Mi perfil. Destaca lo que te importa en cada producto. En la lista, con \"Diseño Góndola\" e \"Información nutricional\" prendidos, marca los productos que declaran tus alergias y avisa si Open Food Facts no tiene datos de alérgenos. Sin etiqueta no significa que sea seguro. Queda solo en tu navegador. No es consejo médico."],
-  ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
+  ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Elegís con cuáles comparar en Ajustes. \"llevando 2\": precio por unidad con su promo."],
+  ["Promos de otros súper", "Las promos de otros súper son solo de compra online. Los totales no incluyen envío. Si los términos de una promo cambiaron, no se resta."],
+  ["Carrito comparado", "En el carrito, compara solo los productos que están en los dos súper. Si faltan, \"Faltan N\" muestra cuáles."],
+  ["Tarjetas para todos los súper", "Tus tarjetas valen para Coto y para los otros súper. De Carrefour todavía no se pueden leer las promos del banco: se compara solo por precio."],
 ];
 
 const PROFILE = [
@@ -168,7 +171,7 @@ function helpView(doc, meta) {
     el(doc, "dl", { className: "help" }, HELP.flatMap(([t, d]) => [el(doc, "dt", { textContent: t }), el(doc, "dd", { textContent: d })])),
     el(doc, "p", { className: "legal" }, [
       el(doc, "strong", { textContent: "No afiliado a Coto." }),
-      " Usa los datos de coto.com.ar. Solo envía códigos de barras: a Carrefour, Día y Más para comparar, y a Open Food Facts para la tabla nutricional.",
+      " Usa los datos de coto.com.ar. A Carrefour, Día y Más les envía códigos de barras y cantidades del carrito para comparar. A Open Food Facts, solo códigos de barras. Sin cookies ni datos personales.",
     ]),
     meta.welcomeUrl ? el(doc, "p", { className: "welcome-link" }, [el(doc, "a", { href: meta.welcomeUrl, target: "_blank", rel: "noopener noreferrer", textContent: "Ver la bienvenida de nuevo" })]) : null,
     el(doc, "p", { className: "version", textContent: `Versión ${meta.version ?? ""}`.trim() }),
