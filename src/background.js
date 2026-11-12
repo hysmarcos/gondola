@@ -1,5 +1,6 @@
 // Service worker. Responde a:
 // - { type: "compare", eans, stores }: precios de otros super.
+// - { type: "cartCompare", items, stores }: el carrito entero simulado en otros súper.
 // - { type: "nutrition", ean }: información nutricional de Open Food Facts.
 // - { type: "bankPromos", stores }: promos de banco online de otros súper.
 // - { type: "openSettings" }: abre los ajustes (lo pide el menú de perfil de Coto).
@@ -56,6 +57,10 @@ chrome.runtime.onMessage.addListener((m, _sender, reply) => {
   }
   if (m?.type === "compare") {
     service.compare(m.eans, m.stores).then(reply, () => reply({}));
+    return true;
+  }
+  if (m?.type === "cartCompare") {
+    service.cartCompare(m.items, m.stores).then(reply, () => reply({}));
     return true;
   }
   if (m?.type === "nutrition") {

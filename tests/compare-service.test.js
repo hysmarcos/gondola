@@ -227,3 +227,145 @@ describe("createCompareService", () => {
     expect(f.calls.filter((c) => c.kind === "sim").length).toBe(0);
   });
 });
+
+// Fetch falso para el carrito: la simulación devuelve `simItems(pedidos)`; por defecto todos, en el orden pedido.
+function cartFetch({ simItems, failSim = false, noStock = [] } = {}) {
+  const calls = [];
+  const fn = async (url, init = {}) => {
+    const u = new URL(url);
+    const isSim = init.method === "POST";
+    calls.push({ host: u.host, kind: isSim ? "sim" : "search", url, init });
+    if (isSim) {
+      if (failSim) return { ok: false, status: 500, json: async () => ({}) };
+      const asked = JSON.parse(init.body).items;
+      const out = (simItems ? simItems(asked) : asked).map((i) => ({
+        id: i.id,
+        quantity: i.quantity,
+        availability: "available",
+        sellingPrice: Number(i.id) * 100,
+        listPrice: Number(i.id) * 100,
+        priceDefinition: { total: Number(i.id) * 100 * i.quantity },
+      }));
+      return { ok: true, json: async () => ({ items: out }) };
+    }
+    const eans = u.searchParams.getAll("fq").map((f) => f.split(":")[1]);
+    return {
+      ok: true,
+      json: async () =>
+        eans.map((ean) => ({
+          productName: "P " + ean,
+          link: `/p/${ean}`,
+          // itemId = últimos 3 dígitos + 1, distinto por EAN
+          items: [{ ean, itemId: String(Number(ean.slice(-3)) + 1), sellers: [{ sellerId: "1", commertialOffer: { Price: 1000, AvailableQuantity: noStock.includes(ean) ? 0 : 9 } }] }],
+        })),
+    };
+  };
+  fn.calls = calls;
+  return fn;
+}
+
+const A = "7790000000010"; // itemId 11
+const B = "7790000000020"; // itemId 21
+
+describe("cartCompare", () => {
+  const make = (f) => createCompareService({ fetch: f, cache: createPriceCache(memStorage()) });
+
+  it("1 búsqueda y 1 simulación a Día, ninguna a otro host", async () => {
+    const f = cartFetch();
+    const r = await make(f).cartCompare([{ ean: A, qty: 2 }, { ean: B, qty: 1 }], ["dia"]);
+    expect(Object.keys(r)).toEqual(["dia"]);
+    expect(f.calls.map((c) => c.kind)).toEqual(["search", "sim"]);
+    expect(f.calls.every((c) => c.host === "diaonline.supermercadosdia.com.ar")).toBe(true);
+    expect(f.calls[1].init.credentials).toBe("omit");
+    expect(typeof r.dia.at).toBe("number");
+    expect(r.dia.lines[A]).toEqual({ total: 22, onSale: false, url: "/p/" + A });
+    expect(r.dia.lines[B].total).toBe(21);
+  });
+
+  it("si la simulación vuelve en orden inverso, cada EAN recibe su total", async () => {
+    const f = cartFetch({ simItems: (a) => [...a].reverse() });
+    const r = await make(f).cartCompare([{ ean: A, qty: 2 }, { ean: B, qty: 1 }], ["dia"]);
+    expect(r.dia.lines[A].total).toBe(22);
+    expect(r.dia.lines[B].total).toBe(21);
+  });
+
+  it("lo que no vuelve en la simulación es missing", async () => {
+    const f = cartFetch({ simItems: (a) => a.slice(0, 1) });
+    const r = await make(f).cartCompare([{ ean: A, qty: 2 }, { ean: B, qty: 1 }], ["dia"]);
+    expect(r.dia.lines[A].total).toBe(22);
+    expect(r.dia.lines[B]).toBe("missing");
+  });
+
+  it("si vuelve con otra cantidad es missing", async () => {
+    const f = cartFetch({ simItems: (a) => a.map((i) => ({ ...i, quantity: 1 })) });
+    const r = await make(f).cartCompare([{ ean: A, qty: 2 }], ["dia"]);
+    expect(r.dia.lines[A]).toBe("missing");
+  });
+
+  it("sin stock es missing y no se simula", async () => {
+    const f = cartFetch({ noStock: [A] });
+    const r = await make(f).cartCompare([{ ean: A, qty: 1 }], ["dia"]);
+    expect(r.dia.lines[A]).toBe("missing");
+    expect(f.calls.filter((c) => c.kind === "sim").length).toBe(0);
+  });
+
+  it("120 EAN hacen 3 búsquedas y 1 simulación", async () => {
+    const f = cartFetch();
+    const items = eanList(120).map((ean) => ({ ean, qty: 1 }));
+    const r = await make(f).cartCompare(items, ["dia"]);
+    expect(f.calls.filter((c) => c.kind === "search").length).toBe(3);
+    expect(f.calls.filter((c) => c.kind === "sim").length).toBe(1);
+    expect(Object.keys(r.dia.lines).length).toBe(120);
+  });
+
+  it("simulación con HTTP 500 deja ese súper en error", async () => {
+    const f = cartFetch({ failSim: true });
+    const statuses = [];
+    const svc = createCompareService({ fetch: f, cache: createPriceCache(memStorage()), onStatus: (id, ok) => statuses.push([id, ok]) });
+    expect(await svc.cartCompare([{ ean: A, qty: 1 }], ["dia"])).toEqual({ dia: "error" });
+    expect(statuses.at(-1)).toEqual(["dia", false]);
+  });
+
+  it("búsqueda que falla deja ese súper en error y los otros siguen", async () => {
+    const f = fakeFetch({ fail: ["www.carrefour.com.ar"] });
+    const r = await make(f).cartCompare([{ ean: A, qty: 1 }], ["carrefour", "dia"]);
+    expect(r.carrefour).toBe("error");
+    expect(r.dia.lines[A]).toBeTruthy();
+  });
+
+  it("descarta qty 0, qty 1.5, EAN inválido y repetidos", async () => {
+    const f = cartFetch();
+    const ok = "7790000000030";
+    const r = await make(f).cartCompare(
+      [{ ean: A, qty: 0 }, { ean: B, qty: 1.5 }, { ean: "abc", qty: 1 }, { ean: ok, qty: 1 }, { ean: ok, qty: 4 }],
+      ["dia"],
+    );
+    expect(Object.keys(r.dia.lines)).toEqual([ok]);
+    expect(JSON.parse(f.calls[1].init.body).items[0].quantity).toBe(1);
+  });
+
+  it("sin items válidos devuelve vacío sin pedidos", async () => {
+    const f = cartFetch();
+    expect(await make(f).cartCompare([{ ean: A, qty: 0 }], ["dia"])).toEqual({});
+    expect(f.calls.length).toBe(0);
+  });
+
+  it("pedidos iguales en vuelo se comparten, sin importar el orden", async () => {
+    const f = cartFetch();
+    const svc = make(f);
+    const [a, b] = await Promise.all([
+      svc.cartCompare([{ ean: A, qty: 2 }, { ean: B, qty: 1 }], ["dia"]),
+      svc.cartCompare([{ ean: B, qty: 1 }, { ean: A, qty: 2 }], ["dia"]),
+    ]);
+    expect(f.calls.filter((c) => c.kind === "sim").length).toBe(1);
+    expect(a.dia.lines).toEqual(b.dia.lines);
+  });
+
+  it("no guarda nada entre pedidos", async () => {
+    const f = cartFetch();
+    const svc = make(f);
+    await svc.cartCompare([{ ean: A, qty: 1 }], ["dia"]);
+    await svc.cartCompare([{ ean: A, qty: 1 }], ["dia"]);
+    expect(f.calls.filter((c) => c.kind === "sim").length).toBe(2);
+  });
+});
