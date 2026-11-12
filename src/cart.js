@@ -13,7 +13,11 @@ function analyzeLine({ id, name, qty, list, data, url }, store, opts = {}) {
   // Para la información nutricional de la compra: si es comida y el tamaño del envase.
   const nutri = data ? nutriEligible(data) : false;
   const amount = nutri ? unitPrice(data, store, [], 0, opts).amount ?? null : null;
-  return { ...core, qty, nutri, amount, discount: discount > 0.5 ? discount : 0, promoLabel, ...compareFields(data, store, opts) };
+  // Para comparar el carrito con otros súper: marca y grupos que miran las reglas de cada banco.
+  // Datos planos: el análisis viaja por postMessage.
+  const brand = typeof data?.product_brand === "string" ? data.product_brand : "";
+  const groups = (data?.groups ?? []).map((g) => g?.group_id).filter((g) => typeof g === "string");
+  return { ...core, qty, nutri, amount, brand, groups, discount: discount > 0.5 ? discount : 0, promoLabel, ...compareFields(data, store, opts) };
 }
 
 function analyzeCore({ id, name, qty, list, data }, store, opts = {}) {
@@ -98,10 +102,10 @@ export function analyzeCart(lines, promos, day, store, opts = {}) {
   const used = [today?.promo, best?.promo].filter((p) => p?.capWeekly);
   return {
     lines: analyzed.map((l) => {
-      const { id, name, url, total, listTotal, missing, saving, promoText, ean, cmp, discount, promoLabel, qty, nutri, amount } = l;
+      const { id, name, url, total, listTotal, missing, saving, promoText, ean, cmp, discount, promoLabel, qty, nutri, amount, bankEligible, brand, groups } = l;
       return {
         id, name, url, total: round2(total), listTotal: round2(listTotal), missing, saving, promoText, ean, cmp, qty, nutri, amount,
-        discount, promoLabel, bankShare: shareOf(l),
+        discount, promoLabel, bankShare: shareOf(l), bankEligible, brand, groups,
       };
     }),
     discountTotal: round2(analyzed.reduce((s, l) => s + l.discount, 0)),

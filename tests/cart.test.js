@@ -71,6 +71,24 @@ describe("analyzeCart EAN", () => {
   });
 });
 
+describe("líneas con datos para comparar el carrito", () => {
+  it("cada línea trae si acepta banco, la marca y los grupos (datos planos)", () => {
+    const lines = CART_LINES.map((l, i) =>
+      i === 0 ? { ...l, data: { ...l.data, product_brand: "Heroe", groups: [{ group_id: "limpieza" }, { group_id: "pisos" }, {}] } }
+        : i === 1 ? { ...l, data: null } : l);
+    const a = analyzeCart(lines, [], MON, "200");
+    expect(a.lines[0]).toMatchObject({ bankEligible: true, brand: "Heroe", groups: ["limpieza", "pisos"] });
+    expect(a.lines[1]).toMatchObject({ bankEligible: true, brand: "", groups: [] });
+    for (const l of a.lines) expect(typeof l.bankEligible).toBe("boolean");
+  });
+
+  it("una línea con oferta que bloquea el banco sale con bankEligible false", () => {
+    const blocked = analyzeCart(CART_LINES, [], MON, "200").lines.filter((l) => !l.bankEligible);
+    // Mismo criterio que el reintegro: lo que queda afuera de "solo productos sin oferta".
+    expect(blocked.map((l) => l.id)).toEqual(["prod00575398", "prod00299912", "prod00608118"]);
+  });
+});
+
 describe("líneas con datos para la información nutricional", () => {
   it("cada línea lleva cantidad, si es comida y el tamaño del envase", () => {
     const a = analyzeCart(CART_LINES, [], 1, "200");
