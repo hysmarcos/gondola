@@ -3,12 +3,16 @@ import * as coto from "./coto.js";
 import * as mas from "./mas.js";
 import * as dia from "./dia.js";
 import * as carrefour from "./carrefour.js";
-import { exclusionText, hashOf } from "./hash.js";
+import { fingerprint, hashOf } from "./hash.js";
 
 export const RULES = { coto, mas, dia, carrefour };
 
+// La huella vacía (legal vacío) no es un texto leído: nunca da una regla.
+const EMPTY = hashOf("");
+
 const entryOf = (promo, rules) => {
-  const hash = hashOf(exclusionText(promo?.legal));
+  const hash = fingerprint(promo?.legal);
+  if (hash === EMPTY) return null;
   return (rules?.exclusions ?? []).find((e) => e.hash === hash) ?? null;
 };
 

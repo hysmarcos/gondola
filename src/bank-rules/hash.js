@@ -23,6 +23,13 @@ export function exclusionText(legal) {
   return out.join("|");
 }
 
+// Huella de una promo: la de sus oraciones de exclusión o, si no tiene ninguna, la del legal
+// entero (con la misma limpieza). Así un legal que nadie leyó nunca da una huella conocida
+// por casualidad: "EXCEPTO…" o "ÚNICAMENTE EN…" no están en la lista de palabras.
+export function fingerprint(legal) {
+  return hashOf(exclusionText(legal) || clean(String(legal ?? "")));
+}
+
 // FNV-1a de 32 bits, en hexadecimal de 8 caracteres.
 export function hashOf(text) {
   let h = 0x811c9dc5;

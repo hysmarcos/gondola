@@ -114,9 +114,13 @@ Fuera de alcance:
   restringen productos (`EXCLUI`, `EXCLUY`, `EXCLUSION`, `EXCLUID`, `NO INCLUYE`,
   `NO APLICA`, `NO ACUMULA`, `NO CUMULATIV`, `NO VALID`, `NO PARTICIP`, `SELECCIONAD`;
   ninguna toca "exclusivo"), en mayúsculas, sin acentos y con espacios simples. Si una de
-  esas oraciones termina en ":", entra también todo lo que sigue (la lista). `hashOf(texto)`
-  da la huella. Los números, los días y los meses quedan afuera, así un cambio de fecha no
-  dispara la alarma.
+  esas oraciones termina en ":", entra también todo lo que sigue (la lista).
+  `fingerprint(legal)` da la huella: `hashOf` de `exclusionText(legal)` o, si sale vacío,
+  `hashOf` del legal entero con la misma limpieza (mayúsculas, sin acentos, solo letras y
+  espacios, sin días ni meses, espacios simples). Así un legal sin esas palabras que nadie
+  leyó ("EXCEPTO…", "ÚNICAMENTE EN…") no cae en una regla conocida. Ninguna regla usa la
+  huella vacía (legal vacío). Los números, los días y los meses quedan afuera, así un
+  cambio de fecha no dispara la alarma.
 
 ### Estado de una promo
 

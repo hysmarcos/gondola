@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { compareCart } from "../src/cart-compare.js";
-import { hashOf } from "../src/bank-rules/hash.js";
+import { fingerprint } from "../src/bank-rules/hash.js";
+import { readFileSync } from "node:fs";
+import { parseDia } from "../src/bank-promos/dia.js";
 
 const DIA = [{ id: "dia", name: "Día" }];
 const TUE = 2, WED = 3;
@@ -23,16 +25,17 @@ const analysis = (extra = {}) => ({ lines: LINES, total: 10000, today: { promo: 
 const LINE_RESULTS = { 1: { total: 900, onSale: false, url: "u1" }, 2: { total: 1900, onSale: true, url: "u2" }, 3: { total: 2800, onSale: false, url: "u3" } };
 const results = (lines = LINE_RESULTS) => ({ dia: { at: 1234, lines } });
 
-// Reglas de prueba: la tarjeta va en la promo; con legal vacío no se excluye nada salvo la marca "excluida".
+// Reglas de prueba: la tarjeta va en la promo; con el legal LEGAL no se excluye nada salvo la marca "excluida".
+const LEGAL = "Válido los martes en la tienda online.";
 const RULES = {
   dia: {
     cardOf: (p) => p.card ?? null,
-    exclusions: [{ hash: hashOf(""), test: (prod) => prod.brand === "excluida" }],
+    exclusions: [{ hash: fingerprint(LEGAL), test: (prod) => prod.brand === "excluida" }],
   },
 };
 const promo = (extra = {}) => ({
   id: "p1", store: "dia", bankLabel: "Naranja X", title: "Turbo 25%", percent: 25, cap: 9500, capKnown: true,
-  capPeriod: null, minPurchase: null, days: [TUE], from: null, to: null, online: true, direct: false, legal: "",
+  capPeriod: null, minPurchase: null, days: [TUE], from: null, to: null, online: true, direct: false, legal: LEGAL,
   card: { cardId: "naranjax", plan: "turbo" }, ...extra,
 });
 
@@ -180,14 +183,16 @@ describe("compareCart: con tarjetas", () => {
 
   it("las reglas reciben nombre y marca sin acentos, grupos y si está en oferta", () => {
     const seen = [];
-    const rules = { dia: { ...RULES.dia, exclusions: [{ hash: hashOf(""), test: (p) => (seen.push(p), false) }] } };
+    const rules = { dia: { ...RULES.dia, exclusions: [{ hash: fingerprint(LEGAL), test: (p) => (seen.push(p), false) }] } };
     run({ rules });
     expect(seen[0]).toEqual({ name: "yerba mananita", brand: "mananita", groups: ["almacen"], onSale: false });
     expect(seen[1].onSale).toBe(true);
   });
 
   it("con las reglas reales de Día", () => {
-    const real = promo({ bankLabel: "Naranja", title: "Plan Turbo 25%", card: undefined });
+    // El legal leído de la captura de Día (sin él la huella no está en las reglas).
+    const { legal } = parseDia(readFileSync("tests/fixtures/bank-dia.html", "utf8")).find((p) => p.id === "Naranja 25%");
+    const real = promo({ bankLabel: "Naranja", title: "Plan Turbo 25%", card: undefined, legal });
     const st = compareCart({ analysis: analysis(), results: results(), promos: { dia: [real] }, cards: CARDS, day: TUE, stores: DIA }).stores[0];
     expect(st.bankOther).toMatchObject({ saving: 1400, total: 4200 });
   });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { exclusionText, hashOf } from "../src/bank-rules/hash.js";
+import { exclusionText, hashOf, fingerprint } from "../src/bank-rules/hash.js";
 import { RULES, statusOf, excluded, promoEntries } from "../src/bank-rules/index.js";
 import { parseMas } from "../src/bank-promos/mas.js";
 import { parseDia } from "../src/bank-promos/dia.js";
@@ -55,6 +55,25 @@ describe("exclusionText y hashOf", () => {
   });
 });
 
+describe("fingerprint", () => {
+  it("con oraciones de exclusión, la huella es la de esas oraciones", () => {
+    expect(fingerprint(A)).toBe(hashOf(exclusionText(A)));
+  });
+
+  it("sin oraciones de exclusión, la huella es el legal entero sin números, días ni meses", () => {
+    const legal = (d, n) => `Válido el ${d} de 2026. 20% de reintegro con un tope de $${n}. Excepto vinos.`;
+    expect(exclusionText(legal("MIÉRCOLES 11 DE NOVIEMBRE", "25.000"))).toBe("");
+    expect(fingerprint(legal("MIÉRCOLES 11 DE NOVIEMBRE", "25.000"))).toBe(hashOf("VALIDO EL DE DE DE REINTEGRO CON UN TOPE DE EXCEPTO VINOS"));
+    expect(fingerprint(legal("MIÉRCOLES 11 DE NOVIEMBRE", "25.000"))).toBe(fingerprint(legal("JUEVES 3 DE DICIEMBRE", "30.000")));
+    expect(fingerprint(legal("JUEVES 3 DE DICIEMBRE", "30.000"))).not.toBe(fingerprint(legal("JUEVES 3 DE DICIEMBRE", "30.000").replace("vinos", "vinos y cervezas")));
+  });
+
+  it("un legal vacío da la huella vacía", () => {
+    expect(fingerprint("")).toBe(hashOf(""));
+    expect(fingerprint(undefined)).toBe(hashOf(""));
+  });
+});
+
 describe("statusOf y excluded", () => {
   it("sigue el orden: sin tarjeta, sin número, huella desconocida, ok", () => {
     expect(statusOf({ bankLabel: "Z", percent: 20, legal: A }, rules)).toBe("unmapped");
@@ -68,10 +87,12 @@ describe("statusOf y excluded", () => {
     expect(statusOf({ bankLabel: "X", percent: 20, capKnown: true, legal: A }, rules)).toBe("ok");
   });
 
-  it("una promo solo en productos seleccionados no es ok aunque las reglas conozcan el texto vacío", () => {
+  it("una regla con la huella vacía no vale para ninguna promo", () => {
     const empty = { cardOf: () => ({ cardId: "modo", plan: null }), exclusions: [{ hash: hashOf(""), test: () => false }] };
     expect(statusOf({ percent: 10, legal: "VÁLIDO EN PRODUCTOS SELECCIONADOS." }, empty)).toBe("changed");
-    expect(statusOf({ percent: 10, legal: "Válido los martes." }, empty)).toBe("ok");
+    expect(statusOf({ percent: 10, legal: "Válido los martes." }, empty)).toBe("changed");
+    expect(statusOf({ percent: 10, legal: "" }, empty)).toBe("changed");
+    expect(excluded({ legal: "" }, empty, product("detergente"))).toBe(true);
   });
 
   it("excluded usa el test de la huella; sin huella conocida excluye todo", () => {
@@ -81,7 +102,7 @@ describe("statusOf y excluded", () => {
   });
 
   it("promoEntries arma { promo, ref, status } con las reglas del súper", () => {
-    const promo = { bankLabel: "Modo", title: "Desde APP MODO o APP de bancos adheridos", percent: 20, capKnown: true, legal: "" };
+    const promo = mas.find((p) => p.bankLabel === "Modo");
     expect(promoEntries("mas", [promo])).toEqual([{ promo, ref: { cardId: "modo", plan: null }, status: "ok" }]);
     expect(promoEntries("mas", [{ ...promo, legal: "Solo productos seleccionados." }])[0].status).toBe("changed");
     expect(promoEntries("mas", "error")).toBe("error");
@@ -102,6 +123,18 @@ describe("reglas de Más (captura 2026-11-12)", () => {
     expect(statusOf(modo, RULES.mas)).toBe("ok");
     expect(RULES.mas.cardOf(masClub)).toEqual({ cardId: "masclub", plan: null });
     expect(RULES.mas.cardOf(modo)).toEqual({ cardId: "modo", plan: null });
+  });
+
+  it("MODO con otro día y otros montos sigue ok; con un legal sin leer, changed", () => {
+    const otro = modo.legal.replace(/MIERCOLES 11 DE NOVIEMBRE/i, "JUEVES 12 DE NOVIEMBRE").replace("$75.000", "$80.000").replace("$25.000", "$20.000");
+    expect(otro).not.toBe(modo.legal);
+    expect(statusOf({ ...modo, legal: otro }, RULES.mas)).toBe("ok");
+    // Sin ninguna palabra de la lista, pero con una restricción que nadie leyó.
+    const nuevo = "Válido el jueves 12 de noviembre. 20% de reintegro. Únicamente en productos de almacén, salvo bebidas.";
+    expect(exclusionText(nuevo)).toBe("");
+    expect(statusOf({ ...modo, legal: nuevo }, RULES.mas)).toBe("changed");
+    expect(excluded({ ...modo, legal: nuevo }, RULES.mas, product("detergente"))).toBe(true);
+    expect(statusOf({ ...modo, legal: "" }, RULES.mas)).toBe("changed");
   });
 
   it("no confunde un banco que paga con MODO con la billetera MODO", () => {
@@ -179,6 +212,12 @@ describe("reglas de Día (captura 2026-11-12)", () => {
     }
   });
 
+  it("Personal Pay con un legal sin leer y sin palabras de exclusión queda changed", () => {
+    const pp = dia.find((p) => p.id === "Personal Pay");
+    expect(statusOf({ ...pp, legal: "Válido los jueves. 15% de reintegro. No es válido en bebidas alcohólicas." }, RULES.dia)).toBe("changed");
+    expect(statusOf({ ...pp, legal: "Válido los jueves. 15% de reintegro, excepto bebidas." }, RULES.dia)).toBe("changed");
+  });
+
   it("Naranja sin plan claro no se asigna", () => {
     expect(RULES.dia.cardOf({ bankLabel: "Naranja", title: "Naranja 40%", percent: 40, legal: "" })).toBe(null);
   });
@@ -198,6 +237,10 @@ describe("reglas de Carrefour", () => {
 });
 
 describe("cada regla tiene fuente", () => {
+  it("ninguna regla usa la huella vacía", () => {
+    for (const id of Object.keys(RULES)) for (const e of RULES[id].exclusions ?? []) expect([id, e.hash]).not.toEqual([id, hashOf("")]);
+  });
+
   it("toda exclusión dice su fuente y tiene test", () => {
     for (const id of ["mas", "dia"]) {
       expect(RULES[id].exclusions.length).toBeGreaterThan(0);

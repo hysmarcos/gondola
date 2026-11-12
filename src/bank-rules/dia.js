@@ -8,7 +8,6 @@
 // - "Banco del Sol": "no aplica sobre productos incluidos en programas gubernamentales"; con
 //   los datos de Coto no se sabe cuáles son, así que esa huella no está y queda "changed".
 // - "3CSI TC": cuotas con cualquier Visa, Mastercard, Amex o Cabal; no es una tarjeta de la lista.
-import { hashOf } from "./hash.js";
 import { norm } from "../exclusions.js";
 
 const SOURCE = "https://diaonline.supermercadosdia.com.ar/medios-de-pago-y-promociones (2026-11-12)";
@@ -43,8 +42,11 @@ export function cardOf(promo) {
 }
 
 export const exclusions = [
-  // Sin oraciones de exclusión: "Personal Pay" y "20% - MODO". Ninguno excluye productos.
-  { hash: hashOf(""), source: SOURCE, test: () => false },
+  // Sin oraciones de exclusión, la huella es el legal entero (releído el 2026-11-12):
+  // "Personal Pay" (15%, sin tope, compra mínima) no excluye productos.
+  { hash: "631001dd", source: SOURCE, test: () => false },
+  // "20% - MODO": acumulable, bancos adheridos, tope por banco por mes. No excluye productos.
+  { hash: "2bc39944", source: SOURCE, test: () => false },
   // "Naranja 20/25/30%": "no aplica para compras realizadas con Naranja Visa, Mastercard, Amex
   // ni billeteras que no sean Naranja X". Restringe el medio de pago, no productos.
   { hash: "4fd1ef42", source: SOURCE, test: () => false },
