@@ -1,8 +1,10 @@
 // Reglas a mano de las promos online de Día. Fuente: los términos de cada tarjeta en
 // la página de promos de Día, leídos el 2026-11-12.
 // Lo que queda afuera a propósito (no se resta):
-// - "Mercado Pago 10%": vale solo en "productos o servicios seleccionados" por Mercado Pago.
-// - "Columbia 20% de reintegro": el legal dice "en las sucursales", no la tienda online.
+// - "Mercado Pago 10%": vale solo en "productos o servicios seleccionados" por Mercado Pago;
+//   no se sabe cuáles, así que esa huella no está y queda "changed".
+// - "Columbia 20% de reintegro": el legal dice "en las sucursales" y nunca nombra la tienda
+//   online. No es una promo online: cardOf no la asigna.
 // - "Banco del Sol": "no aplica sobre productos incluidos en programas gubernamentales"; con
 //   los datos de Coto no se sabe cuáles son, así que esa huella no está y queda "changed".
 // - "3CSI TC": cuotas con cualquier Visa, Mastercard, Amex o Cabal; no es una tarjeta de la lista.
@@ -28,7 +30,7 @@ function naranja(promo) {
 export function cardOf(promo) {
   const bank = plain(promo?.bankLabel);
   const legal = plain(promo?.legal);
-  if (/seleccionados/.test(legal)) return null;
+  // Solo en sucursales: no es promo online, aunque Día la marque así.
   if (/sucursal/.test(legal) && !/online|sitio web/.test(legal)) return null;
   if (bank === "personal pay") return { cardId: "personalpay", plan: null };
   if (bank === "modo") return { cardId: "modo", plan: null };
@@ -41,8 +43,9 @@ export function cardOf(promo) {
 }
 
 export const exclusions = [
-  // Sin oraciones de exclusión: "20% - MODO" y "Naranja 20/25/30%". Ninguno excluye productos.
+  // Sin oraciones de exclusión: "Personal Pay" y "20% - MODO". Ninguno excluye productos.
   { hash: hashOf(""), source: SOURCE, test: () => false },
-  // "Personal Pay": solo "exclusivo en tiendas físicas y el sitio web". No excluye productos.
-  { hash: "5e2ef266", source: SOURCE, test: () => false },
+  // "Naranja 20/25/30%": "no aplica para compras realizadas con Naranja Visa, Mastercard, Amex
+  // ni billeteras que no sean Naranja X". Restringe el medio de pago, no productos.
+  { hash: "4fd1ef42", source: SOURCE, test: () => false },
 ];

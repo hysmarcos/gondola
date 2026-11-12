@@ -111,9 +111,12 @@ Fuera de alcance:
     `onSale` (si en el otro súper está en oferta). Mismo estilo que `exclusions.js`.
   - Cada archivo dice la fuente y la fecha de lectura.
 - `src/bank-rules/hash.js`: `exclusionText(legal)` junta las oraciones del legal que
-  hablan de exclusiones (`EXCLU`, `NO INCLUYE`, `NO APLICA SOBRE`, `NO ACUMULABLE`), en
-  mayúsculas, sin acentos y con espacios simples. `hashOf(texto)` da la huella. Las
-  fechas quedan afuera, así un cambio de mes no dispara la alarma.
+  restringen productos (`EXCLUI`, `EXCLUY`, `EXCLUSION`, `EXCLUID`, `NO INCLUYE`,
+  `NO APLICA`, `NO ACUMULA`, `NO CUMULATIV`, `NO VALID`, `NO PARTICIP`, `SELECCIONAD`;
+  ninguna toca "exclusivo"), en mayúsculas, sin acentos y con espacios simples. Si una de
+  esas oraciones termina en ":", entra también todo lo que sigue (la lista). `hashOf(texto)`
+  da la huella. Los números, los días y los meses quedan afuera, así un cambio de fecha no
+  dispara la alarma.
 
 ### Estado de una promo
 

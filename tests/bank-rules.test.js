@@ -34,6 +34,20 @@ describe("exclusionText y hashOf", () => {
     expect(hashOf(exclusionText(base))).not.toBe(hashOf(exclusionText(base.replace("Vinos", "Vinos, Fernet"))));
   });
 
+  it("toma otras formas de restringir productos, no las de vigencia", () => {
+    expect(exclusionText("VÁLIDO EN PRODUCTOS SELECCIONADOS.")).toBe("VALIDO EN PRODUCTOS SELECCIONADOS");
+    expect(exclusionText("Descuento no cumulativo. No válido para vinos. No participan ofertas. No aplica a electro.")).toBe(
+      "DESCUENTO NO CUMULATIVO|NO VALIDO PARA VINOS|NO PARTICIPAN OFERTAS|NO APLICA A ELECTRO",
+    );
+    expect(exclusionText("Exclusivo para compras online. Promoción exclusiva para socios.")).toBe("");
+  });
+
+  it("los días y meses no cambian la huella", () => {
+    const day = (d) => `Promo del ${d}. No acumulable con otras promociones del ${d}.`;
+    expect(exclusionText(day("MARTES 27 DE OCTUBRE"))).toBe("NO ACUMULABLE CON OTRAS PROMOCIONES DEL DE");
+    expect(hashOf(exclusionText(day("MARTES 27 DE OCTUBRE")))).toBe(hashOf(exclusionText(day("MIERCOLES 11 DE NOVIEMBRE"))));
+  });
+
   it("hashOf es FNV-1a de 32 bits en 8 caracteres hexadecimales", () => {
     expect(hashOf("")).toBe("811c9dc5");
     expect(hashOf("a")).toBe("e40c292c");
@@ -54,6 +68,12 @@ describe("statusOf y excluded", () => {
     expect(statusOf({ bankLabel: "X", percent: 20, capKnown: true, legal: A }, rules)).toBe("ok");
   });
 
+  it("una promo solo en productos seleccionados no es ok aunque las reglas conozcan el texto vacío", () => {
+    const empty = { cardOf: () => ({ cardId: "modo", plan: null }), exclusions: [{ hash: hashOf(""), test: () => false }] };
+    expect(statusOf({ percent: 10, legal: "VÁLIDO EN PRODUCTOS SELECCIONADOS." }, empty)).toBe("changed");
+    expect(statusOf({ percent: 10, legal: "Válido los martes." }, empty)).toBe("ok");
+  });
+
   it("excluded usa el test de la huella; sin huella conocida excluye todo", () => {
     expect(excluded({ legal: A }, rules, product("carne picada"))).toBe(true);
     expect(excluded({ legal: A }, rules, product("detergente"))).toBe(false);
@@ -62,7 +82,8 @@ describe("statusOf y excluded", () => {
 
   it("promoEntries arma { promo, ref, status } con las reglas del súper", () => {
     const promo = { bankLabel: "Modo", title: "Desde APP MODO o APP de bancos adheridos", percent: 20, capKnown: true, legal: "" };
-    expect(promoEntries("mas", [promo])).toEqual([{ promo, ref: { cardId: "modo", plan: null }, status: "changed" }]);
+    expect(promoEntries("mas", [promo])).toEqual([{ promo, ref: { cardId: "modo", plan: null }, status: "ok" }]);
+    expect(promoEntries("mas", [{ ...promo, legal: "Solo productos seleccionados." }])[0].status).toBe("changed");
     expect(promoEntries("mas", "error")).toBe("error");
   });
 });
@@ -136,7 +157,7 @@ describe("reglas de Día (captura 2026-11-12)", () => {
   const expected = {
     "Personal Pay": ["ok", { cardId: "personalpay", plan: null }],
     "20% - MODO": ["ok", { cardId: "modo", plan: null }],
-    "Mercado Pago 10%": ["unmapped", null], // solo productos que elige Mercado Pago
+    "Mercado Pago 10%": ["changed", { cardId: "mercadopago", plan: null }], // "productos seleccionados": no se traduce
     "Columbia 20% de reintegro": ["unmapped", null], // el legal dice "en las sucursales"
     "Banco del Sol": ["changed", { cardId: "bancodelsol", plan: null }], // "programas gubernamentales" no se traduce
     "3CSI TC": ["unmapped", null], // cuotas con cualquier Visa: no es una tarjeta de la lista

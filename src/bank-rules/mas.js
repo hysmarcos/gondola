@@ -2,6 +2,7 @@
 // (la misma que lee src/bank-promos/service.js), leída el 2026-11-12.
 // Más cambia sus promos online casi a diario: lo que no está acá queda sin restar.
 import { COCA_COLA, toRe, norm } from "../exclusions.js";
+import { hashOf } from "./hash.js";
 
 const SOURCE = "https://www.masonline.com.ar/promociones-bancarias (2026-11-12)";
 
@@ -66,9 +67,9 @@ function masClubOnline(p) {
 }
 
 export const exclusions = [
-  // MasClub "Sin tope. Exclusivo MasOnline." (25%, martes 27 de octubre). La huella lleva el
-  // día de la semana y el mes: cada promo nueva de MasClub hace saltar la alarma.
-  { hash: "0f81bd60", source: SOURCE, test: masClubOnline },
-  // MODO "Desde APP MODO o APP de bancos adheridos" (20%). El legal no excluye productos.
-  { hash: "192e2b46", source: SOURCE, test: () => false },
+  // MasClub "Sin tope. Exclusivo MasOnline." (25%, martes 27 de octubre): "no acumulable…"
+  // y la lista que sigue a "EXCLUIDOS - NO INCLUYE:".
+  { hash: "8868ade6", source: SOURCE, test: masClubOnline },
+  // MODO "Desde APP MODO o APP de bancos adheridos" (20%): sin oraciones de exclusión.
+  { hash: hashOf(""), source: SOURCE, test: () => false },
 ];

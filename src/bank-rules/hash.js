@@ -1,12 +1,15 @@
 // Huella de las exclusiones de una promo. Si el súper cambia ese texto, cambia la huella
 // y la promo deja de restarse hasta que alguien relea los términos (alarma).
 
-const KEYS = /EXCLU|NO INCLUYE|NO APLICA SOBRE|NO ACUMULABLE/;
+// Toda forma de restringir productos, aunque sea con otras palabras ("seleccionados",
+// "no cumulativo"). Ninguna toca "EXCLUSIVO": esas oraciones hablan de vigencia, no de productos.
+const KEYS = /EXCLUI|EXCLUY|EXCLUSION|EXCLUID|NO INCLUYE|NO APLICA|NO ACUMULA|NO CUMULATIV|NO VALID|NO PARTICIP|SELECCIONAD/;
+const DATES = /\b(LUNES|MARTES|MIERCOLES|JUEVES|VIERNES|SABADOS?|DOMINGOS?|ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SE?PTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/g;
 
-const clean = (s) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toUpperCase().replace(/[^A-Z ]+/g, " ").replace(/ +/g, " ").trim();
+const clean = (s) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toUpperCase().replace(/[^A-Z ]+/g, " ").replace(DATES, " ").replace(/ +/g, " ").trim();
 
-// Solo las oraciones que hablan de exclusiones, sin números: un cambio de fecha o de tope
-// no dispara la alarma. Un título como "EXCLUIDOS - NO INCLUYE:" trae la lista después,
+// Solo las oraciones que hablan de exclusiones, sin números, días ni meses: un cambio de
+// fecha o de tope no dispara la alarma. Un título como "EXCLUIDOS - NO INCLUYE:" trae la lista después,
 // en oraciones sin esas palabras: desde ahí entra todo el resto del legal.
 export function exclusionText(legal) {
   const out = [];
