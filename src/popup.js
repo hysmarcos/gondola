@@ -1,11 +1,11 @@
 // Ventana de la extensión: pestañas Tarjetas, Ajustes, Colaborá y Ayuda.
 // Para sumar un menú: una entrada en TABS y su función en VIEWS.
-import { dayName, isComunidad } from "./banks.js";
 import { ALLERGENS } from "./nutrition.js";
 import { feedbackLinks, REPO } from "./feedback.js";
-
-const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
-const SVG = "http://www.w3.org/2000/svg";
+import { STORES } from "./stores.js";
+import { el, icon, plural, switchInput } from "./popup-dom.js";
+import { cardsView } from "./popup-cards.js";
+import { normalizeTheme } from "./theme.js";
 
 const TABS = [
   { id: "tarjetas", label: "Tarjetas", icon: ["M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z", "M3 10h18", "M7 15h4"] },
@@ -34,6 +34,7 @@ const SETTINGS = [
 ];
 
 const HELP = [
+  ["Modo oscuro", "En Ajustes, sección Apariencia, elegí Claro, Oscuro o Automático. Cambia todo el sitio de Coto. La ventana de Góndola sigue clara."],
   ["Precio real para comparar", "El precio por kg, litro, unidad o 10 m de papel, ya con la oferta de Coto."],
   ["Hoy con tu banco", "El mismo precio con la promo de tu tarjeta, si Coto la aplica a ese producto."],
   ["Banco no aplica", "El producto ya está en oferta o Coto lo excluye de las promos bancarias."],
@@ -41,138 +42,11 @@ const HELP = [
   ["Información nutricional", "Tabla de Open Food Facts por código de barras, cargada por la comunidad. Si falta, podés cargarla vos."],
   ["Sin TACC", "Lo que marca Coto. Si el producto menciona trigo, avena, cebada o centeno, te avisa. Verificá siempre el símbolo oficial en el envase."],
   ["Mi perfil", "En Ajustes, sección Mi perfil. Destaca lo que te importa en cada producto. En la lista, con \"Diseño Góndola\" e \"Información nutricional\" prendidos, marca los productos que declaran tus alergias y avisa si Open Food Facts no tiene datos de alérgenos. Sin etiqueta no significa que sea seguro. Queda solo en tu navegador. No es consejo médico."],
-  ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
+  ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Elegís con cuáles comparar en Ajustes. \"llevando 2\": precio por unidad con su promo."],
+  ["Promos de otros súper", "Las promos de otros súper son solo de compra online. Los totales no incluyen envío. Si los términos de una promo cambiaron, no se resta."],
+  ["Carrito comparado", "En el carrito, compara solo los productos que están en los dos súper. Si faltan, \"Faltan N\" muestra cuáles."],
+  ["Tarjetas para todos los súper", "Tus tarjetas valen para Coto y para los otros súper. De Carrefour todavía no se pueden leer las promos del banco: se compara solo por precio."],
 ];
-
-function describe(p) {
-  const days = p.days.map(dayName).join(", ");
-  const cap = p.cap ? `tope $${money.format(p.cap)}${p.capWeekly ? " por semana" : ""}` : "sin tope";
-  const only = p.onlyNoOffer ? " · solo sin oferta" : "";
-  return `${days} · ${p.percent}% · ${cap}${only}`;
-}
-
-function el(doc, tag, props = {}, children = []) {
-  const e = doc.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === "attrs") for (const [a, val] of Object.entries(v)) e.setAttribute(a, val);
-    else e[k] = v;
-  }
-  for (const c of children) if (c != null) e.append(c);
-  return e;
-}
-
-function icon(doc, paths) {
-  const svg = doc.createElementNS(SVG, "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("class", "icon");
-  for (const d of paths) {
-    const p = doc.createElementNS(SVG, "path");
-    p.setAttribute("d", d);
-    svg.append(p);
-  }
-  return svg;
-}
-
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const norm = (t) => String(t).normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-
-function switchInput(doc, props) {
-  return el(doc, "input", { type: "checkbox", className: "switch", ...props, attrs: { role: "switch", ...(props.attrs ?? {}) } });
-}
-
-// Logo del banco (decorativo: el nombre va al lado). Si no carga, deja el lugar vacío.
-function bankLogo(doc, items, logoUrl) {
-  const src = logoUrl(items.find((p) => p.logo)?.logo);
-  if (!src) return el(doc, "span", { className: "bank-logo bank-logo--empty", attrs: { "aria-hidden": "true" } });
-  const img = el(doc, "img", { className: "bank-logo", attrs: { src, alt: "", loading: "lazy" } });
-  img.addEventListener("error", () => img.classList.add("bank-logo--empty"));
-  return img;
-}
-
-function cardsView(doc, s, storage, meta = {}) {
-  const logoUrl = meta.logoUrl ?? (() => null);
-  const view = [];
-  // Comunidad Coto no va acá: se prende en Ajustes ("Tengo Comunidad Coto").
-  const promos = (s.promos ?? []).filter((p) => !isComunidad(p));
-  if (!promos.length) {
-    view.push(el(doc, "div", { className: "empty" }, [
-      el(doc, "p", { className: "empty-title", textContent: "Todavía no hay promos" }),
-      el(doc, "p", { textContent: "Abrí coto.com.ar una vez para cargar las promos de los bancos." }),
-    ]));
-    return view;
-  }
-
-  // Día de compra: chips de radio.
-  const current = typeof s.day === "number" ? String(s.day) : "hoy";
-  const days = el(doc, "fieldset", { className: "days" }, [el(doc, "legend", { textContent: "Día de compra" })]);
-  const options = [["hoy", "Hoy"], ...[0, 1, 2, 3, 4, 5, 6].map((d) => [String(d), dayName(d).slice(0, 3)])];
-  for (const [value, text] of options) {
-    const input = el(doc, "input", { type: "radio", name: "day", value, checked: value === current });
-    input.addEventListener("change", () => storage.set({ day: value === "hoy" ? "hoy" : Number(value) }));
-    const title = value === "hoy" ? "Hoy" : dayName(Number(value));
-    days.append(el(doc, "label", { className: "chip", title }, [input, el(doc, "span", { textContent: text })]));
-  }
-  view.push(days);
-
-  const selected = new Set((s.selectedPromoIds ?? []).filter((id) => promos.some((p) => p.id === id)));
-  const summary = el(doc, "p", { className: "summary", attrs: { "aria-live": "polite" } });
-  const updateSummary = () => {
-    summary.textContent = selected.size ? plural(selected.size, "promo elegida", "promos elegidas") : "Marcá las promos de tus tarjetas";
-  };
-  updateSummary();
-
-  const search = el(doc, "input", { type: "search", placeholder: "Buscar banco", className: "search", attrs: { "aria-label": "Buscar banco" } });
-  view.push(el(doc, "div", { className: "toolbar" }, [search, summary]));
-
-  const byBank = new Map();
-  for (const p of promos) {
-    if (!byBank.has(p.bank)) byBank.set(p.bank, []);
-    byBank.get(p.bank).push(p);
-  }
-  const list = el(doc, "div", { className: "banks" });
-  const rows = [];
-  // Primero los bancos con promos elegidas, después por nombre.
-  const chosen = ([, items]) => (items.some((p) => selected.has(p.id)) ? 0 : 1);
-  const order = [...byBank].sort((a, b) => chosen(a) - chosen(b) || a[0].localeCompare(b[0]));
-  for (const [bank, items] of order) {
-    const count = el(doc, "span", { className: "count" });
-    const updateCount = () => {
-      const n = items.filter((p) => selected.has(p.id)).length;
-      count.textContent = n ? String(n) : "";
-      count.hidden = !n;
-    };
-    const details = el(doc, "details", { className: "bank", open: items.some((p) => selected.has(p.id)) }, [
-      el(doc, "summary", {}, [bankLogo(doc, items, logoUrl), el(doc, "span", { className: "bank-name", textContent: bank }), count, icon(doc, ["M6 9l6 6l6-6"])]),
-    ]);
-    for (const p of items) {
-      const box = switchInput(doc, { value: p.id, checked: selected.has(p.id) });
-      box.addEventListener("change", () => {
-        if (box.checked) selected.add(p.id);
-        else selected.delete(p.id);
-        updateCount();
-        updateSummary();
-        storage.set({ selectedPromoIds: [...selected] });
-      });
-      details.append(el(doc, "label", { className: "row", title: p.text }, [el(doc, "span", { className: "row-text", textContent: describe(p) }), box]));
-    }
-    updateCount();
-    rows.push({ name: norm(bank), details });
-    list.append(details);
-  }
-  const noMatch = el(doc, "p", { className: "empty-search", textContent: "Ningún banco con ese nombre", hidden: true });
-  search.addEventListener("input", () => {
-    const q = norm(search.value.trim());
-    let shown = 0;
-    for (const r of rows) {
-      r.details.hidden = !!q && !r.name.includes(q);
-      if (!r.details.hidden) shown++;
-    }
-    noMatch.hidden = shown > 0;
-  });
-  view.push(list, noMatch);
-  return view;
-}
 
 const PROFILE = [
   { key: "profileCeliac", title: "Soy celíaco/a", text: "Muestra si Coto o Open Food Facts lo marcan Sin TACC." },
@@ -189,6 +63,48 @@ function settingRow(doc, { key, title, text }, checked, storage, onChange = () =
   return el(doc, "label", { className: "setting" }, [
     el(doc, "span", { className: "setting-text" }, [el(doc, "span", { className: "setting-title", textContent: title }), el(doc, "span", { className: "setting-desc", textContent: text })]),
     box,
+  ]);
+}
+
+// Un interruptor por súper, debajo de "Comparar con otros súper". Apagar uno escribe storesOff.
+// Si el súper no respondió la última vez, la fila lo dice.
+function storeRows(doc, s, storage) {
+  const off = new Set(Array.isArray(s.storesOff) ? s.storesOff : []);
+  return STORES.map((st) => {
+    const box = switchInput(doc, { name: `store-${st.id}`, checked: !off.has(st.id), disabled: s.compareStores === false });
+    box.addEventListener("change", () => {
+      if (box.checked) off.delete(st.id);
+      else off.add(st.id);
+      storage.set({ storesOff: STORES.map((x) => x.id).filter((id) => off.has(id)) });
+    });
+    const failed = s.storeStatus?.[st.id] === "error";
+    const row = el(doc, "label", { className: "row row--sub" }, [
+      el(doc, "span", { className: "row-text", textContent: st.name }),
+      failed ? el(doc, "span", { className: "row-note", textContent: "No responde" }) : null,
+      box,
+    ]);
+    row.dataset.store = st.id;
+    return row;
+  });
+}
+
+// Tema del sitio: tres opciones excluyentes. Lo inválido vale "light".
+const THEMES = [["light", "Claro"], ["dark", "Oscuro"], ["auto", "Automático"]];
+
+function themeRow(doc, value, storage) {
+  const current = normalizeTheme(value);
+  const options = THEMES.map(([id, label]) => {
+    const radio = el(doc, "input", { type: "radio", name: "theme", value: id, checked: id === current });
+    radio.addEventListener("change", () => {
+      if (radio.checked) storage.set({ theme: id });
+    });
+    return el(doc, "label", {}, [radio, el(doc, "span", { textContent: label })]);
+  });
+  // El lector de pantalla lee la descripción al entrar al grupo.
+  return el(doc, "fieldset", { className: "setting theme", attrs: { "aria-describedby": "theme-desc" } }, [
+    el(doc, "legend", { className: "setting-title", textContent: "Tema" }),
+    el(doc, "span", { id: "theme-desc", className: "setting-desc", textContent: "Modo oscuro para todo el sitio de Coto. Automático sigue el tema de tu sistema." }),
+    el(doc, "div", { className: "segmented" }, options),
   ]);
 }
 
@@ -229,7 +145,7 @@ function settingsView(doc, s, storage, meta = {}) {
     const body = el(doc, "div", { className: "screen-body" });
     // El estado de la fila: cuántos ajustes están prendidos, o qué hay en el perfil.
     const update = () => {
-      const boxes = [...body.querySelectorAll("input.switch")];
+      const boxes = [...body.querySelectorAll(".setting input.switch")];
       const on = boxes.filter((b) => b.checked).length;
       if (sec.id !== "perfil") status.replaceChildren(`${on} de ${boxes.length}`, el(doc, "span", { className: "sr-only", textContent: " prendidos" }));
       else {
@@ -238,7 +154,14 @@ function settingsView(doc, s, storage, meta = {}) {
       }
     };
     if (sec.id === "perfil") body.append(...profileView(doc, s, storage, update));
-    else body.append(...SETTINGS.filter((x) => x.section === sec.id).map((item) => settingRow(doc, item, s[item.key] !== false, storage, update)));
+    else {
+      if (sec.id === "apariencia") body.append(themeRow(doc, s.theme, storage));
+      for (const item of SETTINGS.filter((x) => x.section === sec.id)) {
+        const onChange = item.key === "compareStores" ? () => { update(); for (const b of body.querySelectorAll("[data-store] input")) b.disabled = !body.querySelector('input[name="compareStores"]').checked; } : update;
+        body.append(settingRow(doc, item, s[item.key] !== false, storage, onChange));
+        if (item.key === "compareStores") body.append(...storeRows(doc, s, storage));
+      }
+    }
     update();
 
     const row = el(doc, "button", { type: "button", className: "menu-row" }, [
@@ -271,7 +194,7 @@ function helpView(doc, meta) {
     el(doc, "dl", { className: "help" }, HELP.flatMap(([t, d]) => [el(doc, "dt", { textContent: t }), el(doc, "dd", { textContent: d })])),
     el(doc, "p", { className: "legal" }, [
       el(doc, "strong", { textContent: "No afiliado a Coto." }),
-      " Usa los datos de coto.com.ar. Solo envía códigos de barras: a Carrefour, Día y Más para comparar, y a Open Food Facts para la tabla nutricional.",
+      " Usa los datos de coto.com.ar. A Carrefour, Día y Más les envía códigos de barras y cantidades del carrito para comparar. A Open Food Facts, solo códigos de barras. Sin cookies ni datos personales.",
     ]),
     meta.welcomeUrl ? el(doc, "p", { className: "welcome-link" }, [el(doc, "a", { href: meta.welcomeUrl, target: "_blank", rel: "noopener noreferrer", textContent: "Ver la bienvenida de nuevo" })]) : null,
     el(doc, "p", { className: "version", textContent: `Versión ${meta.version ?? ""}`.trim() }),
@@ -306,9 +229,14 @@ function contribView(doc, meta) {
 const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), ajustes: settingsView, colabora: (doc, s, st, meta) => contribView(doc, meta), ayuda: (doc, s, st, meta) => helpView(doc, meta) };
 
 // storage: misma interfaz que en bridge.js.
-// meta: { version, logoUrl, welcomeUrl, tab, section }. tab y section abren el popup en ese lugar.
+// meta: { version, logoUrl, welcomeUrl, tab, section, stores, storePromos }. tab y section abren
+// el popup en ese lugar. stores y storePromos son las promos de los otros súper (ver popup-cards.js).
+const KEYS = ["skin", "promos", "selectedPromoIds", "cards", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab", "theme"];
+
+// Devuelve { refreshCards() }: vuelve a dibujar solo la pestaña Tarjetas (cuando llegan las
+// promos), sin tocar las otras pestañas y con la búsqueda que estaba escrita.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["skin", "promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
+  const s = await storage.get(KEYS);
   const wanted = meta.section ? "ajustes" : meta.tab ?? s.popupTab;
   let active = TABS.some((t) => t.id === wanted) ? wanted : "tarjetas";
 
@@ -356,4 +284,16 @@ export async function renderPopup(doc, storage, meta = {}) {
   select(active);
 
   doc.body.replaceChildren(header, main, nav);
+
+  async function refreshCards() {
+    const panel = panels.tarjetas;
+    const q = panel.querySelector('input[type="search"]')?.value ?? "";
+    panel.replaceChildren(...VIEWS.tarjetas(doc, await storage.get(KEYS), storage, meta));
+    const search = panel.querySelector('input[type="search"]');
+    if (search && q) {
+      search.value = q;
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+  return { refreshCards };
 }

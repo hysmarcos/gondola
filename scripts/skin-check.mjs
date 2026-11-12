@@ -29,8 +29,7 @@
 // Facts) corre acá, en Node; a Open Food Facts solo viaja el código de barras.
 import { readFile, mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
-import { createCompareService } from "../src/compare-service.js";
-import { createNutritionService } from "../src/nutrition-service.js";
+import { services, connect, injection } from "./lib/fake-extension.mjs";
 
 const BASE = "https://www.coto.com.ar";
 const PAGES = process.env.URL ? [{ name: process.env.URL, url: process.env.URL }] : [
@@ -47,81 +46,22 @@ const SIZES = [
   // Zoom del navegador al 150 %: la ventana de 1280 × 900 deja 853 × 600 px de CSS.
   { name: "1280x900 zoom 1,5", viewport: { width: 853, height: 600 }, scale: 1.5, columns: 2 },
 ].filter((s) => !process.env.ONLY || s.name === process.env.ONLY);
-const CSS = ["src/badge.css", "src/skin.css", "src/skin-list.css", "src/skin-pdp.css"];
+// Los CSS del content script de Coto, leídos de manifest.json en su orden: los tokens --g-*
+// viven en src/theme.css.
+const manifest = JSON.parse(await readFile("manifest.json", "utf8"));
+const CSS = manifest.content_scripts.find((c) => c.css).css;
 const PDP = { name: "PDP Leche Protein (PLU 508911)", url: process.env.PDP_URL || `${BASE}/productos/leche-protein-la-serenisima-1l/_/R-00508911-00508911-200` };
 const PDP_SIZE = { name: "1280x900", viewport: { width: 1280, height: 900 }, scale: 1 };
 const BUY_WIDTH = 380; // caja de compra (spec 5.1), más o menos 2 px
 const PDP_SCROLL = 600;
 const LABEL_WIDTH = 300; // columna de la etiqueta de nutrición (spec 5.3), más o menos 2 px
-const DEV = "https://gondola.local"; // host falso: sirve assets/ (logos de bancos)
 const TOLERANCE = 1;
 const FILTER_WIDTH = 184; // ancho de la columna de filtros (spec 4.1), más o menos 2 px
 const SCROLL_DOWN = 1500;
 
-// Lo que en la extensión hace el service worker: pedir precios a otros súper.
-const memory = new Map();
-const compareService = createCompareService({
-  fetch: globalThis.fetch.bind(globalThis),
-  cache: {
-    get: async (keys) => Object.fromEntries(keys.filter((k) => memory.has(k)).map((k) => [k, memory.get(k)])),
-    set: async (o) => Object.entries(o).forEach(([k, v]) => memory.set(k, v)),
-  },
-});
-
-// Y la información nutricional de Open Food Facts (solo viaja el código de barras, como en
-// la extensión): la PDP de un alimento la muestra, y con ella la columna izquierda es más alta.
-const nutritionMemory = new Map();
-const nutritionService = createNutritionService({
-  fetch: globalThis.fetch.bind(globalThis),
-  cache: {
-    get: async (keys) => Object.fromEntries(keys.filter((k) => nutritionMemory.has(k)).map((k) => [k, nutritionMemory.get(k)])),
-    set: async (o) => Object.entries(o).forEach(([k, v]) => nutritionMemory.set(k, v)),
-  },
-});
-
-async function serve(route) {
-  const path = new URL(route.request().url()).pathname;
-  if (path.startsWith("/assets/") && !path.includes("..")) {
-    const body = await readFile("." + decodeURIComponent(path)).catch(() => null);
-    if (body) return route.fulfill({ body, headers: { "Access-Control-Allow-Origin": "*" }, contentType: path.endsWith(".png") ? "image/png" : path.endsWith(".svg") ? "image/svg+xml" : "application/octet-stream" });
-  }
-  return route.fulfill({ status: 404 });
-}
-
-// El content script de la extensión, con chrome.* de mentira solo para él (no queda en
-// window, así Coto no ve una extensión). El ajuste "skin" queda prendido.
-function injection(badge, styles, kind) {
-  return `(() => {
-  const data = {};
-  const listeners = [];
-  const local = {
-    get: async (keys) => Object.fromEntries([].concat(keys).filter((k) => k in data).map((k) => [k, data[k]])),
-    set: async (o) => { Object.assign(data, o); const ch = Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { newValue: v }])); listeners.forEach((f) => f(ch)); },
-    remove: async () => {},
-    onChanged: { addListener: (f) => listeners.push(f) },
-  };
-  const chrome = {
-    runtime: {
-      getURL: (p) => ${JSON.stringify(DEV)} + "/" + p,
-      sendMessage: (m) => m && m.type === "compare" ? window.__gondolaCompare(m.eans) : m && m.type === "nutrition" ? window.__gondolaNutrition(m.ean) : Promise.resolve("error"),
-    },
-    storage: { local },
-  };
-  window.__gondolaStorage = local;
-  const start = () => {
-    if (!document.documentElement) return setTimeout(start, 0);
-    document.documentElement.setAttribute("data-gondola-skin", ${JSON.stringify(kind)});
-    const style = document.createElement("style");
-    style.id = "gondola-skin-check";
-    style.textContent = ${JSON.stringify(styles)};
-    // Primero en la página, como el CSS de una extensión real: el de Coto viene después y
-    // gana los empates. Al final (como estaba) tapaba errores de cascada.
-    (document.head ?? document.documentElement).prepend(style);
-    (function (chrome) { ${badge} })(chrome);
-  };
-  start();
-})();`;
-}
+// Lo que en la extensión hace el service worker: otros súper e información nutricional (la
+// PDP de un alimento la muestra, y con ella la columna izquierda es más alta).
+const svc = services();
 
 // Medidas de cada tarjeta, agrupadas en filas por el borde de arriba de su celda.
 function measure() {
@@ -494,11 +434,11 @@ async function interactPdp(page) {
 
 async function newContext(size, kind) {
   const context = await browser.newContext({ viewport: size.viewport, deviceScaleFactor: size.scale, locale: "es-AR" });
-  await context.route(DEV + "/**", serve);
-  await context.exposeBinding("__gondolaCompare", (_src, eans) => compareService.compare(eans).catch(() => ({})));
-  await context.exposeBinding("__gondolaNutrition", (_src, ean) => nutritionService.get(ean).catch(() => "error"));
+  await connect(context, svc);
   await context.addInitScript({ content: interceptor });
-  await context.addInitScript({ content: injection(badge, styles, kind) });
+  // El ajuste "skin" queda prendido y data-gondola-skin se pone a mano; el storage queda en
+  // window.__gondolaStorage para PROFILE.
+  await context.addInitScript({ content: injection({ badge, styles, styleId: "gondola-skin-check", exposeStorage: true, before: `document.documentElement.setAttribute("data-gondola-skin", ${JSON.stringify(kind)});` }) });
   if (process.env.PROFILE) await context.addInitScript({ content: `window.__gondolaStorage?.set(${JSON.stringify(JSON.parse(process.env.PROFILE))});` });
   return context;
 }

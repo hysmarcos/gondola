@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { STORES } from "../src/stores.js";
-import { searchUrl, parseSearch, simulationRequest, parseSimulation, bestOffer } from "../src/vtex.js";
+import { searchUrl, parseSearch, simulationRequest, parseSimulation, bestOffer, cartSimulationRequest, parseCartSimulation } from "../src/vtex.js";
 
 const store = STORES[0];
 
@@ -108,5 +108,59 @@ describe("v9: link del producto en cada súper", () => {
     const hit = hits.get("7790001");
     expect(hit.url).toBe("https://www.carrefour.com.ar/leche-1l/p");
     expect(bestOffer(hit, {})).toMatchObject({ unit: 2000, qty: 1, url: "https://www.carrefour.com.ar/leche-1l/p" });
+  });
+});
+
+describe("cartSimulationRequest", () => {
+  it("pide todos los items en un POST a la misma URL de simulación", () => {
+    const a = { itemId: "10", seller: "1" };
+    const b = { itemId: "20", seller: "2" };
+    const { url, init } = cartSimulationRequest(store, [{ hit: a, qty: 2 }, { hit: b, qty: 1 }]);
+    expect(url).toBe(simulationRequest(store, a, 1).url);
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({
+      items: [{ id: "10", quantity: 2, seller: "1" }, { id: "20", quantity: 1, seller: "2" }],
+      country: "ARG",
+    });
+  });
+});
+
+describe("parseCartSimulation", () => {
+  const fixture = JSON.parse(readFileSync(new URL("./fixtures/vtex-cart.json", import.meta.url), "utf8"));
+  const sum = (json, ids) => (json.totals ?? []).filter((t) => ids.includes(t.id)).reduce((a, t) => a + t.value, 0) / 100;
+
+  for (const id of ["carrefour", "dia", "mas"]) {
+    it(`${id}: los totales por item suman lo que dice el pedido`, () => {
+      const json = fixture[id].simulation;
+      const sim = parseCartSimulation(json);
+      const available = json.items.filter((i) => i.availability === "available");
+      expect(sim.size).toBe(available.length);
+      const total = [...sim.values()].reduce((a, v) => a + v.total, 0);
+      expect(Math.abs(total - sum(json, ["Items", "Discounts"]))).toBeLessThanOrEqual(0.01);
+    });
+  }
+
+  it("Más deja afuera el item que no se puede cumplir", () => {
+    const json = fixture.mas.simulation;
+    const bad = json.items.find((i) => i.availability !== "available");
+    expect(bad).toBeTruthy();
+    expect(parseCartSimulation(json).has(String(bad.id))).toBe(false);
+  });
+
+  it("total, cantidad y promo de un item", () => {
+    const json = { items: [{ id: "9", quantity: 2, availability: "available", sellingPrice: 150000, listPrice: 200000 }] };
+    expect(parseCartSimulation(json).get("9")).toEqual({ total: 3000, quantity: 2, onSale: true, list: 4000 });
+  });
+
+  it("prefiere priceDefinition.total (promos por cantidad)", () => {
+    const json = { items: [{ id: 9, quantity: 3, availability: "available", sellingPrice: 100000, listPrice: 100000, priceDefinition: { total: 250000 } }] };
+    expect(parseCartSimulation(json).get("9")).toEqual({ total: 2500, quantity: 3, onSale: false, list: 3000 });
+  });
+
+  it("sin stock o sin datos no hay entrada", () => {
+    expect(parseCartSimulation({ items: [{ id: "9", quantity: 1, availability: "withoutStock", sellingPrice: 100 }] }).size).toBe(0);
+    expect(parseCartSimulation({ items: [{ id: "9", quantity: 1, availability: "available" }] }).size).toBe(0);
+    expect(parseCartSimulation(null).size).toBe(0);
+    expect(parseCartSimulation({}).size).toBe(0);
   });
 });

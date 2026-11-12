@@ -67,3 +67,37 @@ export function bestOffer(hit, sims) {
   }
   return best;
 }
+
+// Pedido de carrito simulado con todos los items juntos: así las promos por cantidad
+// y por combinación cuentan como en el súper. items = [{ hit, qty }].
+export function cartSimulationRequest(store, items) {
+  return {
+    url: `https://${store.host}/api/checkout/pub/orderForms/simulation?sc=${store.sc}`,
+    init: {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        items: items.map(({ hit, qty }) => ({ id: hit.itemId, quantity: qty, seller: hit.seller })),
+        country: "ARG",
+      }),
+    },
+  };
+}
+
+// Map itemId -> { total, quantity, onSale } de los items que se pueden comprar.
+// Se cruza por id (la respuesta puede venir en otro orden o con menos items).
+export function parseCartSimulation(json) {
+  const out = new Map();
+  if (!Array.isArray(json?.items)) return out;
+  for (const item of json.items) {
+    if (!item || item.availability !== "available" || item.id == null) continue;
+    const quantity = Number(item.quantity);
+    // priceDefinition.total ya trae las promos por cantidad; sin él, precio por unidad.
+    const cents = item.priceDefinition?.total != null ? Number(item.priceDefinition.total) : Number(item.sellingPrice) * quantity;
+    if (!(quantity >= 1) || !Number.isFinite(cents)) continue;
+    // list: lo que sale sin ninguna oferta, solo si es más que lo que se paga.
+    const full = Number(item.listPrice) * quantity;
+    out.set(String(item.id), { total: cents / 100, quantity, onSale: Number(item.listPrice) > Number(item.sellingPrice), list: full > cents ? full / 100 : null });
+  }
+  return out;
+}

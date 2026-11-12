@@ -14,6 +14,7 @@ const INCLUDE = [
   /^assets\/banks\/[\w.-]+\.png$/,
   /^assets\/fonts\/[\w.-]+\.(woff2|txt)$/,
   /^assets\/off\/[\w.-]+\.svg$/,
+  /^assets\/stores\/[\w.-]+\.(png|svg)$/,
   /^assets\/allergens\/[\w.-]+\.png$/,
 ];
 

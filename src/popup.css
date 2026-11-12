@@ -318,6 +318,76 @@ main {
   border-bottom-right-radius: 0;
 }
 
+/* Tarjeta: planes y una línea por súper */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.plans {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+}
+
+.card-store {
+  font-size: 12px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.store-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.card-link {
+  color: var(--red);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.card-link:hover {
+  color: var(--red-hover);
+}
+
+/* Promos que no sabemos de qué tarjeta son */
+.others {
+  margin-top: 14px;
+}
+
+.others-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.others ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.others li {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.others li + li {
+  border-top: 1px solid var(--line);
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -333,6 +403,27 @@ main {
   font-size: 12px;
   color: var(--muted);
   text-wrap: pretty;
+}
+
+/* Un súper dentro de "Comparar con otros súper" */
+.row--sub {
+  padding-left: 24px;
+  border-top: 0;
+}
+
+.row--sub .row-text {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.row-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.row--sub:has(.switch:disabled) {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* Interruptor */
@@ -817,4 +908,84 @@ html[data-page] body {
 /* El recorte del cuerpo no llega a las esquinas de abajo: se redondea la barra. */
 html[data-page] .tabs {
   border-radius: 0 0 16px 16px;
+}
+
+/* Tema: tres segmentos. El radio queda oculto, pero el segmento muestra el foco. */
+.setting.theme {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0;
+  padding-right: 0;
+  padding-left: 0;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  cursor: default;
+}
+
+.setting.theme legend {
+  padding: 0;
+  float: left;
+  width: 100%;
+}
+
+.setting.theme legend + .setting-desc {
+  clear: both;
+}
+
+.segmented {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.segmented label {
+  position: relative;
+  display: flex;
+  flex: 1;
+}
+
+.segmented input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.segmented span {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  transition-property: background-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease);
+}
+
+.segmented label:hover span {
+  color: var(--ink);
+}
+
+.segmented input:checked + span {
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / 0.08);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.segmented input:focus-visible + span {
+  outline: 2px solid var(--red-bright);
+  outline-offset: 1px;
 }

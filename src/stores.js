@@ -1,6 +1,29 @@
 // Supermercados con los que se compara. El orden es el de la pantalla.
+// Logos empaquetados (assets/stores): el ícono oficial de cada súper, bajado de su sitio.
+// "coto" no es un súper con el que se compara, pero tiene su fila en el detalle.
+const LOGOS = { coto: "coto.png", carrefour: "carrefour.svg", dia: "dia.png", mas: "mas.png" };
+
+// id: el de STORES o "coto". getURL: chrome.runtime.getURL. null si no hay logo.
+export function storeLogoUrl(id, getURL) {
+  const file = Object.hasOwn(LOGOS, id) ? LOGOS[id] : null;
+  return file && getURL ? getURL("assets/stores/" + file) : null;
+}
+
+export const STORE_LOGOS = Object.values(LOGOS);
+
 export const STORES = [
-  { id: "carrefour", name: "Carrefour", host: "www.carrefour.com.ar", sc: 1 },
-  { id: "dia", name: "Día", host: "diaonline.supermercadosdia.com.ar", sc: 1 },
-  { id: "mas", name: "Más", host: "www.masonline.com.ar", sc: 1 },
+  { id: "carrefour", name: "Carrefour", host: "www.carrefour.com.ar", sc: 1, promosUrl: "https://www.carrefour.com.ar/descuentos-bancarios" },
+  { id: "dia", name: "Día", host: "diaonline.supermercadosdia.com.ar", sc: 1, promosUrl: "https://diaonline.supermercadosdia.com.ar/medios-de-pago-y-promociones" },
+  { id: "mas", name: "Más", host: "www.masonline.com.ar", sc: 1, promosUrl: "https://www.masonline.com.ar/promociones-bancarias" },
 ];
+
+// Los súper de una lista de ids (la que viaja en el mensaje "settings"), en el orden de la pantalla.
+export const storesFrom = (ids) => STORES.filter((st) => Array.isArray(ids) && ids.includes(st.id));
+
+// Los súper que el usuario deja prendidos. `s` es lo guardado en chrome.storage.
+// Con "Comparar con otros súper" apagado no queda ninguno.
+export function enabledStores(s = {}) {
+  if (s.compareStores === false) return [];
+  const off = Array.isArray(s.storesOff) ? s.storesOff : [];
+  return STORES.filter((st) => !off.includes(st.id));
+}

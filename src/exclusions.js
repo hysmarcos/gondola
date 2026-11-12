@@ -23,20 +23,24 @@ const NAME_RULES = [
   /\bmonster energy\b/,
 ];
 
-const BRANDS = [
+// Línea Coca-Cola. También la usan las reglas de los otros súper (bank-rules).
+export const COCA_COLA = [
   "coca-cola", "coca cola", "crush", "fanta", "schweppes", "sprite", "aquarius", "smartwater",
   "cepita", "benedictino", "powerade", "ades", "hi-c",
+];
+const BRANDS = [
+  ...COCA_COLA,
   "catena zapata", "nicola catena", "alma negra", "padrillos", "enemigo", "dv catena",
   "saint felicien", "nicasia", "tilia",
   "chandon", "mercier", "baron b", "dom perignon", "pommery", "moet", "la grande dame", "krug",
 ];
 // Marcas que también son palabras comunes ("Animal Print", "Monster Jam"): solo por marca.
 const BRAND_ONLY = ["animal", "monster"];
-const toRe = (list) => new RegExp(`(^|[^a-z])(${list.map((b) => b.replace(/[-]/g, "\\-")).join("|")})([^a-z]|$)`);
+export const toRe = (list) => new RegExp(`(^|[^a-z])(${list.map((b) => b.replace(/[-]/g, "\\-")).join("|")})([^a-z]|$)`);
 const BRAND_RE = toRe(BRANDS);
 const BRAND_ONLY_RE = toRe(BRAND_ONLY);
 
-function norm(text) {
+export function norm(text) {
   return String(text ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 }
 

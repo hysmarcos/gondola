@@ -8,6 +8,8 @@ import { installBridge } from "../src/bridge.js";
 import { createCompareClient } from "../src/compare-client.js";
 import { createCompareService } from "../src/compare-service.js";
 import { logoUrl } from "../src/logos.js";
+// Los colores de badge.css salen de los tokens --g-* de theme.css: va primero.
+import themeCss from "../src/theme.css";
 import css from "../src/badge.css";
 
 // Base de logos y relevo: la pone el script de capturas (o el servidor local por defecto).
@@ -15,7 +17,7 @@ const DEV = window.__gondolaDev ?? "http://127.0.0.1:8765";
 if (!window.__gondolaDemo && window.top === window) {
   window.__gondolaDemo = true;
   const s = document.createElement("style");
-  s.textContent = css.replaceAll("../assets/", DEV + "/assets/");
+  s.textContent = themeCss + "\n" + css.replaceAll("../assets/", DEV + "/assets/");
   // Al empezar la página todavía no hay documento: el estilo entra apenas exista.
   const addStyle = () => (document.head ?? document.documentElement).append(s);
   if (document.documentElement) addStyle(); else document.addEventListener("readystatechange", addStyle, { once: true });
