@@ -1,0 +1,49 @@
+// Promos de banco de Más (Super Mas Online): filas de la API pública a Promo común.
+const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+// "9.500" -> 9500
+const money = (s) => Number(String(s).replace(/\./g, ""));
+
+function capOf(row) {
+  const title = row.title || "";
+  const sub = row.sub_title || "";
+  if (/sin tope/i.test(title) || /sin tope/i.test(sub)) return null;
+  const m = sub.match(/tope[^$\d]{0,40}\$?\s*(\d{1,3}(?:\.\d{3})+|\d+)/i);
+  return m ? money(m[1]) : null;
+}
+
+function capPeriodOf(sub) {
+  if (/semanal/i.test(sub)) return "week";
+  if (/mensual/i.test(sub)) return "month";
+  if (/transacci/i.test(sub)) return "tx";
+  return null;
+}
+
+export function parseMas(data) {
+  if (!data || !Array.isArray(data.promos)) return [];
+  const names = new Map((data.banks || []).map((b) => [b.id, b.name]));
+  const out = [];
+  for (const row of data.promos) {
+    if (!row || !row.active) continue;
+    const sub = row.sub_title || "";
+    const min = sub.match(/m[ií]nimo de compra:?\s*\$\s*([\d.]+)/i);
+    const cap = capOf(row);
+    out.push({
+      id: String(row.id),
+      store: "mas",
+      bankLabel: names.get(row.idBank) || "",
+      title: row.title || "",
+      percent: typeof row.discount_percentage === "number" ? row.discount_percentage : null,
+      cap,
+      capPeriod: cap == null ? null : capPeriodOf(sub),
+      minPurchase: min ? money(min[1]) : null,
+      days: DAYS.flatMap((d, i) => (row[d] ? [i] : [])),
+      from: row.active_from || null,
+      to: row.active_to || null,
+      online: row.ecommerce === true || row.ecommerce === "true",
+      direct: /descuento/i.test(row.discount_text_info || ""),
+      legal: row.legal || "",
+    });
+  }
+  return out;
+}
