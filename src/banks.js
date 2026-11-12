@@ -13,13 +13,18 @@ export function dayName(day) {
   return DAYS[day] ?? "";
 }
 
-function bankName(icono) {
-  const key = String(icono ?? "")
+// "logo_naranjax2.png" → "naranjax".
+export function bankKey(icono) {
+  return String(icono ?? "")
     .replace(/^logo_/, "")
     .replace(/\.\w+$/, "")
     .replace(/[_\d]+$/, "")
     .replace(/_d$/, "")
     .toLowerCase();
+}
+
+function bankName(icono) {
+  const key = bankKey(icono);
   return BANK_NAMES[key] ?? key.toUpperCase();
 }
 
@@ -55,6 +60,7 @@ export function parsePromos(result) {
       capWeekly: /semana/i.test(obs),
       onlyNoOffer: /sin oferta/i.test(obs),
       text: String(p.descripcion ?? ""),
+      obs,
     });
   }
   return out;

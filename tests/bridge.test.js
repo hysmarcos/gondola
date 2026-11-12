@@ -69,26 +69,61 @@ describe("installBridge", () => {
   });
 
   it("manda la configuración al arrancar y cuando cambia", async () => {
-    const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["457"], day: 1, comunidad: false });
+    const st = fakeStorage({ promos: PROMOS, cards: { icbc: { plan: "sueldo" } }, day: 1, comunidad: false });
     const win = fakeWin();
     installBridge(win, st, () => 0);
     await tick();
     const first = win.posted.find((m) => m.type === "settings");
     expect(first.day).toBe(1);
-    expect(first.selected.map((p) => p.id)).toEqual(["457"]);
-    await st.set({ selectedPromoIds: ["457", "449"] });
+    // Con Plan Sueldo entran las dos promos de ICBC (la de plan y la general).
+    expect(first.selected.map((p) => p.id)).toEqual(["457", "456"]);
+    await st.set({ cards: { icbc: { plan: "sueldo" }, credicoop: { plan: null } } });
     await tick();
     const last = win.posted.filter((m) => m.type === "settings").at(-1);
-    expect(last.selected.map((p) => p.id)).toEqual(["457", "449"]);
+    expect(last.selected.map((p) => p.id)).toEqual(["457", "456", "449"]);
+    expect(last.cards).toEqual({ icbc: { plan: "sueldo" }, credicoop: { plan: null } });
+  });
+  it("con la tarjeta sin plan no entra la promo de un plan", async () => {
+    const st = fakeStorage({ promos: PROMOS, cards: { icbc: { plan: null } }, comunidad: false });
+    const win = fakeWin();
+    installBridge(win, st, () => 0);
+    await tick();
+    expect(win.posted.find((m) => m.type === "settings").selected.map((p) => p.id)).toEqual(["456"]);
+  });
+  it("migra una sola vez las promos elegidas a tarjetas", async () => {
+    const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["457", "445"], comunidad: false });
+    const win = fakeWin();
+    installBridge(win, st, () => 0);
+    await tick();
+    const migrated = { icbc: { plan: "sueldo" }, columbia: { plan: null } };
+    expect(st.data.cards).toEqual(migrated);
+    expect(win.posted.find((m) => m.type === "settings").cards).toEqual(migrated);
+    // Ya migrado: cambiar las promos viejas no toca las tarjetas.
+    await st.set({ selectedPromoIds: ["449"] });
+    await tick();
+    expect(st.data.cards).toEqual(migrated);
+  });
+  it("tarjetas rotas en storage se ignoran sin romper el puente", async () => {
+    const rotas = ["roto", 7, [1], { inventado: { plan: null }, icbc: { plan: "noexiste" }, tci: 7, galicia: null }];
+    for (const cards of rotas) {
+      const st = fakeStorage({ promos: PROMOS, cards, comunidad: false });
+      const win = fakeWin();
+      installBridge(win, st, () => 0);
+      await tick();
+      const m = win.posted.find((x) => x.type === "settings");
+      expect(m).toBeTruthy();
+      // Solo la ICBC con plan desconocido sobrevive, sin plan.
+      expect(m.selected.map((p) => p.id)).toEqual(cards.icbc ? ["456"] : []);
+    }
   });
   it("la promo de Comunidad sale del ajuste, no de las tarjetas elegidas", async () => {
     // Elegida a mano pero con el ajuste apagado: no va. Sin elegir y con el ajuste prendido: va.
-    const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["468"], comunidad: false });
+    const st = fakeStorage({ promos: PROMOS, cards: {}, comunidad: false });
     const win = fakeWin();
     installBridge(win, st, () => 0);
     await tick();
     expect(win.posted.find((m) => m.type === "settings").selected).toEqual([]);
-    await st.set({ comunidad: true, selectedPromoIds: [] });
+    await st.set({ comunidad: true });
     await tick();
     expect(win.posted.filter((m) => m.type === "settings").at(-1).selected.map((p) => p.id)).toEqual(["468"]);
   });
