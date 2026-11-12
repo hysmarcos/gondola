@@ -6,7 +6,6 @@ import { STORES } from "./stores.js";
 const CC = "coto-unit-cc";
 // Tolerancia de comparación: dentro del 1% es "casi igual".
 const TOLERANCE = 0.01;
-const round2 = (n) => Math.round(n * 100) / 100;
 
 const NOTES = {
   none: "Sin promo de tus tarjetas hoy",
@@ -26,26 +25,19 @@ function storeHref(url, id) {
   }
 }
 
-// Contra quién se gana: Coto si gana otro súper; si gana Coto, el súper más cercano.
-function runnerUp(cmp) {
-  const v = cmp.verdict;
-  if (v.winner !== "coto") return "Coto";
-  const gap = (st) => {
-    const coto = v.withCards ? st.bankCoto?.total ?? st.coto : st.coto;
-    const other = v.withCards ? st.bankOther?.total ?? st.other : st.other;
-    return Math.max(0, round2(other - coto));
-  };
-  return cmp.stores.find((st) => st.state === "ok" && Math.abs(gap(st) - v.saving) < 0.01)?.name ?? null;
-}
+const FEW = "Pocos productos en común para comparar";
+const WAIT = "Comparando con otros súper…";
+
+// Nombre para mostrar de un id del veredicto ("coto" o un súper).
+const nameOf = (cmp, id) => (id === "coto" ? "Coto" : cmp.stores.find((st) => st.id === id)?.name ?? null);
 
 function verdictView(cmp) {
   const v = cmp.verdict;
-  if (!v || v.winner == null) return { text: "Pocos productos en común para comparar", sub: null };
-  const name = v.winner === "coto" ? "Coto" : cmp.stores.find((st) => st.id === v.winner)?.name ?? v.winner;
-  const text = `Hoy te conviene ${name}`;
+  if (!v || v.winner == null) return { text: FEW, sub: null };
+  const text = `Hoy te conviene ${nameOf(cmp, v.winner) ?? v.winner}`;
   if (!(Math.round(v.saving) > 0)) return { text, sub: "Sale casi lo mismo en todos" };
   if (!v.withCards) return { text, sub: `Pagás ${$0(v.saving)} menos` };
-  const second = runnerUp(cmp);
+  const second = nameOf(cmp, v.runnerUp);
   return { text, sub: `Con tus tarjetas pagás ${$0(v.saving)} menos` + (second ? ` que en ${second}` : "") };
 }
 
@@ -84,7 +76,7 @@ function footOf(cmp, now) {
   const ats = cmp.stores.map((st) => st.at).filter(Number.isFinite);
   if (!ats.length) return "Precios online, sin envío";
   const min = Math.floor((now - Math.min(...ats)) / 60_000);
-  return `Precios online de ${min < 1 ? "recién" : `hace ${min} min`}, sin envío`;
+  return min < 1 ? "Precios online recién consultados, sin envío" : `Precios online de hace ${min} min, sin envío`;
 }
 
 function el(doc, tag, cls, text) {
@@ -192,14 +184,19 @@ export function miniCartLine(cmp) {
 }
 
 // La línea va como última fila de la caja de resumen del mini-carrito (paintSummary la
-// rearma cuando cambia, por eso se vuelve a poner). Una sola línea: no cambia de alto.
-export function paintMiniCompare(doc, box, text) {
+// rearma cuando cambia, por eso se vuelve a poner). Ocupa su lugar desde el primer
+// pintado y tiene alto fijo: el desplegable no cambia de tamaño cuando llega la respuesta.
+// cmp: el resultado, o null mientras se espera. on: false si no hay nada que comparar.
+export function paintMiniCompare(doc, box, cmp, { on = true } = {}) {
   let row = box.querySelector(`:scope > .${CC}-mini`);
-  if (!text) return row?.remove();
+  if (!on) return row?.remove();
   if (!row) {
     row = el(doc, "a", `coto-unit-sum-row ${CC}-mini`);
     row.setAttribute("href", "/carrito");
   }
+  const text = cmp ? miniCartLine(cmp) ?? FEW : WAIT;
   if (row.textContent !== text) row.textContent = text;
+  const wait = !cmp;
+  if (row.classList.contains(`${CC}-mini--wait`) !== wait) row.classList.toggle(`${CC}-mini--wait`, wait);
   if (box.lastElementChild !== row) box.append(row);
 }

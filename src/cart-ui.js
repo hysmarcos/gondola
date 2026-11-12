@@ -7,7 +7,7 @@ import { summaryRows, paintSummary, closeSummaryPop, $2 } from "./cart-summary.j
 import { isComunidad } from "./banks.js";
 import { cartNutrition, cartNutritionRows } from "./nutrition-cart.js";
 import { compareCart } from "./cart-compare.js";
-import { paintCartCompare, paintMiniCompare, miniCartLine } from "./cart-compare-ui.js";
+import { paintCartCompare, paintMiniCompare } from "./cart-compare-ui.js";
 
 const SOURCE = "coto-unit";
 const WARN = "coto-unit-cart-warn";
@@ -263,26 +263,31 @@ export function installCartUi(win, doc, deps = {}) {
     if (!now && sig === ccSig) return;
     ccSig = sig;
     clearTimeout(ccTimer);
-    const go = () => ccFetch(items, cart, sig, ids, cards).catch(() => {});
+    const go = () => ccFetch(items, cart, sig, ids, cards);
     if (now) go();
     else ccTimer = setTimeout(go, CC_WAIT_MS);
   }
 
-  // Lo que hay para pintar, o null. De paso pide de nuevo si cambió la firma.
-  function ccCompare(a) {
+  // on: hay algo que comparar. cmp: lo que hay para pintar, o null mientras se espera.
+  // shown: el resultado se va a ver (/carrito al día o mini-carrito abierto); si no, no se
+  // le manda el carrito a nadie.
+  function ccCompare(a, shown) {
     const items = cartCompare && state.compare && state.stores.length ? ccItems(a) : [];
-    if (!items.length) {
+    const on = items.length > 0;
+    if (!on || !shown) {
       ccStop();
-      return null;
+      return { on, cmp: null };
     }
     ccWant(items);
     const cc = state.cc;
     // Cambió el carrito: los precios de antes ya no valen hasta la respuesta nueva.
-    if (cc?.cart !== cartSigOf(items)) return null;
+    if (cc?.cart !== cartSigOf(items)) return { on, cmp: null };
     // Solo los súper prendidos: uno apagado no se pinta aunque esté en la respuesta.
     const stores = state.stores.filter((s) => s.id in cc.results);
-    if (!stores.length) return null;
-    return compareCart({ analysis: a, results: cc.results, promos: cc.promos, cards: state.cards, day: state.day, stores });
+    if (!stores.length) return { on, cmp: null };
+    // Sin las promos de los otros súper todavía, se compara sin tarjetas de los dos lados.
+    const cards = cc.promos === undefined ? {} : state.cards;
+    return { on, cmp: compareCart({ analysis: a, results: cc.results, promos: cc.promos, cards, day: state.day, stores }) };
   }
 
   // Va justo después de la caja de resumen.
@@ -322,15 +327,21 @@ export function installCartUi(win, doc, deps = {}) {
     if (onCart()) win.postMessage?.({ source: SOURCE, type: "cartRequest" }, "*");
   }
 
-  // Mini-carrito (desplegable del ícono): precio con promo por línea y totales.
-  function renderMini(a, cmp) {
-    const menu = doc.querySelector(".dropdown-carrito");
-    if (!menu) return closeSummaryPop(doc);
-    keepOpen(menu);
+  // El total del mini-carrito coincide con el carrito leído.
+  function miniInSync(menu, a) {
     // Coto muestra "Total" y el monto en dos h4.roar-total: el monto es el último.
     const amounts = [...menu.querySelectorAll(".roar-total")].map((e) => parseMoney(e.textContent)).filter((n) => n !== null);
     const shownTotal = amounts.at(-1) ?? null;
-    const ok = shownTotal === null || Math.abs(shownTotal - a.listTotal) <= 1;
+    return shownTotal === null || Math.abs(shownTotal - a.listTotal) <= 1;
+  }
+
+  // Mini-carrito (desplegable del ícono): precio con promo por línea y totales.
+  // cc: { on, cmp } del carrito comparado.
+  function renderMini(a, cc) {
+    const menu = doc.querySelector(".dropdown-carrito");
+    if (!menu) return closeSummaryPop(doc);
+    keepOpen(menu);
+    const ok = miniInSync(menu, a);
     const byName = new Map(a.lines.map((l) => [normName(l.name), l]));
     for (const item of menu.querySelectorAll("card-product-float")) {
       const title = item.querySelector(".titulo-producto");
@@ -355,7 +366,7 @@ export function installCartUi(win, doc, deps = {}) {
     // El detalle se abre en un panel flotante: el mini-carrito mantiene su tamaño.
     paintSummary(doc, box, summaryRows(a, state.day, new Date().getDay()), logoUrl, { float: true, alive: () => menu.isConnected && menu.classList.contains("show") });
     // El carrito comparado en una fila más de la caja; lleva a /carrito.
-    paintMiniCompare(doc, box, miniCartLine(cmp));
+    paintMiniCompare(doc, box, cc.cmp, { on: cc.on });
   }
 
   // El globo de ayuda: uno solo para toda la página, pegado a la ventana para que el
@@ -504,13 +515,18 @@ export function installCartUi(win, doc, deps = {}) {
   function render() {
     checkPath();
     checkMini();
-    const cmp = state.analysis ? ccCompare(state.analysis) : null;
-    if (state.analysis) renderMini(state.analysis, cmp);
-    if (!onCart() || !state.analysis) return;
-    if (!inSync(state.analysis)) return clear();
-    renderWarnings(state.analysis);
-    renderBox(state.analysis);
-    renderCc(cmp);
+    const a = state.analysis;
+    if (!a) return;
+    // El carrito se manda a otros súper solo si el resultado se va a ver.
+    const menu = doc.querySelector(".dropdown-carrito.show");
+    const shown = (onCart() && inSync(a)) || (!!menu && miniInSync(menu, a));
+    const cc = ccCompare(a, shown);
+    renderMini(a, cc);
+    if (!onCart()) return;
+    if (!inSync(a)) return clear();
+    renderWarnings(a);
+    renderBox(a);
+    renderCc(cc.cmp);
   }
 
   win.addEventListener("message", (e) => {

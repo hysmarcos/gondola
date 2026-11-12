@@ -146,7 +146,7 @@ describe("compareCart: con tarjetas", () => {
     expect(r.stores[0].bankOther).toBeNull();
     expect(r.stores[0].bankNote).toBe("error");
     // 5600 contra 5500 de Coto con ICBC: gana Coto por 100.
-    expect(r.verdict).toEqual({ winner: "coto", saving: 100, withCards: true });
+    expect(r.verdict).toEqual({ winner: "coto", saving: 100, withCards: true, runnerUp: "dia" });
   });
 
   it("sin promos pedidas para el súper (undefined): bankNote none, no error", () => {
@@ -195,18 +195,18 @@ describe("compareCart: con tarjetas", () => {
 
 describe("compareCart: veredicto", () => {
   it("con tarjetas Día gana por 1300", () => {
-    expect(run().verdict).toEqual({ winner: "dia", saving: 1300, withCards: true });
+    expect(run().verdict).toEqual({ winner: "dia", saving: 1300, withCards: true, runnerUp: "coto" });
   });
 
   it("sin tarjetas compara sin banco: Día gana por 400", () => {
     const r = run({ cards: {} });
     expect(r.stores[0].bankOther).toBeNull();
-    expect(r.verdict).toEqual({ winner: "dia", saving: 400, withCards: false });
+    expect(r.verdict).toEqual({ winner: "dia", saving: 400, withCards: false, runnerUp: "coto" });
   });
 
   it("diferencia de 0,5%: gana Coto", () => {
     const r = run({ cards: {}, results: results({ 1: { total: 995, onSale: false }, 2: { total: 1990, onSale: false }, 3: { total: 2985, onSale: false } }) });
-    expect(r.verdict).toEqual({ winner: "coto", saving: 0, withCards: false });
+    expect(r.verdict).toEqual({ winner: "coto", saving: 0, withCards: false, runnerUp: "dia" });
   });
 
   it("Coto gana por la menor diferencia a su favor", () => {
@@ -218,7 +218,20 @@ describe("compareCart: veredicto", () => {
         mas: { at: 1, lines: { 1: { total: 1000 }, 2: { total: 2000 }, 3: { total: 3050 } } },
       },
     });
-    expect(r.verdict).toEqual({ winner: "coto", saving: 50, withCards: false });
+    expect(r.verdict).toEqual({ winner: "coto", saving: 50, withCards: false, runnerUp: "mas" });
+  });
+
+  it("runnerUp cuando gana Coto: solo entre los súper que compiten", () => {
+    const stores = [{ id: "mas", name: "Más" }, { id: "dia", name: "Día" }];
+    const r = run({
+      cards: {}, stores, promos: {},
+      results: {
+        // Más tiene un solo producto en común (menos de la mitad del carrito): no compite.
+        mas: { at: 1, lines: { 1: { total: 1000 }, 2: "missing", 3: "missing" } },
+        dia: { at: 1, lines: { 1: { total: 1100 }, 2: { total: 2100 }, 3: { total: 3100 } } },
+      },
+    });
+    expect(r.verdict).toEqual({ winner: "coto", saving: 300, withCards: false, runnerUp: "dia" });
   });
 
   it("gana el súper que más ahorra", () => {
@@ -227,7 +240,7 @@ describe("compareCart: veredicto", () => {
       cards: {}, stores, promos: {},
       results: { dia: results().dia, mas: { at: 1, lines: { 1: { total: 800 }, 2: { total: 1800 }, 3: { total: 2700 } } } },
     });
-    expect(r.verdict).toEqual({ winner: "mas", saving: 700, withCards: false });
+    expect(r.verdict).toEqual({ winner: "mas", saving: 700, withCards: false, runnerUp: "coto" });
   });
 
   it("súper con menos de la mitad del carrito en común no compite", () => {

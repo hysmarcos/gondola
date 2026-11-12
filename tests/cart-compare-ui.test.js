@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { paintCartCompare, miniCartLine } from "../src/cart-compare-ui.js";
+import { paintCartCompare, miniCartLine, paintMiniCompare } from "../src/cart-compare-ui.js";
 
 const NOW = 1_700_000_000_000;
 const MIN = 60_000;
@@ -24,7 +24,7 @@ const mas = (extra = {}) => ({
   bankCoto: null, bankOther: null, bankNote: "none", minLeft: null, ...extra,
 });
 const cmpOf = (stores, verdict) => ({ stores, verdict });
-const winsDia = () => cmpOf([dia(), mas()], { winner: "dia", saving: 3150, withCards: false });
+const winsDia = () => cmpOf([dia(), mas()], { winner: "dia", saving: 3150, withCards: false, runnerUp: "coto" });
 
 function paint(cmp, opts = {}) {
   const doc = document.implementation.createHTMLDocument("t");
@@ -52,14 +52,14 @@ describe("paintCartCompare", () => {
   });
 
   it("dentro del 1%: casi igual", () => {
-    const { box } = paint(cmpOf([mas({ other: 30200, diff: 200 })], { winner: "coto", saving: 0, withCards: false }));
+    const { box } = paint(cmpOf([mas({ other: 30200, diff: 200 })], { winner: "coto", saving: 0, withCards: false, runnerUp: "mas" }));
     expect(box.querySelector(".coto-unit-cc--eq").textContent).toContain("= casi igual");
     expect(box.textContent).toContain("Hoy te conviene Coto");
     expect(box.textContent).toContain("Sale casi lo mismo en todos");
   });
 
   it("con tarjetas: renglón con los dos totales y la respuesta contra el segundo", () => {
-    const { box } = paint(cmpOf([dia(), mas()], { winner: "dia", saving: 1300, withCards: true }), { cards: true });
+    const { box } = paint(cmpOf([dia(), mas()], { winner: "dia", saving: 1300, withCards: true, runnerUp: "coto" }), { cards: true });
     expect(box.textContent).toContain("Con tus tarjetas pagás $1.300 menos que en Coto");
     const d = block(box, "dia");
     expect(d.textContent).toContain("Con tus tarjetas (Naranja X 25%)");
@@ -67,10 +67,10 @@ describe("paintCartCompare", () => {
     expect(block(box, "mas").textContent).toContain("Sin promo de tus tarjetas hoy");
   });
 
-  it("gana Coto con tarjetas: el segundo es el súper más cercano", () => {
-    const cmp = cmpOf([dia({ bankOther: { label: "X 10%", saving: 1, total: 24025 } }), mas()], { winner: "coto", saving: 1000, withCards: true });
+  it("gana Coto con tarjetas: el segundo es el runnerUp del veredicto, sin recalcular", () => {
+    const cmp = cmpOf([dia({ bankOther: { label: "X 10%", saving: 1, total: 24025 } }), mas()], { winner: "coto", saving: 1000, withCards: true, runnerUp: "mas" });
     const { box } = paint(cmp, { cards: true });
-    expect(box.textContent).toContain("Con tus tarjetas pagás $1.000 menos que en Día");
+    expect(box.textContent).toContain("Con tus tarjetas pagás $1.000 menos que en Más");
   });
 
   it("sin tarjetas prendidas no va el renglón con tarjetas", () => {
@@ -79,7 +79,7 @@ describe("paintCartCompare", () => {
   });
 
   it("bankNote min: cuánto falta para la compra mínima", () => {
-    const { box } = paint(cmpOf([dia({ bankOther: null, bankNote: "min", minLeft: 69400 })], { winner: "dia", saving: 3150, withCards: true }), { cards: true });
+    const { box } = paint(cmpOf([dia({ bankOther: null, bankNote: "min", minLeft: 69400 })], { winner: "dia", saving: 3150, withCards: true, runnerUp: "coto" }), { cards: true });
     expect(box.textContent).toContain("Te faltan $69.400 para la compra mínima");
   });
 
@@ -160,7 +160,7 @@ describe("paintCartCompare", () => {
 
   it("pie: menos de un minuto es recién", () => {
     const { box } = paint(cmpOf([dia({ at: NOW - 30_000 })], { winner: null }));
-    expect(box.textContent).toContain("Precios online de recién, sin envío");
+    expect(box.textContent).toContain("Precios online recién consultados, sin envío");
   });
 });
 
@@ -169,8 +169,25 @@ describe("miniCartLine", () => {
     expect(miniCartLine(winsDia())).toBe("Día: $3.150 menos en 9 de 12");
   });
   it("gana Coto", () => {
-    expect(miniCartLine(cmpOf([mas()], { winner: "coto", saving: 0, withCards: false }))).toBe("Coto es el más barato");
+    expect(miniCartLine(cmpOf([mas()], { winner: "coto", saving: 0, withCards: false, runnerUp: "mas" }))).toBe("Coto es el más barato");
   });
+  it("paintMiniCompare: espera, respuesta y pocos en común en la misma fila", () => {
+    const doc = document.implementation.createHTMLDocument("t");
+    const box = doc.createElement("div");
+    doc.body.append(box);
+    paintMiniCompare(doc, box, null);
+    const row = box.querySelector(".coto-unit-cc-mini");
+    expect(row.textContent).toBe("Comparando con otros súper…");
+    expect(row.classList.contains("coto-unit-cc-mini--wait")).toBe(true);
+    paintMiniCompare(doc, box, winsDia());
+    expect(box.querySelector(".coto-unit-cc-mini")).toBe(row);
+    expect(row.textContent).toBe("Día: $3.150 menos en 9 de 12");
+    expect(row.classList.contains("coto-unit-cc-mini--wait")).toBe(false);
+    paintMiniCompare(doc, box, cmpOf([mas()], { winner: null }));
+    expect(box.querySelector(".coto-unit-cc-mini")).toBe(row);
+    expect(row.textContent).toBe("Pocos productos en común para comparar");
+  });
+
   it("sin respuesta", () => {
     expect(miniCartLine(cmpOf([mas()], { winner: null }))).toBeNull();
     expect(miniCartLine(null)).toBeNull();

@@ -108,9 +108,12 @@ function verdictOf(stores, analysis, cards) {
     });
   if (!rivals.length) return { winner: null };
   const best = rivals.filter((r) => r.gain > TOLERANCE * r.totalCoto).sort((a, b) => b.gain - a.gain)[0];
-  if (best) return { winner: best.id, saving: best.gain, withCards };
-  // Gana Coto: por la menor diferencia a su favor (0 si empatan).
-  return { winner: "coto", saving: Math.min(...rivals.map((r) => Math.max(0, -r.gain))), withCards };
+  // runnerUp: contra quién se mide `saving` ("Pagás $X menos que en …").
+  // Si gana otro súper, el ahorro es contra Coto.
+  if (best) return { winner: best.id, saving: best.gain, withCards, runnerUp: "coto" };
+  // Gana Coto: por la menor diferencia a su favor (0 si empatan), contra ese súper.
+  const closest = rivals.reduce((a, b) => (Math.max(0, -b.gain) < Math.max(0, -a.gain) ? b : a));
+  return { winner: "coto", saving: Math.max(0, -closest.gain), withCards, runnerUp: closest.id };
 }
 
 // day: día de compra elegido (0 = domingo); puede no ser hoy.

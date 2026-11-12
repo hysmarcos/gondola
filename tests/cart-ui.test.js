@@ -540,29 +540,91 @@ describe("carrito comparado", () => {
     }
   });
 
-  it("mini-carrito: una fila más en la caja de resumen que lleva a /carrito", async () => {
-    const deps = fakeDeps();
+  // Página de producto con el mini-carrito (abierto o cerrado).
+  function setupMiniCc(deps, { open = true } = {}) {
     const win = new EventTarget();
     win.location = { pathname: "/productos/x" };
     win.postMessage = () => {};
     win.MutationObserver = window.MutationObserver;
     const doc = document.implementation.createHTMLDocument("mini");
-    doc.body.innerHTML = `<ul class="dropdown-menu dropdown-carrito show"><div class="precio-carrito"><div class="total-precio"><h4 class="roar-total">$48.355,92</h4></div></div></ul>`;
+    // Como Coto: el desplegable se arma al abrirse.
+    const menu = `<ul class="dropdown-menu dropdown-carrito show"><div class="precio-carrito"><div class="total-precio"><h4 class="roar-total">$48.355,92</h4></div></div></ul>`;
+    doc.body.innerHTML = "<header></header>";
+    const setOpen = (on) => { doc.querySelector("header").innerHTML = on ? menu : ""; };
+    setOpen(open);
     installCartUi(win, doc, deps);
     const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
+    return { doc, send, setOpen };
+  }
+  // El súper compite: tiene más de la mitad del carrito en común.
+  const competing = (n = 3) => {
+    const a = qty(n);
+    a.total = 5000;
+    return a;
+  };
+
+  it("mini-carrito: la fila está desde el primer pintado y no se va entre cambios del carrito", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setupMiniCc(deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    send({ type: "cart", analysis: competing(), seq: 1 });
+    const box = doc.querySelector(".coto-unit-mini-total");
+    const row = () => box.querySelector(".coto-unit-cc-mini");
+    // Antes de cualquier respuesta: la fila ya ocupa su lugar.
+    expect(row().textContent).toBe("Comparando con otros súper…");
+    expect(box.lastElementChild).toBe(row());
+    expect(row().classList.contains("coto-unit-sum-row")).toBe(true);
+    expect(row().getAttribute("href")).toBe("/carrito");
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia"], 4000));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(row().textContent).toBe("Día: $1.478 menos en 1 de 6");
+    // Cambia el carrito: la fila sigue, esperando la respuesta nueva.
+    send({ type: "cart", analysis: competing(4), seq: 2 });
+    expect(row().textContent).toBe("Comparando con otros súper…");
+    await vi.advanceTimersByTimeAsync(800);
+    // Sin súper que compita: la fila sigue, con su texto.
+    deps.calls[1].resolve(answer(["dia"], 50000));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(row().textContent).toBe("Pocos productos en común para comparar");
+  });
+
+  it("página de producto con el mini-carrito cerrado: no pide; al abrirlo, sí", async () => {
+    const deps = fakeDeps();
+    const { send, setOpen } = setupMiniCc(deps, { open: false });
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    send({ type: "cart", analysis: competing(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(deps.calls).toHaveLength(0);
+    setOpen(true);
+    await vi.advanceTimersByTimeAsync(800);
+    expect(deps.calls).toHaveLength(1);
+  });
+
+  it("en /carrito con el total desfasado no pide", async () => {
+    const deps = fakeDeps();
+    const { send } = setup("/carrito", "$1,00", deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(deps.calls).toHaveLength(0);
+  });
+
+  it("con las promos de tarjetas sin llegar, compara sin tarjetas", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
     send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
     const a = withEan();
-    a.total = 5000; // el súper compite: tiene más de la mitad del carrito en común
+    a.total = 5000;
     send({ type: "cart", analysis: a, seq: 1 });
     await vi.advanceTimersByTimeAsync(800);
     deps.calls[0].resolve(answer(["dia"], 4000));
     await vi.advanceTimersByTimeAsync(0);
-    const box = doc.querySelector(".coto-unit-mini-total");
-    const row = box.querySelector(".coto-unit-cc-mini");
-    expect(row.textContent).toMatch(/^Día: \$1\.478 menos en 1 de 6$/);
-    expect(row.getAttribute("href")).toBe("/carrito");
-    expect(box.lastElementChild).toBe(row);
-    expect(row.classList.contains("coto-unit-sum-row")).toBe(true);
+    expect(cc(doc).textContent).toContain("Pagás $1.478 menos");
+    // Se prenden tarjetas: hasta que lleguen sus promos, ni la respuesta ni los súper usan banco.
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"], cards: { naranjax: { plan: null } } });
+    expect(cc(doc).textContent).toContain("Pagás $1.478 menos");
+    expect(cc(doc).textContent).not.toContain("Con tus tarjetas");
   });
 });
 

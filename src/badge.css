@@ -1003,12 +1003,16 @@
   align-self: auto;
 }
 
-/* Mini-carrito: una sola línea, cortada si no entra. */
+/* Mini-carrito: una sola línea de alto fijo, cortada si no entra. Está desde el primer
+   pintado (con "Comparando…" mientras espera): el desplegable no cambia de tamaño. */
 .coto-unit-cc-mini {
   display: block;
+  box-sizing: border-box;
+  height: 31px;
   margin-top: 6px;
   padding-top: 8px;
   border-top: 1px solid #f0f0f0;
+  line-height: 22px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1020,6 +1024,11 @@
 
 .coto-unit-cc-mini:hover {
   text-decoration: underline;
+}
+
+.coto-unit-cc-mini--wait {
+  font-weight: 400;
+  color: #8a9096;
 }
 
 /* Precio de Coto tachado en el mini-carrito: gris, para que no parezca el que se paga. */
