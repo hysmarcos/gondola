@@ -1,12 +1,10 @@
 // Ventana de la extensión: pestañas Tarjetas, Ajustes, Colaborá y Ayuda.
 // Para sumar un menú: una entrada en TABS y su función en VIEWS.
-import { dayName, isComunidad } from "./banks.js";
 import { ALLERGENS } from "./nutrition.js";
 import { feedbackLinks, REPO } from "./feedback.js";
 import { STORES } from "./stores.js";
-
-const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
-const SVG = "http://www.w3.org/2000/svg";
+import { el, icon, plural, switchInput } from "./popup-dom.js";
+import { cardsView } from "./popup-cards.js";
 
 const TABS = [
   { id: "tarjetas", label: "Tarjetas", icon: ["M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z", "M3 10h18", "M7 15h4"] },
@@ -44,136 +42,6 @@ const HELP = [
   ["Mi perfil", "En Ajustes, sección Mi perfil. Destaca lo que te importa en cada producto. En la lista, con \"Diseño Góndola\" e \"Información nutricional\" prendidos, marca los productos que declaran tus alergias y avisa si Open Food Facts no tiene datos de alérgenos. Sin etiqueta no significa que sea seguro. Queda solo en tu navegador. No es consejo médico."],
   ["Otros súper", "Precio del mismo producto (mismo código de barras) en la web de Carrefour, Día y Más, zona por defecto. Puede variar en tu sucursal. Sin descuentos bancarios. \"llevando 2\": precio por unidad con su promo."],
 ];
-
-function describe(p) {
-  const days = p.days.map(dayName).join(", ");
-  const cap = p.cap ? `tope $${money.format(p.cap)}${p.capWeekly ? " por semana" : ""}` : "sin tope";
-  const only = p.onlyNoOffer ? " · solo sin oferta" : "";
-  return `${days} · ${p.percent}% · ${cap}${only}`;
-}
-
-function el(doc, tag, props = {}, children = []) {
-  const e = doc.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === "attrs") for (const [a, val] of Object.entries(v)) e.setAttribute(a, val);
-    else e[k] = v;
-  }
-  for (const c of children) if (c != null) e.append(c);
-  return e;
-}
-
-function icon(doc, paths) {
-  const svg = doc.createElementNS(SVG, "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("aria-hidden", "true");
-  svg.setAttribute("class", "icon");
-  for (const d of paths) {
-    const p = doc.createElementNS(SVG, "path");
-    p.setAttribute("d", d);
-    svg.append(p);
-  }
-  return svg;
-}
-
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const norm = (t) => String(t).normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-
-function switchInput(doc, props) {
-  return el(doc, "input", { type: "checkbox", className: "switch", ...props, attrs: { role: "switch", ...(props.attrs ?? {}) } });
-}
-
-// Logo del banco (decorativo: el nombre va al lado). Si no carga, deja el lugar vacío.
-function bankLogo(doc, items, logoUrl) {
-  const src = logoUrl(items.find((p) => p.logo)?.logo);
-  if (!src) return el(doc, "span", { className: "bank-logo bank-logo--empty", attrs: { "aria-hidden": "true" } });
-  const img = el(doc, "img", { className: "bank-logo", attrs: { src, alt: "", loading: "lazy" } });
-  img.addEventListener("error", () => img.classList.add("bank-logo--empty"));
-  return img;
-}
-
-function cardsView(doc, s, storage, meta = {}) {
-  const logoUrl = meta.logoUrl ?? (() => null);
-  const view = [];
-  // Comunidad Coto no va acá: se prende en Ajustes ("Tengo Comunidad Coto").
-  const promos = (s.promos ?? []).filter((p) => !isComunidad(p));
-  if (!promos.length) {
-    view.push(el(doc, "div", { className: "empty" }, [
-      el(doc, "p", { className: "empty-title", textContent: "Todavía no hay promos" }),
-      el(doc, "p", { textContent: "Abrí coto.com.ar una vez para cargar las promos de los bancos." }),
-    ]));
-    return view;
-  }
-
-  // Día de compra: chips de radio.
-  const current = typeof s.day === "number" ? String(s.day) : "hoy";
-  const days = el(doc, "fieldset", { className: "days" }, [el(doc, "legend", { textContent: "Día de compra" })]);
-  const options = [["hoy", "Hoy"], ...[0, 1, 2, 3, 4, 5, 6].map((d) => [String(d), dayName(d).slice(0, 3)])];
-  for (const [value, text] of options) {
-    const input = el(doc, "input", { type: "radio", name: "day", value, checked: value === current });
-    input.addEventListener("change", () => storage.set({ day: value === "hoy" ? "hoy" : Number(value) }));
-    const title = value === "hoy" ? "Hoy" : dayName(Number(value));
-    days.append(el(doc, "label", { className: "chip", title }, [input, el(doc, "span", { textContent: text })]));
-  }
-  view.push(days);
-
-  const selected = new Set((s.selectedPromoIds ?? []).filter((id) => promos.some((p) => p.id === id)));
-  const summary = el(doc, "p", { className: "summary", attrs: { "aria-live": "polite" } });
-  const updateSummary = () => {
-    summary.textContent = selected.size ? plural(selected.size, "promo elegida", "promos elegidas") : "Marcá las promos de tus tarjetas";
-  };
-  updateSummary();
-
-  const search = el(doc, "input", { type: "search", placeholder: "Buscar banco", className: "search", attrs: { "aria-label": "Buscar banco" } });
-  view.push(el(doc, "div", { className: "toolbar" }, [search, summary]));
-
-  const byBank = new Map();
-  for (const p of promos) {
-    if (!byBank.has(p.bank)) byBank.set(p.bank, []);
-    byBank.get(p.bank).push(p);
-  }
-  const list = el(doc, "div", { className: "banks" });
-  const rows = [];
-  // Primero los bancos con promos elegidas, después por nombre.
-  const chosen = ([, items]) => (items.some((p) => selected.has(p.id)) ? 0 : 1);
-  const order = [...byBank].sort((a, b) => chosen(a) - chosen(b) || a[0].localeCompare(b[0]));
-  for (const [bank, items] of order) {
-    const count = el(doc, "span", { className: "count" });
-    const updateCount = () => {
-      const n = items.filter((p) => selected.has(p.id)).length;
-      count.textContent = n ? String(n) : "";
-      count.hidden = !n;
-    };
-    const details = el(doc, "details", { className: "bank", open: items.some((p) => selected.has(p.id)) }, [
-      el(doc, "summary", {}, [bankLogo(doc, items, logoUrl), el(doc, "span", { className: "bank-name", textContent: bank }), count, icon(doc, ["M6 9l6 6l6-6"])]),
-    ]);
-    for (const p of items) {
-      const box = switchInput(doc, { value: p.id, checked: selected.has(p.id) });
-      box.addEventListener("change", () => {
-        if (box.checked) selected.add(p.id);
-        else selected.delete(p.id);
-        updateCount();
-        updateSummary();
-        storage.set({ selectedPromoIds: [...selected] });
-      });
-      details.append(el(doc, "label", { className: "row", title: p.text }, [el(doc, "span", { className: "row-text", textContent: describe(p) }), box]));
-    }
-    updateCount();
-    rows.push({ name: norm(bank), details });
-    list.append(details);
-  }
-  const noMatch = el(doc, "p", { className: "empty-search", textContent: "Ningún banco con ese nombre", hidden: true });
-  search.addEventListener("input", () => {
-    const q = norm(search.value.trim());
-    let shown = 0;
-    for (const r of rows) {
-      r.details.hidden = !!q && !r.name.includes(q);
-      if (!r.details.hidden) shown++;
-    }
-    noMatch.hidden = shown > 0;
-  });
-  view.push(list, noMatch);
-  return view;
-}
 
 const PROFILE = [
   { key: "profileCeliac", title: "Soy celíaco/a", text: "Muestra si Coto o Open Food Facts lo marcan Sin TACC." },
@@ -337,7 +205,7 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 // storage: misma interfaz que en bridge.js.
 // meta: { version, logoUrl, welcomeUrl, tab, section }. tab y section abren el popup en ese lugar.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["skin", "promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
+  const s = await storage.get(["skin", "promos", "selectedPromoIds", "cards", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
   const wanted = meta.section ? "ajustes" : meta.tab ?? s.popupTab;
   let active = TABS.some((t) => t.id === wanted) ? wanted : "tarjetas";
 

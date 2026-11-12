@@ -318,6 +318,76 @@ main {
   border-bottom-right-radius: 0;
 }
 
+/* Tarjeta: planes y una línea por súper */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.plans {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+}
+
+.card-store {
+  font-size: 12px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.store-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.card-link {
+  color: var(--red);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.card-link:hover {
+  color: var(--red-hover);
+}
+
+/* Promos que no sabemos de qué tarjeta son */
+.others {
+  margin-top: 14px;
+}
+
+.others-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.others ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.others li {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.others li + li {
+  border-top: 1px solid var(--line);
+}
+
 .row {
   display: flex;
   align-items: center;

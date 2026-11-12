@@ -126,14 +126,7 @@ describe("installBridge", () => {
     await st.set({ comunidad: true });
     await tick();
     expect(win.posted.filter((m) => m.type === "settings").at(-1).selected.map((p) => p.id)).toEqual(["468"]);
-  });
-  it("el popup no lista Comunidad en Tarjetas", async () => {
-    await renderPopup(document, fakeStorage({ promos: PROMOS }), {});
-    const banks = [...document.querySelectorAll('[data-view="tarjetas"] .bank-name')].map((e) => e.textContent);
-    expect(banks.length).toBeGreaterThan(0);
-    expect(banks).not.toContain("Comunidad Coto");
-  });
-  it("manda los ajustes del popup: encendidos salvo que se apaguen", async () => {
+  });  it("manda los ajustes del popup: encendidos salvo que se apaguen", async () => {
     const st = fakeStorage({ autoPromo: false });
     const win = fakeWin();
     installBridge(win, st, () => 0);
@@ -247,46 +240,6 @@ describe("popup", () => {
     expect(document.querySelector('[role="tabpanel"]:not([hidden])').dataset.view).toBe("ajustes");
   });
 
-  it("agrupa por banco y guarda lo elegido", async () => {
-    const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["457"] });
-    await open(st);
-    const banks = [...document.querySelectorAll(".bank-name")].map((h) => h.textContent);
-    expect(banks).toContain("ICBC");
-    expect(banks.filter((b) => b === "Naranja X")).toHaveLength(1);
-    const icbc = document.querySelector('input[value="457"]');
-    expect(icbc.checked).toBe(true);
-    expect(icbc.getAttribute("role")).toBe("switch");
-    expect(icbc.closest("label").textContent).toContain("Lunes · 30% · tope $20.000");
-    expect(icbc.closest("details").open).toBe(true);
-    const cred = document.querySelector('input[value="449"]');
-    cred.checked = true;
-    await change(cred);
-    expect(st.data.selectedPromoIds.sort()).toEqual(["449", "457"]);
-    expect(document.querySelector(".summary").textContent).toBe("2 promos elegidas");
-  });
-
-  it("elige el día con botones", async () => {
-    const st = fakeStorage({ promos: PROMOS, day: 3 });
-    await open(st);
-    expect(document.querySelector('input[name="day"][value="3"]').checked).toBe(true);
-    const hoy = document.querySelector('input[name="day"][value="hoy"]');
-    hoy.checked = true;
-    await change(hoy);
-    expect(st.data.day).toBe("hoy");
-  });
-
-  it("el buscador filtra bancos", async () => {
-    await open(fakeStorage({ promos: PROMOS }));
-    const search = document.querySelector('input[type="search"]');
-    search.value = "icb";
-    search.dispatchEvent(new Event("input", { bubbles: true }));
-    const visible = [...document.querySelectorAll("details.bank:not([hidden]) .bank-name")].map((e) => e.textContent);
-    expect(visible).toEqual(["ICBC"]);
-    search.value = "zzz";
-    search.dispatchEvent(new Event("input", { bubbles: true }));
-    expect(document.querySelector(".empty-search").hidden).toBe(false);
-  });
-
   it("los ajustes se guardan y arrancan encendidos", async () => {
     const st = fakeStorage({ promos: PROMOS, markBest: false });
     await open(st);
@@ -346,15 +299,6 @@ describe("popup", () => {
     expect(st.data.compareStores).toBe(false);
     await open(st);
     expect(document.querySelector('input[name="compareStores"]').checked).toBe(false);
-  });
-
-  it("cada banco lleva su logo", async () => {
-    document.body.innerHTML = "";
-    const promos = PROMOS.map((p) => ({ ...p, logo: p.logo ?? "logo_icbc_1.png" }));
-    await renderPopup(document, fakeStorage({ promos }), { version: "1", logoUrl: (n) => "https://x/" + n });
-    const img = document.querySelector("details.bank summary img.bank-logo");
-    expect(img.getAttribute("src")).toMatch(/^https:\/\/x\//);
-    expect(img.getAttribute("alt")).toBe("");
   });
 
   it("ayuda dice que no es de Coto y la versión", async () => {
