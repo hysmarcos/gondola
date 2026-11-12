@@ -15,8 +15,11 @@ const CAPTURAS = ["lista", "pdp", "header", "footer", "home", "ingresar"];
 // ni sin abrirlos: el carrito y el mini carrito (sin sesión /carrito lleva al ingreso) y las
 // ventanas, globos y avisos (solo existen abiertos). Uno más por el respaldo de .list-group-item
 // y .bg-white, que solo aparecen en páginas con sesión. Dos más por el error del ingreso (campo
-// inválido y su texto), que solo aparece al mandar el formulario.
-const MAX_SIN_CAPTURA = 35;
+// inválido y su texto), que solo aparece al mandar el formulario. Sube a 85 tras la revisión del
+// dueño con sesión: el encabezado con sesión (íconos, menú del perfil, globo "Envío a"), el
+// respaldo de Bootstrap para Mi cuenta y Mis pedidos, y la compra (/caja/), que es otra
+// aplicación de Coto y pide sesión y carrito.
+const MAX_SIN_CAPTURA = 85;
 const SIN_CAPTURA = /^\/\*\s*sin captura:\s*\S/;
 
 const docs = CAPTURAS.map((f) => new JSDOM(readFileSync(`tests/fixtures/dom/${f}.html`, "utf8")).window.document);

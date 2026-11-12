@@ -29,6 +29,154 @@
   color: var(--g-ink);
 }
 
+/* ---------- Respaldo: textos, campos y botones de Bootstrap ----------
+   Coto fija en sus hojas globales colores pensados para fondo blanco (títulos casi negros,
+   campos claros, links en su rojo). Con sesión hay muchas páginas (Mi cuenta, Mis pedidos, los
+   pasos de la compra) que nadie pintó una por una: estas reglas las dejan legibles. Van con la
+   menor fuerza posible, así las reglas de zona de más abajo ganan. Donde Coto usa !important o
+   estilos de componente, el prefijo va dos veces ([data-gondola-theme="dark"][data-gondola-theme]) para ganarle. */
+
+/* Títulos: Coto los pinta casi negros en todo el sitio. */
+[data-gondola-theme="dark"] :is(h1, h2, h4, h5, h6, .h1, .h2, .h4, .h5, .h6) {
+  color: var(--g-ink);
+}
+
+/* Los h3 y los links son del rojo de Coto: en oscuro, el rojo de texto. Con la menor fuerza
+   (:where): cualquier clase de Coto que les ponga otro color sigue ganando. Los botones y los
+   nodos de Góndola quedan afuera. */
+[data-gondola-theme="dark"] :where(h3, .h3) {
+  color: var(--g-red-text);
+}
+
+[data-gondola-theme="dark"] :where(a:not(.btn, [class*="button"], [class*="coto-unit-"], [class*="gondola-"])) {
+  color: var(--g-red-text);
+}
+
+/* Clases de texto oscuro (llevan !important en Coto). */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.text-dark, .text-body, .color-black) {
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: clases de texto oscuro que solo se usan en páginas con sesión */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.color-midnight-black, .color-p-search, .text-gray-coto:not(.promo-subtitle), .text-gray-700, .text-gray-800, .text-gray-900, .text-gray-950) {
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: texto apagado (solo en páginas con sesión): el secundario del tema. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.text-muted, .text-secondary) {
+  color: var(--g-ink2) !important;
+}
+
+/* sin captura: grises de texto que solo se usan en páginas con sesión */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.text-black-50, .text-gray-500, .text-gray-550, .text-gray-600) {
+  color: var(--g-ink2) !important;
+}
+
+/* sin captura: el rojo de Coto como texto (.text-primary lleva !important), con sesión. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.text-primary, .color-primary) {
+  color: var(--g-red-text) !important;
+}
+
+/* Campos: fondo de página, borde y texto claro. */
+[data-gondola-theme="dark"] :is(.form-control, .form-select) {
+  border-color: var(--g-line-2);
+  background-color: var(--g-bg);
+  color: var(--g-ink);
+}
+
+[data-gondola-theme="dark"] .form-control:focus {
+  background-color: var(--g-bg);
+  color: var(--g-ink);
+}
+
+[data-gondola-theme="dark"] .form-control::placeholder {
+  color: var(--g-ink2);
+}
+
+/* sin captura: campos bloqueados (Mi perfil); Coto los fija gris claro con !important. */
+[data-gondola-theme="dark"][data-gondola-theme] .form-control:disabled,
+[data-gondola-theme="dark"][data-gondola-theme] .form-control[readonly] {
+  background-color: var(--g-soft) !important;
+  color: var(--g-ink2);
+}
+
+/* sin captura: la etiqueta pegada a un campo ("(15)" en Mi perfil) y su botón de guardar. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.input-group-text, .save-celular-button) {
+  border-color: var(--g-line-2) !important;
+  background-color: var(--g-soft) !important;
+  color: var(--g-ink2);
+}
+
+/* sin captura: casillas y opciones sin marcar (la marcada conserva su rojo). */
+[data-gondola-theme="dark"] .form-check-input:not(:checked) {
+  border-color: var(--g-ink3);
+  background-color: var(--g-bg);
+}
+
+/* sin captura: botones claros de Bootstrap (con sesión): superficie con borde. */
+[data-gondola-theme="dark"] .btn-light,
+[data-gondola-theme="dark"] .btn-light:hover,
+[data-gondola-theme="dark"] .btn-light:focus,
+[data-gondola-theme="dark"] .btn-light:active,
+[data-gondola-theme="dark"] .btn-light:disabled {
+  border-color: var(--g-line-2);
+  background-color: var(--g-surface-2);
+  color: var(--g-ink);
+}
+
+/* Botón secundario de Coto (blanco con borde rojo): transparente, en el rojo de texto. */
+[data-gondola-theme="dark"] .btn-secondary,
+[data-gondola-theme="dark"] .btn-secondary:hover,
+[data-gondola-theme="dark"] .btn-secondary:focus {
+  border-color: var(--g-red-text);
+  background-color: transparent;
+  color: var(--g-red-text);
+}
+
+/* sin captura: el selector de cantidad viejo de Coto (.picker) y el nuevo fuera de product-quantity. */
+[data-gondola-theme="dark"] :is(.picker button, .picker .cantidad-producto, .input-spinner .btn, .input-spinner .form-control) {
+  border-color: var(--g-line-2) !important;
+  background-color: var(--g-bg) !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: cabecera y pie de tarjeta (Mis pedidos los fija blancos) y su título negro. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.card-header, .card-footer) {
+  border-color: var(--g-line) !important;
+  background-color: var(--g-surface-2) !important;
+  color: var(--g-ink);
+}
+
+/* sin captura: título de la cabecera de tarjeta */
+[data-gondola-theme="dark"][data-gondola-theme] .card-header .title {
+  color: var(--g-ink);
+}
+
+/* sin captura: recuadros y tablas de las páginas con sesión. */
+[data-gondola-theme="dark"] :is(.box, .table, .filter-group, .itemlist) {
+  border-color: var(--g-line);
+}
+
+/* sin captura: tablas de las páginas con sesión */
+[data-gondola-theme="dark"] .table {
+  color: var(--g-ink);
+}
+
+/* sin captura: links de listas y menús laterales que Coto fija en gris oscuro. */
+[data-gondola-theme="dark"] :is(.boxed-link .text, .item-link .text, .menu-aside .menu-link, .menu-category a, .list-menu li > a, a.itemside, a[class*="card"], .nav-link) {
+  color: var(--g-ink);
+}
+
+/* sin captura: sombras de utilidad de las páginas de compra: un borde fino en su lugar. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.shadow-xs, .shadow-s, .shadow-md) {
+  box-shadow: 0 0 0 1px var(--g-line) !important;
+}
+
+/* sin captura: rellenos grises de utilidad. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.bg-gray-light, .bg-secondary-light) {
+  background-color: var(--g-soft) !important;
+}
+
 /* ---------- Encabezado, buscador y logo ---------- */
 
 /* Barra del encabezado: superficie, sin la sombra que Coto le pone al bajar. La línea de abajo
@@ -53,6 +201,73 @@
 /* sin captura: con sesión, el encabezado muestra links de la cuenta en lugar de "Ingresar" */
 [data-gondola-theme="dark"] .lado-derecho :is(a, .btn-link):not(.button_primary_red) {
   color: var(--g-ink) !important;
+}
+
+/* sin captura: con sesión. La campana, el carrito y la persona son dibujos casi negros
+   (el color va escrito en el propio dibujo): pasan a texto claro. */
+[data-gondola-theme="dark"] header.section-header svg path[fill="#171717"] { /* fijo: es el color que Coto escribe en su dibujo; acá solo se lo busca */
+  fill: var(--g-ink);
+}
+
+/* sin captura: con sesión. El botón del perfil (borde y texto gris oscuro). */
+[data-gondola-theme="dark"][data-gondola-theme] .btn-profile {
+  border-color: var(--g-line-2);
+  background-color: var(--g-surface-2);
+  color: var(--g-ink);
+}
+
+/* sin captura: con sesión. El número sobre la campana y el carrito (blanco con borde rojo). */
+[data-gondola-theme="dark"][data-gondola-theme] .lado-derecho .icono-notificaciones .numero-notificaciones {
+  background-color: var(--g-surface) !important;
+  color: var(--g-red-text) !important;
+}
+
+/* sin captura: con sesión. Menú del perfil: Coto fija cada fila blanca con texto gris oscuro
+   y una raya blanca a la izquierda. */
+[data-gondola-theme="dark"][data-gondola-theme] .dropdown-menu :is(.dropdown-item:not(.categorias-generales), .dropdown-profile-item, .dropdown-profile-drop) {
+  border-left-color: transparent !important;
+  background-color: transparent !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: menú del perfil. El saludo ("Hola …") va en el rojo de texto. */
+[data-gondola-theme="dark"][data-gondola-theme] .dropdown-menu .dropdown-profile-drop {
+  color: var(--g-red-text) !important;
+}
+
+/* sin captura: menú del perfil y avisos. Al pasar el mouse: relleno suave y rojo de texto. */
+[data-gondola-theme="dark"][data-gondola-theme] .dropdown-menu .dropdown-item:not(.categorias-generales):hover,
+[data-gondola-theme="dark"][data-gondola-theme] .dropdown-menu .dropdown-profile-item:hover {
+  background-color: var(--g-soft) !important;
+  color: var(--g-red-text) !important;
+  fill: var(--g-red-text);
+}
+
+/* sin captura: menú del perfil. Los links de cada fila heredan el color de la fila. */
+[data-gondola-theme="dark"][data-gondola-theme] .dropdown-menu .dropdown-profile-item a {
+  color: inherit !important;
+}
+
+/* sin captura: menú del perfil. Los íconos son dibujos gris oscuro de un solo color: pasan a
+   gris claro. El ícono de "Configurar Góndola" queda como es. */
+[data-gondola-theme="dark"] .dropdown-menu .dropdown-profile-item img:not(.gondola-menu-icon) {
+  filter: brightness(0) invert(0.7);
+}
+
+/* sin captura: con sesión. Globo "Envío a": Coto fija la dirección y los textos en gris oscuro. */
+[data-gondola-theme="dark"][data-gondola-theme] #address-list {
+  border-color: var(--g-line) !important;
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: globo "Envío a" */
+[data-gondola-theme="dark"][data-gondola-theme] #address-list :is(strong, p, span, small, li, label, .address-config, .address-row):not(.text-danger) {
+  color: var(--g-ink) !important;
+}
+
+/* sin captura: globo "Envío a" */
+[data-gondola-theme="dark"][data-gondola-theme] #address-list hr {
+  border-color: var(--g-line) !important;
 }
 
 /* Buscador: campo de texto oscuro con su botón pegado. El borde azul de foco es de Coto. */
@@ -245,6 +460,13 @@
   color: var(--g-red-text) !important;
 }
 
+/* La página actual (Coto la marca con .activeLink): rojo de compra con texto blanco. */
+[data-gondola-theme="dark"] app-paginator a.activeLink {
+  border-color: var(--g-red) !important;
+  background-color: var(--g-red) !important;
+  color: #ffffff !important; /* fijo: blanco sobre el rojo de compra, como el texto de Coto */
+}
+
 /* sin captura: la página actual solo se marca con más de una página de resultados */
 [data-gondola-theme="dark"] app-paginator .page-item.active .page-link {
   border-color: var(--g-red) !important;
@@ -345,6 +567,14 @@
 
 [data-gondola-theme="dark"] #coto-atajos-inline .cai-hover-card .cai-link {
   box-shadow: inset 0 0 0 100vmax var(--g-surface-2), 0 0 0 1px var(--g-line) !important;
+  -webkit-text-fill-color: var(--g-ink);
+}
+
+/* Al pasar el mouse (o con el foco) Coto cambia la sombra con una regla más fuerte, que
+   destapaba el fondo blanco: se repite el relleno con más fuerza, con un borde más claro. */
+[data-gondola-theme="dark"] #coto-atajos-inline .cai-hover-card:hover .cai-link,
+[data-gondola-theme="dark"] #coto-atajos-inline .cai-hover-card:focus-within .cai-link {
+  box-shadow: inset 0 0 0 100vmax var(--g-soft), 0 0 0 1px var(--g-ink3) !important;
   -webkit-text-fill-color: var(--g-ink);
 }
 
@@ -540,8 +770,9 @@
   color: var(--g-red-text) !important;
 }
 
-/* sin captura: carrito, requiere sesión. Fotos del carrito y del mini carrito sobre la placa. */
-[data-gondola-theme="dark"] card-product .c__item-img,
+/* sin captura: carrito, requiere sesión. Fotos del carrito y del mini carrito sobre la placa.
+   En el carrito la placa va en la foto misma: su columna es mucho más ancha que la foto. */
+[data-gondola-theme="dark"] card-product .c__item-img .img-fluid,
 [data-gondola-theme="dark"] .dropdown-carrito .imagen-producto {
   border-radius: 8px;
   background-color: var(--g-plate) !important;
@@ -614,6 +845,124 @@
 /* sin captura: ventana "Atención" del carrito */
 [data-gondola-theme="dark"] .atencion-button:hover {
   background-color: var(--g-soft) !important;
+}
+
+/* ---------- Compra (/caja/): entrega, pago y resumen ----------
+   Es otra aplicación de Coto, con sus propias hojas. Pide sesión y un carrito: no hay captura.
+   Los nombres salen de sus hojas públicas; solo colores. */
+
+/* sin captura: compra. El fondo de la página y del pie (gris casi blanco). */
+[data-gondola-theme="dark"][data-gondola-theme] .bg-grey {
+  background-color: var(--g-bg) !important;
+}
+
+/* sin captura: compra. El logo del encabezado, como el del sitio: rojo a negro. */
+[data-gondola-theme="dark"] header .brand-wrap :is(img.logo, .logo img) {
+  filter: grayscale(1) contrast(4) !important;
+  outline: 1px solid var(--g-line);
+  border-radius: 8px;
+}
+
+/* sin captura: compra. Links grises del encabezado y del pie ("Seguir comprando"). */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.section-header, .section-footer) .btn-link {
+  color: var(--g-ink2) !important;
+}
+
+/* sin captura: compra. Pasos (Entrega, Pago, Resumen): círculos y líneas. */
+[data-gondola-theme="dark"][data-gondola-theme] .bs-stepper-circle {
+  background-color: var(--g-line-2) !important;
+}
+
+/* sin captura: compra. El paso actual y los ya hechos: círculo oscuro con su anillo de color. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.active, .bs-confirmed, .bs-conf-partial) .bs-stepper-circle {
+  background-color: var(--g-bg) !important;
+}
+
+/* sin captura: compra */
+[data-gondola-theme="dark"][data-gondola-theme] .bs-stepper-label {
+  color: var(--g-ink3);
+}
+
+/* sin captura: compra */
+[data-gondola-theme="dark"][data-gondola-theme] .active .bs-stepper-label {
+  color: var(--g-red-text);
+}
+
+/* sin captura: compra */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.bs-stepper .line, .bs-stepper-line) {
+  background-color: var(--g-line-2);
+}
+
+/* sin captura: compra. Títulos que Coto fija en gris oscuro. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.main-ch-title, .secondary-title, .ch-title-right, .ch-title-right-header, .ch-label, .modal-title, .modal-tab-text, .delivery-type-card__heading, .banner-body, .header-text) {
+  color: var(--g-ink);
+}
+
+/* sin captura: compra. Textos secundarios (gris medio, que sobre oscuro no llega). */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.main-ch-subtitle, .secondary-subtitle, .ch-resumen-li, .ch-resumen-big-li, .ch-resumen-left-title, .ch-resumen-left-li, .ch-form-text, .container-envio-domicilio, .cupon-section-subtitle, .cupon-additional-text, .delivery-type-card__price, .delivery-option__description, .delivery-option__title--gray, .darkish-gray, .dark-gray) {
+  color: var(--g-ink2);
+}
+
+/* sin captura: compra. Rojos de texto. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.ch-resumen-text-header, .ch-resumen-big-red-coto, .ch-resumen-big-blue, .ch-resumen-left-a, .cupon-section-title, .delivery-type-card__link, .body-link, .red-coto, .cherry) {
+  color: var(--g-red-text);
+}
+
+/* sin captura: compra. "¿Cómo querés recibir tu pedido?" y el aviso sin cupos: tarjetas blancas.
+   La raya roja de la izquierda es de Coto y queda. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.delivery-type-card, .no-cupos-banner) {
+  background: var(--g-surface-2);
+  box-shadow: 0 0 0 1px var(--g-line);
+  color: var(--g-ink);
+}
+
+/* sin captura: compra. Fecha y rango horario: campos. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.form-entrega, .form-textarea) {
+  background-color: var(--g-bg) !important;
+  color: var(--g-ink);
+}
+
+/* sin captura: compra */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.form-rango-horario, .ch-select) {
+  border-color: var(--g-line-2) !important;
+}
+
+/* sin captura: compra. Cupón: botón "Aplicar" y aviso gris. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.cupon-btn-apply, .cupon-info-message) {
+  border-color: var(--g-line-2);
+  background-color: var(--g-soft);
+  color: var(--g-ink);
+}
+
+/* sin captura: compra */
+[data-gondola-theme="dark"][data-gondola-theme] .cupon-info-message :is(small, .small) {
+  color: var(--g-ink2);
+}
+
+/* sin captura: compra. Botón rojo apagado ("Confirmar Pago" antes de elegir): gris del tema. */
+[data-gondola-theme="dark"][data-gondola-theme] .btn-primary.disabled,
+[data-gondola-theme="dark"][data-gondola-theme] .btn-primary:disabled {
+  border-color: var(--g-line-2) !important;
+  background-color: var(--g-line-2) !important;
+  color: var(--g-ink2) !important;
+}
+
+/* sin captura: compra. Rellenos grises claros de las listas de productos y del detalle. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.modal-text-middle-qty, .conf-text-middle-qty, .columna-detalle-compra, .checkmark) {
+  border-color: var(--g-line);
+  background-color: var(--g-soft);
+  color: var(--g-ink);
+}
+
+/* sin captura: compra. Bordes grises claros. */
+[data-gondola-theme="dark"][data-gondola-theme] :is(.modal-products-ul, .modal-products-li, .bt-1) {
+  border-color: var(--g-line);
+}
+
+/* sin captura: compra. La cruz de cerrar ventanas (negra). */
+[data-gondola-theme="dark"][data-gondola-theme] .close {
+  color: var(--g-ink2);
+  text-shadow: none;
 }
 
 /* ---------- Pie ----------
@@ -699,7 +1048,7 @@
    y el mini carrito tienen sus reglas, más específicas. */
 [data-gondola-theme="dark"] .dropdown-menu {
   border-color: var(--g-line);
-  background-color: var(--g-surface-2);
+  background-color: var(--g-surface-2) !important;
   box-shadow: none;
   color: var(--g-ink);
 }
