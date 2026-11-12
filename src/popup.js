@@ -203,7 +203,8 @@ function contribView(doc, meta) {
 const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), ajustes: settingsView, colabora: (doc, s, st, meta) => contribView(doc, meta), ayuda: (doc, s, st, meta) => helpView(doc, meta) };
 
 // storage: misma interfaz que en bridge.js.
-// meta: { version, logoUrl, welcomeUrl, tab, section }. tab y section abren el popup en ese lugar.
+// meta: { version, logoUrl, welcomeUrl, tab, section, stores, storePromos }. tab y section abren
+// el popup en ese lugar. stores y storePromos son las promos de los otros súper (ver popup-cards.js).
 export async function renderPopup(doc, storage, meta = {}) {
   const s = await storage.get(["skin", "promos", "selectedPromoIds", "cards", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
   const wanted = meta.section ? "ajustes" : meta.tab ?? s.popupTab;

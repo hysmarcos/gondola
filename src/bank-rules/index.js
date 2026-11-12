@@ -1,0 +1,34 @@
+// Reglas de cada súper y el estado de una promo. Solo una promo "ok" se resta de un total.
+import * as coto from "./coto.js";
+import * as mas from "./mas.js";
+import * as dia from "./dia.js";
+import * as carrefour from "./carrefour.js";
+import { exclusionText, hashOf } from "./hash.js";
+
+export const RULES = { coto, mas, dia, carrefour };
+
+const entryOf = (promo, rules) => {
+  const hash = hashOf(exclusionText(promo?.legal));
+  return (rules?.exclusions ?? []).find((e) => e.hash === hash) ?? null;
+};
+
+// "unclear": sin porcentaje o sin tope leído (ni monto ni "sin tope").
+export function statusOf(promo, rules) {
+  if (!rules?.cardOf(promo)) return "unmapped";
+  if (promo.percent == null || promo.capKnown === false) return "unclear";
+  if (!entryOf(promo, rules)) return "changed";
+  return "ok";
+}
+
+// Con términos que no conocemos, todo queda excluido.
+export function excluded(promo, rules, product) {
+  const entry = entryOf(promo, rules);
+  return entry ? !!entry.test(product) : true;
+}
+
+// Lo que pide la pestaña Tarjetas por cada promo de un súper. "error" pasa igual.
+export function promoEntries(storeId, promos) {
+  if (!Array.isArray(promos)) return "error";
+  const rules = RULES[storeId];
+  return promos.map((promo) => ({ promo, ref: rules?.cardOf(promo) ?? null, status: rules ? statusOf(promo, rules) : "unmapped" }));
+}
