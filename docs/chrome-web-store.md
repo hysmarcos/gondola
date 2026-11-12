@@ -68,7 +68,7 @@ QUÉ AGREGA
 PRIVACIDAD
 • Sin servidores propios, sin cuentas, sin publicidad y sin analítica.
 • Tus ajustes quedan en tu navegador.
-• Para comparar, envía el código de barras de los productos a las búsquedas públicas de Carrefour, Día y Más. Con el carrito o el mini-carrito abierto, envía también las cantidades para simular la compra, y lee sus páginas públicas de promos. Sin cookies ni datos personales. Se apaga en Ajustes.
+• Para comparar, envía el código de barras de los productos a las búsquedas públicas de Carrefour, Día y Más. Con el carrito o el mini-carrito abierto, envía también las cantidades para simular la compra, y lee las páginas públicas de promos de Día y Más. Sin cookies ni datos personales. Se apaga en Ajustes.
 • Para la información nutricional, solo envía el código de barras a Open Food Facts: el del producto de comida que abrís, los de tu carrito y, con el diseño Góndola prendido y celiaquía o alguna alergia en tu perfil, los de los productos de comida de la lista que se ven en pantalla. Se apaga en Ajustes.
 • Tu perfil (celíaco/a, sodio, azúcar, alergias) queda solo en tu navegador.
 
@@ -107,12 +107,12 @@ Mejorar la web de compras de Coto Digital (coto.com.ar) para comparar productos 
 |---|---|
 | `storage` | Guarda en el navegador las tarjetas, el día de compra y los ajustes que elige el usuario. |
 | Acceso a `www.coto.com.ar` (content scripts) | Agrega el precio por kilo, el orden por precio por kilo, las promos bancarias y el total real del carrito en las páginas de Coto. |
-| Acceso a `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar` y `www.masonline.com.ar` | Busca el mismo producto por código de barras en la búsqueda pública de cada súper para mostrar su precio, simula el carrito con las cantidades (solo con el carrito o el mini-carrito abierto) y lee sus páginas públicas de promos. Sin cookies ni datos personales. El usuario lo puede apagar. |
+| Acceso a `www.carrefour.com.ar`, `diaonline.supermercadosdia.com.ar` y `www.masonline.com.ar` | Busca el mismo producto por código de barras en la búsqueda pública de cada súper para mostrar su precio, simula el carrito con las cantidades (solo con el carrito o el mini-carrito abierto) y lee las páginas públicas de promos de Día y Más. Sin cookies ni datos personales. El usuario lo puede apagar. |
 | Acceso a `world.openfoodfacts.org` | Pide la tabla nutricional por código de barras a la base abierta Open Food Facts, del producto que el usuario abre y de los productos de su carrito. Con el diseño Góndola prendido y el perfil con celiaquía o alguna alergia, también la pide para los productos de comida de la lista que se ven en pantalla, para marcarles las alergias. El usuario lo puede apagar. |
 
 **¿Usa código remoto?** No. Todo el código va en el paquete.
 
-**Uso de datos.** Marcá solo **Contenido del sitio web**, con esta explicación: la extensión envía el código de barras (EAN) de los productos que el usuario ve en Coto a las búsquedas públicas de Carrefour, Día y Más, para mostrar el precio del mismo producto, y las cantidades del carrito, solo con el carrito o el mini-carrito abierto, para simular la compra, además de leer sus páginas públicas de promos (sin cookies), y el de los productos de comida que abre o tiene en el carrito a Open Food Facts, para mostrar su tabla nutricional (con el diseño Góndola prendido y celiaquía o alguna alergia en el perfil, también el de los productos de comida de la lista que se ven, para marcar las alergias). No envía datos de la persona: ni nombre, ni cuenta, ni tarjetas. Del carrito, solo códigos de barras y cantidades. Todo lo demás pasa en el navegador.
+**Uso de datos.** Marcá solo **Contenido del sitio web**, con esta explicación: la extensión envía el código de barras (EAN) de los productos que el usuario ve en Coto a las búsquedas públicas de Carrefour, Día y Más, para mostrar el precio del mismo producto, y las cantidades del carrito, solo con el carrito o el mini-carrito abierto, para simular la compra, además de leer las páginas públicas de promos de Día y Más (sin cookies), y el de los productos de comida que abre o tiene en el carrito a Open Food Facts, para mostrar su tabla nutricional (con el diseño Góndola prendido y celiaquía o alguna alergia en el perfil, también el de los productos de comida de la lista que se ven, para marcar las alergias). No envía datos de la persona: ni nombre, ni cuenta, ni tarjetas. Del carrito, solo códigos de barras y cantidades. Todo lo demás pasa en el navegador.
 
 Marcá las tres certificaciones:
 
