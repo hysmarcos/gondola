@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createCompareClient } from "../src/compare-client.js";
 import { installCartUi } from "../src/cart-ui.js";
 import { analyzeCart } from "../src/cart.js";
@@ -378,6 +378,191 @@ describe("v5: comparar con otros súper en el carrito", () => {
     expect(records).toHaveLength(0);
     expect(order()).toEqual(before);
     expect(order()).toEqual(["title", "coto-unit-mini-line coto-unit-cart-line", "coto-unit-cart-warn", "coto-unit-cmp"]);
+  });
+});
+
+describe("carrito comparado", () => {
+  // Pedidos falsos: se guardan y se resuelven a mano.
+  function fakeDeps() {
+    const calls = [];
+    const promoCalls = [];
+    return {
+      calls,
+      promoCalls,
+      cartCompare: (items, stores) => new Promise((resolve) => calls.push({ items, stores, resolve })),
+      bankPromos: (stores) => new Promise((resolve) => promoCalls.push({ stores, resolve })),
+    };
+  }
+  const lineRes = (total) => ({ [EAN_DOVE]: { total, onSale: false, url: "https://diaonline.supermercadosdia.com.ar/dove/p" } });
+  const answer = (stores, total = 5000) => Object.fromEntries(stores.map((id) => [id, { at: Date.now(), lines: lineRes(total) }]));
+  const qty = (n) => {
+    const a = withEan();
+    a.lines = a.lines.map((l) => (l.ean === EAN_DOVE ? { ...l, qty: n } : l));
+    return a;
+  };
+  const cc = (doc) => doc.querySelector(".coto-unit-cc");
+  const storeBlock = (doc, id) => doc.querySelector(`.coto-unit-cc [data-store="${id}"]`);
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("dos carritos seguidos: un solo pedido, 800 ms después del último", async () => {
+    const deps = fakeDeps();
+    const { send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia", "mas"] });
+    send({ type: "cart", analysis: qty(1), seq: 1 });
+    await vi.advanceTimersByTimeAsync(500);
+    send({ type: "cart", analysis: qty(2), seq: 2 });
+    await vi.advanceTimersByTimeAsync(799);
+    expect(deps.calls).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(deps.calls).toHaveLength(1);
+    expect(deps.calls[0].items).toEqual([{ ean: EAN_DOVE, qty: 2 }]);
+    expect(deps.calls[0].stores).toEqual(["dia", "mas"]);
+    // Sin tarjetas no se piden promos.
+    expect(deps.promoCalls).toHaveLength(0);
+  });
+
+  it("pinta el bloque después de la caja de resumen, con los súper prendidos", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia", "mas"] });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia", "mas"]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cc(doc).previousElementSibling.classList.contains("coto-unit-cart-box")).toBe(true);
+    expect(cc(doc).textContent).toContain("Tu carrito en otros súper");
+    expect(storeBlock(doc, "dia").textContent).toContain("Día · 1 de 6 productos");
+    expect(storeBlock(doc, "carrefour")).toBeNull();
+  });
+
+  it("con tarjetas pide las promos y pinta el renglón con tarjetas", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"], cards: { naranjax: { plan: null } } });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    expect(deps.promoCalls.map((c) => c.stores)).toEqual([["dia"]]);
+    deps.calls[0].resolve(answer(["dia"]));
+    deps.promoCalls[0].resolve(null);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(storeBlock(doc, "dia").textContent).toContain("No pudimos leer las promos");
+  });
+
+  it("la respuesta de un carrito viejo no se pinta", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    send({ type: "cart", analysis: qty(1), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    send({ type: "cart", analysis: qty(2), seq: 2 });
+    deps.calls[0].resolve(answer(["dia"]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cc(doc)).toBeNull();
+    await vi.advanceTimersByTimeAsync(800);
+    expect(deps.calls).toHaveLength(2);
+    deps.calls[1].resolve(answer(["dia"], 9000));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(storeBlock(doc, "dia")).not.toBeNull();
+  });
+
+  it("stores: [] no pide ni pinta", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: [] });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(deps.calls).toHaveLength(0);
+    expect(cc(doc)).toBeNull();
+  });
+
+  it("carrito sin ninguna línea con EAN: no pide ni pinta", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "cart", analysis: analyzeCart(CART_LINES, [], today, "200"), seq: 1 });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(deps.calls).toHaveLength(0);
+    expect(cc(doc)).toBeNull();
+  });
+
+  it("al sacar Día con una respuesta en vuelo, al llegar no hay bloque de Día", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia", "mas"] });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia", "mas"]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(storeBlock(doc, "dia")).not.toBeNull();
+    // "Actualizar" pide ya, sin esperar.
+    [...cc(doc).querySelectorAll("button")].find((b) => b.textContent === "Actualizar").click();
+    expect(deps.calls).toHaveLength(2);
+    send({ type: "settings", selected: [], day: 1, stores: ["mas"] });
+    expect(storeBlock(doc, "dia")).toBeNull();
+    deps.calls[1].resolve(answer(["dia", "mas"]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(storeBlock(doc, "dia")).toBeNull();
+    expect(storeBlock(doc, "mas")).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(800);
+    expect(deps.calls[2].stores).toEqual(["mas"]);
+    deps.calls[2].resolve(answer(["mas"]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(storeBlock(doc, "dia")).toBeNull();
+  });
+
+  it("compareStores apagado: se borra el bloque", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia"]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cc(doc)).not.toBeNull();
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"], compareStores: false });
+    expect(cc(doc)).toBeNull();
+  });
+
+  it("ningún nodo de Coto cambia de padre ni de atributos", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    const coto = [...doc.body.querySelectorAll("*")].map((el) => ({ el, parent: el.parentNode, attrs: [...el.attributes].map((a) => `${a.name}=${a.value}`).join() }));
+    send({ type: "settings", selected: [], day: 1, stores: ["dia", "mas"] });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia", "mas"]));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cc(doc)).not.toBeNull();
+    for (const { el, parent, attrs } of coto) {
+      expect(el.parentNode).toBe(parent);
+      expect([...el.attributes].map((a) => `${a.name}=${a.value}`).join()).toBe(attrs);
+    }
+  });
+
+  it("mini-carrito: una fila más en la caja de resumen que lleva a /carrito", async () => {
+    const deps = fakeDeps();
+    const win = new EventTarget();
+    win.location = { pathname: "/productos/x" };
+    win.postMessage = () => {};
+    win.MutationObserver = window.MutationObserver;
+    const doc = document.implementation.createHTMLDocument("mini");
+    doc.body.innerHTML = `<ul class="dropdown-menu dropdown-carrito show"><div class="precio-carrito"><div class="total-precio"><h4 class="roar-total">$48.355,92</h4></div></div></ul>`;
+    installCartUi(win, doc, deps);
+    const send = (data) => win.dispatchEvent(new MessageEvent("message", { data: { source: "coto-unit", ...data } }));
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    const a = withEan();
+    a.total = 5000; // el súper compite: tiene más de la mitad del carrito en común
+    send({ type: "cart", analysis: a, seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia"], 4000));
+    await vi.advanceTimersByTimeAsync(0);
+    const box = doc.querySelector(".coto-unit-mini-total");
+    const row = box.querySelector(".coto-unit-cc-mini");
+    expect(row.textContent).toMatch(/^Día: \$1\.478 menos en 1 de 6$/);
+    expect(row.getAttribute("href")).toBe("/carrito");
+    expect(box.lastElementChild).toBe(row);
+    expect(row.classList.contains("coto-unit-sum-row")).toBe(true);
   });
 });
 

@@ -6,10 +6,15 @@ import { parseMoney } from "./money.js";
 import { summaryRows, paintSummary, closeSummaryPop, $2 } from "./cart-summary.js";
 import { isComunidad } from "./banks.js";
 import { cartNutrition, cartNutritionRows } from "./nutrition-cart.js";
+import { compareCart } from "./cart-compare.js";
+import { paintCartCompare, paintMiniCompare, miniCartLine } from "./cart-compare-ui.js";
 
 const SOURCE = "coto-unit";
 const WARN = "coto-unit-cart-warn";
 const BOX = "coto-unit-cart-box";
+const CC = "coto-unit-cc";
+// Espera sin cambios en el carrito antes de pedirlo entero a otros súper.
+const CC_WAIT_MS = 800;
 const LINE = "coto-unit-mini-line";
 const CART_LINE = "coto-unit-cart-line";
 const TIP = "coto-unit-tip";
@@ -77,7 +82,13 @@ export function installCartUi(win, doc, deps = {}) {
   const nutriAsked = new Set();
   let nutriScheduled = false;
 
-  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true, stores: STORES, nutrition: true };
+  // Carrito comparado: deps.cartCompare(items, stores) y deps.bankPromos(stores) → Promise
+  // (null si el service worker no responde).
+  const cartCompare = deps.cartCompare ?? null;
+  const bankPromos = deps.bankPromos ?? null;
+
+  // cc: última respuesta aceptada { cart, results, promos }; ccSig: firma del último pedido.
+  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true, stores: STORES, nutrition: true, cards: {}, cc: null };
 
   // Las respuestas de Open Food Facts llegan de a una: un solo repintado por cuadro.
   function nutriSoon() {
@@ -220,6 +231,77 @@ export function installCartUi(win, doc, deps = {}) {
     paintSummary(doc, box, [...summaryRows(a, state.day, new Date().getDay(), { hints: true }), ...nutritionRows(a)], logoUrl);
   }
 
+  // ---------- Carrito comparado ----------
+  let ccSig = null;
+  let ccTimer = null;
+  const hasCards = () => Object.keys(state.cards).length > 0;
+  const ccItems = (a) => a.lines.filter((l) => l.ean && l.qty > 0).map((l) => ({ ean: String(l.ean), qty: l.qty }));
+  const cartSigOf = (items) => items.map((i) => `${i.ean}:${i.qty}`).sort().join(",");
+
+  function ccStop() {
+    clearTimeout(ccTimer);
+    ccSig = null;
+  }
+
+  async function ccFetch(items, cart, sig, ids, cards) {
+    const [res, promos] = await Promise.all([cartCompare(items, ids), cards ? bankPromos(ids) : null]);
+    // Una respuesta con firma vieja (cambió el carrito o los súper) se descarta.
+    if (sig !== ccSig) return;
+    // Lo que no vino de un súper pedido es un error de ese súper.
+    const byStore = (r) => Object.fromEntries(ids.map((id) => [id, r && typeof r === "object" && r[id] != null ? r[id] : "error"]));
+    state.cc = { cart, results: byStore(res), promos: cards ? byStore(promos) : undefined };
+    render();
+  }
+
+  // Firma: el carrito, los súper prendidos y si hay tarjetas (sin tarjetas no se piden
+  // promos). Pide 800 ms después del último cambio, o ya (botón "Actualizar").
+  function ccWant(items, now = false) {
+    const cart = cartSigOf(items);
+    const ids = state.stores.map((s) => s.id);
+    const cards = hasCards() && !!bankPromos;
+    const sig = [cart, ids.join(), cards].join("|");
+    if (!now && sig === ccSig) return;
+    ccSig = sig;
+    clearTimeout(ccTimer);
+    const go = () => ccFetch(items, cart, sig, ids, cards).catch(() => {});
+    if (now) go();
+    else ccTimer = setTimeout(go, CC_WAIT_MS);
+  }
+
+  // Lo que hay para pintar, o null. De paso pide de nuevo si cambió la firma.
+  function ccCompare(a) {
+    const items = cartCompare && state.compare && state.stores.length ? ccItems(a) : [];
+    if (!items.length) {
+      ccStop();
+      return null;
+    }
+    ccWant(items);
+    const cc = state.cc;
+    // Cambió el carrito: los precios de antes ya no valen hasta la respuesta nueva.
+    if (cc?.cart !== cartSigOf(items)) return null;
+    // Solo los súper prendidos: uno apagado no se pinta aunque esté en la respuesta.
+    const stores = state.stores.filter((s) => s.id in cc.results);
+    if (!stores.length) return null;
+    return compareCart({ analysis: a, results: cc.results, promos: cc.promos, cards: state.cards, day: state.day, stores });
+  }
+
+  // Va justo después de la caja de resumen.
+  function renderCc(cmp) {
+    const sum = doc.querySelector("." + BOX);
+    let box = doc.querySelector("." + CC);
+    if (!cmp || !sum) return box?.remove();
+    if (!box) {
+      box = doc.createElement("div");
+      box.className = CC;
+    }
+    if (sum.nextElementSibling !== box) sum.after(box);
+    paintCartCompare(doc, box, cmp, {
+      now: Date.now(),
+      cards: hasCards() && state.cc.promos !== undefined,
+      onRefresh: () => state.analysis && ccWant(ccItems(state.analysis), true),
+    });
+  }
+
   // Si el total de la página no coincide con el carrito que leímos (cambió una cantidad
   // y Coto no volvió a pedir el carrito), no mostramos nada para no mentir.
   function inSync(a) {
@@ -229,7 +311,7 @@ export function installCartUi(win, doc, deps = {}) {
   }
 
   function clear() {
-    doc.querySelectorAll(`.${WARN}, .${BOX}, .${CART_LINE}, card-product .${LINK}, ${CMP_SEL}`).forEach((e) => e.remove());
+    doc.querySelectorAll(`.${WARN}, .${BOX}, .${CC}, .${CART_LINE}, card-product .${LINK}, ${CMP_SEL}`).forEach((e) => e.remove());
     hideTip();
   }
 
@@ -241,7 +323,7 @@ export function installCartUi(win, doc, deps = {}) {
   }
 
   // Mini-carrito (desplegable del ícono): precio con promo por línea y totales.
-  function renderMini(a) {
+  function renderMini(a, cmp) {
     const menu = doc.querySelector(".dropdown-carrito");
     if (!menu) return closeSummaryPop(doc);
     keepOpen(menu);
@@ -272,6 +354,8 @@ export function installCartUi(win, doc, deps = {}) {
     }
     // El detalle se abre en un panel flotante: el mini-carrito mantiene su tamaño.
     paintSummary(doc, box, summaryRows(a, state.day, new Date().getDay()), logoUrl, { float: true, alive: () => menu.isConnected && menu.classList.contains("show") });
+    // El carrito comparado en una fila más de la caja; lleva a /carrito.
+    paintMiniCompare(doc, box, miniCartLine(cmp));
   }
 
   // El globo de ayuda: uno solo para toda la página, pegado a la ventana para que el
@@ -420,11 +504,13 @@ export function installCartUi(win, doc, deps = {}) {
   function render() {
     checkPath();
     checkMini();
-    if (state.analysis) renderMini(state.analysis);
+    const cmp = state.analysis ? ccCompare(state.analysis) : null;
+    if (state.analysis) renderMini(state.analysis, cmp);
     if (!onCart() || !state.analysis) return;
     if (!inSync(state.analysis)) return clear();
     renderWarnings(state.analysis);
     renderBox(state.analysis);
+    renderCc(cmp);
   }
 
   win.addEventListener("message", (e) => {
@@ -444,6 +530,7 @@ export function installCartUi(win, doc, deps = {}) {
       // Sin ningún súper prendido no hay nada que comparar.
       state.compare = m.compareStores !== false && stores.length > 0;
       state.nutrition = m.nutrition !== false;
+      state.cards = m.cards && typeof m.cards === "object" ? m.cards : {};
       if (!state.compare) doc.querySelectorAll(CMP_SEL).forEach((e) => e.remove());
     } else if (m.type === "cart" && m.analysis) {
       if (typeof m.seq === "number") {

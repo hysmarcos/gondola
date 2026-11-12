@@ -33,7 +33,14 @@ const nutrition = createNutritionUi(document, {
 });
 
 badges = installBadges(window, document, { logoUrl: logo, compare, nutrition });
-installCartUi(window, document, { logoUrl: logo, compare, nutrition: { request: nutritionRequest } });
+installCartUi(window, document, {
+  logoUrl: logo,
+  compare,
+  nutrition: { request: nutritionRequest },
+  // Carrito comparado. Si el service worker no responde (extensión recargada), null.
+  cartCompare: (items, stores) => chrome.runtime.sendMessage({ type: "cartCompare", items, stores }).catch(() => null),
+  bankPromos: (stores) => chrome.runtime.sendMessage({ type: "bankPromos", stores }).catch(() => null),
+});
 installSkin(window, document, chrome.storage.local, () => badges?.refresh());
 installPromoUi(window, document);
 // "Configurar Góndola" en el menú de perfil de Coto. Si la extensión se recargó, no hace nada.

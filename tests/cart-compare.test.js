@@ -149,6 +149,28 @@ describe("compareCart: con tarjetas", () => {
     expect(r.verdict).toEqual({ winner: "coto", saving: 100, withCards: true });
   });
 
+  it("sin promos pedidas para el súper (undefined): bankNote none, no error", () => {
+    const st = run({ promos: {} }).stores[0];
+    expect(st.bankOther).toBeNull();
+    expect(st.bankNote).toBe("none");
+  });
+
+  it("una promo que no ahorra nada (todo excluido) es como no tener promo", () => {
+    const lines = LINES.map((l) => (l.ean ? { ...l, brand: "EXCLUIDA" } : l));
+    const st = run({ analysis: analysis({ lines }) }).stores[0];
+    expect(st.bankOther).toBeNull();
+    expect(st.bankNote).toBe("none");
+  });
+
+  it("promo con ahorro 0 y otra bloqueada por la compra mínima: bankNote min", () => {
+    const lines = LINES.map((l) => (l.ean ? { ...l, brand: "EXCLUIDA" } : l));
+    const promos = { dia: [promo({ id: "a" }), promo({ id: "b", minPurchase: 75000 })] };
+    const st = run({ analysis: analysis({ lines }), promos }).stores[0];
+    expect(st.bankOther).toBeNull();
+    expect(st.bankNote).toBe("min");
+    expect(st.minLeft).toBe(69400);
+  });
+
   it("una línea excluida por las reglas no entra en elegible", () => {
     const lines = LINES.map((l) => (l.ean === "2" ? { ...l, brand: "EXCLUIDA" } : l));
     const st = run({ analysis: analysis({ lines }) }).stores[0];

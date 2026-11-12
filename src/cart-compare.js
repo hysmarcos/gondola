@@ -33,7 +33,9 @@ function bankCotoOf(promo, pairs, coto) {
 
 // La mejor promo "ok" del día de compra para las tarjetas del usuario. Si no hay, por qué.
 function bankOtherOf(promos, rules, cards, day, pairs, other) {
-  if (!Array.isArray(promos)) return { bank: null, note: "error", minLeft: null };
+  if (promos === "error") return { bank: null, note: "error", minLeft: null };
+  // Sin promos pedidas (el usuario no tiene tarjetas): no es un error.
+  if (!Array.isArray(promos)) return { bank: null, note: "none", minLeft: null };
   const mine = promos.filter((p) => Array.isArray(p.days) && p.days.includes(day) && applies(cards, rules?.cardOf(p)));
   let best = null;
   let minLeft = null;
@@ -49,7 +51,8 @@ function bankOtherOf(promos, rules, cards, day, pairs, other) {
       return s + (excluded(promo, rules, product) ? 0 : r.total);
     }, 0);
     const saving = savingOf(eligible, promo);
-    if (!best || saving > best.saving) best = { label: `${promo.bankLabel} ${promo.percent}%`, saving, total: round2(other - saving) };
+    // Una promo que no ahorra nada (todo excluido) es como no tenerla.
+    if (saving > 0 && (!best || saving > best.saving)) best = { label: `${promo.bankLabel} ${promo.percent}%`, saving, total: round2(other - saving) };
   }
   if (best) return { bank: best, note: null, minLeft: null };
   if (minLeft !== null) return { bank: null, note: "min", minLeft };

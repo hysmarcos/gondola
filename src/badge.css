@@ -856,6 +856,172 @@
   color: #6b7177;
 }
 
+/* ---------- Carrito comparado ("Tu carrito en otros súper") ---------- */
+
+/* Misma caja que el resumen, debajo de él. */
+.coto-unit-cc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 12px 14px;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  background: #fff;
+  font: 400 13px/1.35 Poppins, sans-serif;
+  color: #212529;
+  font-variant-numeric: tabular-nums;
+}
+
+.coto-unit-cc-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #51585e;
+}
+
+.coto-unit-cc-answer {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.coto-unit-cc-sub {
+  font-size: 12px;
+  color: #51585e;
+}
+
+.coto-unit-cc-store {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.coto-unit-cc-store--off {
+  color: #6b7177;
+}
+
+.coto-unit-cc-head,
+.coto-unit-cc-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coto-unit-cc-name {
+  font-weight: 600;
+}
+
+.coto-unit-cc-delta,
+.coto-unit-cc-value {
+  flex: none;
+  white-space: nowrap;
+}
+
+.coto-unit-cc-delta {
+  font-weight: 600;
+}
+
+/* Mismos colores que la comparación por producto: rojo si el otro súper es más barato. */
+.coto-unit-cc--down {
+  color: #A32D2D;
+}
+
+.coto-unit-cc--up,
+.coto-unit-cc--eq {
+  color: #5F5E5A;
+}
+
+.coto-unit-cc-row {
+  font-size: 12px;
+  color: #51585e;
+}
+
+.coto-unit-cc-row--note .coto-unit-cc-value {
+  white-space: normal;
+  text-align: right;
+  color: #6b7177;
+}
+
+/* Coto le da estilo a todo button: estos son links de texto. */
+.coto-unit-cc-toggle,
+.coto-unit-cc-refresh {
+  all: unset;
+  align-self: flex-start;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0c447c;
+}
+
+.coto-unit-cc-toggle:hover,
+.coto-unit-cc-refresh:hover {
+  text-decoration: underline;
+}
+
+.coto-unit-cc-toggle:focus-visible,
+.coto-unit-cc-refresh:focus-visible {
+  outline: 2px solid #0c447c;
+  outline-offset: 2px;
+}
+
+.coto-unit-cc-list {
+  margin: 2px 0 0;
+  padding-left: 10px;
+  list-style: none;
+  font-size: 12px;
+  color: #51585e;
+}
+
+.coto-unit-cc-list[hidden] {
+  display: none;
+}
+
+.coto-unit-cc-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.coto-unit-cc-link {
+  flex: none;
+  color: #0c447c;
+}
+
+.coto-unit-cc-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 11px;
+  color: #6b7177;
+}
+
+.coto-unit-cc-foot .coto-unit-cc-refresh {
+  align-self: auto;
+}
+
+/* Mini-carrito: una sola línea, cortada si no entra. */
+.coto-unit-cc-mini {
+  display: block;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0c447c;
+  text-decoration: none;
+}
+
+.coto-unit-cc-mini:hover {
+  text-decoration: underline;
+}
+
 /* Precio de Coto tachado en el mini-carrito: gris, para que no parezca el que se paga. */
 .dropdown-carrito .precio-final[data-coto-unit-strike] {
   color: #8a9096 !important;
