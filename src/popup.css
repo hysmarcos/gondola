@@ -335,6 +335,27 @@ main {
   text-wrap: pretty;
 }
 
+/* Un súper dentro de "Comparar con otros súper" */
+.row--sub {
+  padding-left: 24px;
+  border-top: 0;
+}
+
+.row--sub .row-text {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.row-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.row--sub:has(.switch:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Interruptor */
 .switch {
   appearance: none;

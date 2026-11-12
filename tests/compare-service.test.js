@@ -106,6 +106,23 @@ describe("createCompareService", () => {
     expect(a).toEqual(b);
   });
 
+  it("compara solo los súper pedidos", async () => {
+    const f = fakeFetch();
+    const svc = createCompareService({ fetch: f, cache: createPriceCache(memStorage()) });
+    const out = await svc.compare([EAN], ["dia"]);
+    expect(Object.keys(out[EAN])).toEqual(["dia"]);
+    expect(f.calls.every((c) => c.host === "diaonline.supermercadosdia.com.ar")).toBe(true);
+  });
+
+  it("onStatus avisa si cada súper respondió", async () => {
+    const f = fakeFetch({ fail: ["www.carrefour.com.ar"] });
+    const calls = [];
+    const svc = createCompareService({ fetch: f, cache: createPriceCache(memStorage()), onStatus: (id, ok) => calls.push([id, ok]) });
+    await svc.compare([EAN]);
+    expect(calls).toContainEqual(["carrefour", false]);
+    expect(calls).toContainEqual(["dia", true]);
+  });
+
   it("HTTP 500 en dia da error solo ahi y no se guarda", async () => {
     const dia = STORES.find((s) => s.id === "dia");
     const f = fakeFetch({ fail: [dia.host] });

@@ -3,6 +3,7 @@
 import { dayName, isComunidad } from "./banks.js";
 import { ALLERGENS } from "./nutrition.js";
 import { feedbackLinks, REPO } from "./feedback.js";
+import { STORES } from "./stores.js";
 
 const money = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const SVG = "http://www.w3.org/2000/svg";
@@ -192,6 +193,28 @@ function settingRow(doc, { key, title, text }, checked, storage, onChange = () =
   ]);
 }
 
+// Un interruptor por súper, debajo de "Comparar con otros súper". Apagar uno escribe storesOff.
+// Si el súper no respondió la última vez, la fila lo dice.
+function storeRows(doc, s, storage) {
+  const off = new Set(Array.isArray(s.storesOff) ? s.storesOff : []);
+  return STORES.map((st) => {
+    const box = switchInput(doc, { name: `store-${st.id}`, checked: !off.has(st.id), disabled: s.compareStores === false });
+    box.addEventListener("change", () => {
+      if (box.checked) off.delete(st.id);
+      else off.add(st.id);
+      storage.set({ storesOff: STORES.map((x) => x.id).filter((id) => off.has(id)) });
+    });
+    const failed = s.storeStatus?.[st.id] === "error";
+    const row = el(doc, "label", { className: "row row--sub" }, [
+      el(doc, "span", { className: "row-text", textContent: st.name }),
+      failed ? el(doc, "span", { className: "row-note", textContent: "No responde" }) : null,
+      box,
+    ]);
+    row.dataset.store = st.id;
+    return row;
+  });
+}
+
 // Mi perfil: apagado por defecto. Queda en el navegador.
 function profileView(doc, s, storage, onChange = () => {}) {
   const chosen = new Set(Array.isArray(s.profileAllergens) ? s.profileAllergens : []);
@@ -229,7 +252,7 @@ function settingsView(doc, s, storage, meta = {}) {
     const body = el(doc, "div", { className: "screen-body" });
     // El estado de la fila: cuántos ajustes están prendidos, o qué hay en el perfil.
     const update = () => {
-      const boxes = [...body.querySelectorAll("input.switch")];
+      const boxes = [...body.querySelectorAll(".setting input.switch")];
       const on = boxes.filter((b) => b.checked).length;
       if (sec.id !== "perfil") status.replaceChildren(`${on} de ${boxes.length}`, el(doc, "span", { className: "sr-only", textContent: " prendidos" }));
       else {
@@ -238,7 +261,13 @@ function settingsView(doc, s, storage, meta = {}) {
       }
     };
     if (sec.id === "perfil") body.append(...profileView(doc, s, storage, update));
-    else body.append(...SETTINGS.filter((x) => x.section === sec.id).map((item) => settingRow(doc, item, s[item.key] !== false, storage, update)));
+    else {
+      for (const item of SETTINGS.filter((x) => x.section === sec.id)) {
+        const onChange = item.key === "compareStores" ? () => { update(); for (const b of body.querySelectorAll("[data-store] input")) b.disabled = !body.querySelector('input[name="compareStores"]').checked; } : update;
+        body.append(settingRow(doc, item, s[item.key] !== false, storage, onChange));
+        if (item.key === "compareStores") body.append(...storeRows(doc, s, storage));
+      }
+    }
     update();
 
     const row = el(doc, "button", { type: "button", className: "menu-row" }, [
@@ -308,7 +337,7 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 // storage: misma interfaz que en bridge.js.
 // meta: { version, logoUrl, welcomeUrl, tab, section }. tab y section abren el popup en ese lugar.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["skin", "promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
+  const s = await storage.get(["skin", "promos", "selectedPromoIds", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
   const wanted = meta.section ? "ajustes" : meta.tab ?? s.popupTab;
   let active = TABS.some((t) => t.id === wanted) ? wanted : "tarjetas";
 

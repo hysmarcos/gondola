@@ -4,6 +4,7 @@
 // Nunca se borra un nodo de Coto: sin etiqueta, la tarjeta vuelve a verse como siempre.
 import { dayName } from "./banks.js";
 import { compareRows, paintCompare } from "./compare-ui.js";
+import { STORES, storesFrom } from "./stores.js";
 
 const SOURCE = "coto-unit";
 const BOX = "coto-unit-box";
@@ -133,7 +134,7 @@ export function installBadges(win, doc, deps = {}) {
   const nutrition = deps.nutrition ?? null;
   const today = () => new Date().getDay();
   // hasBank empieza en true: hasta leer los ajustes no se invita a elegir tarjetas.
-  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true, compare: true, nutrition: true, hasBank: true };
+  const state = { labels: {}, marks: {}, best: {}, bestScope: "categoria", comunidad: undefined, seq: 0, bestSeq: -1, day: today(), path: null, sig: undefined, markBest: true, compare: true, stores: STORES, nutrition: true, hasBank: true };
   // La piel de la PDP (src/skin.js pone el atributo; al cambiarlo llama a refresh()).
   const pdpSkin = () => doc.documentElement.getAttribute("data-gondola-skin") === "pdp";
   const requested = new Set(); // EAN ya pedidos: cada uno se pide una sola vez
@@ -210,7 +211,7 @@ export function installBadges(win, doc, deps = {}) {
     const old = box.querySelector(":scope > ." + CMP);
     if (old && old.classList.contains(`${CMP}--icon`) !== (variant === "icon")) old.remove();
     const results = compare.peek(ean);
-    paintCompare(box, compareRows(label.cmp, results), variant);
+    paintCompare(box, compareRows(label.cmp, results, state.stores), variant);
     // Las filas son de la PDP con la piel: la caja pasa a display: contents (sin caja propia,
     // un IntersectionObserver nunca la ve) y es el único producto de la página: se pide ya.
     if (results) return;
@@ -591,7 +592,15 @@ export function installBadges(win, doc, deps = {}) {
     if (m.type === "settings") {
       state.day = Number(m.day) || 0;
       state.markBest = m.markBest !== false;
-      state.compare = m.compareStores !== false;
+      const stores = Array.isArray(m.stores) ? storesFrom(m.stores) : STORES;
+      // Cambió la lista de súper: lo pedido hasta ahora no vale, se pide de nuevo.
+      if (stores.map((s) => s.id).join() !== state.stores.map((s) => s.id).join()) {
+        requested.clear();
+        for (const el of doc.querySelectorAll(`.${BOX} > .${CMP}, .${BLOCK} > .${CMP}`)) el.remove();
+      }
+      state.stores = stores;
+      // Sin ningún súper prendido no hay nada que comparar.
+      state.compare = m.compareStores !== false && stores.length > 0;
       state.nutrition = m.nutrition !== false;
       state.hasBank = (m.selected ?? []).length > 0;
       if (!state.compare) {

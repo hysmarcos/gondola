@@ -29,7 +29,7 @@ function createLimiter(limit) {
     });
 }
 
-export function createCompareService({ fetch, cache, stores = STORES, concurrency = 4, timeoutMs = 8000 }) {
+export function createCompareService({ fetch, cache, stores = STORES, concurrency = 4, timeoutMs = 8000, onStatus = () => {} }) {
   const limiters = new Map(stores.map((s) => [s.id, createLimiter(concurrency)]));
   const inflight = new Map(); // "<storeId>:<ean>" -> Promise<Offer | "missing" | "error">
 
@@ -65,8 +65,10 @@ export function createCompareService({ fetch, cache, stores = STORES, concurrenc
     try {
       hits = parseSearch(await request(store, searchUrl(store, eans)));
     } catch {
+      onStatus(store.id, false);
       return Object.fromEntries(eans.map((e) => [e, "error"]));
     }
+    onStatus(store.id, true);
     const values = await Promise.all(eans.map((e) => offerFor(store, hits.get(e))));
     const out = Object.fromEntries(eans.map((e, i) => [e, values[i]]));
     try {
@@ -112,12 +114,14 @@ export function createCompareService({ fetch, cache, stores = STORES, concurrenc
     return result;
   }
 
-  async function compare(eans) {
+  // storeIds: qué súper consultar; sin él, todos.
+  async function compare(eans, storeIds) {
     const valid = [...new Set((eans ?? []).map(validEan).filter(Boolean))].slice(0, MAX_EANS);
     const out = Object.fromEntries(valid.map((e) => [e, {}]));
     if (!valid.length) return out;
+    const asked = Array.isArray(storeIds) ? stores.filter((s) => storeIds.includes(s.id)) : stores;
     await Promise.all(
-      stores.map(async (store) => {
+      asked.map(async (store) => {
         const r = await compareStore(store, valid);
         for (const e of valid) out[e][store.id] = r[e];
       }),

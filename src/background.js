@@ -1,5 +1,5 @@
 // Service worker. Responde a:
-// - { type: "compare", eans }: precios de otros super.
+// - { type: "compare", eans, stores }: precios de otros super.
 // - { type: "nutrition", ean }: información nutricional de Open Food Facts.
 // - { type: "openSettings" }: abre los ajustes (lo pide el menú de perfil de Coto).
 // Al instalar, abre la bienvenida.
@@ -11,9 +11,25 @@ import { openSettings, welcomeOnInstall } from "./lifecycle.js";
 
 const fetch = globalThis.fetch.bind(globalThis);
 
+// storeStatus: { [storeId]: "error" }. Solo guarda los que fallan.
+async function setStoreStatus(id, ok) {
+  try {
+    const { storeStatus } = await chrome.storage.local.get("storeStatus");
+    const next = { ...(storeStatus ?? {}) };
+    if (ok) delete next[id];
+    else next[id] = "error";
+    // Solo escribe si algo cambió.
+    if (JSON.stringify(next) !== JSON.stringify(storeStatus ?? {})) await chrome.storage.local.set({ storeStatus: next });
+  } catch {
+    // sin estado igual se compara
+  }
+}
+
 const service = createCompareService({
   fetch,
   cache: createPriceCache(chrome.storage.local),
+  // El popup avisa qué súper no responde.
+  onStatus: (id, ok) => setStoreStatus(id, ok),
 });
 
 // La memoria de la primera ola ("nutriCache") ya no se usa.
@@ -32,7 +48,7 @@ chrome.runtime.onMessage.addListener((m, _sender, reply) => {
     return true;
   }
   if (m?.type === "compare") {
-    service.compare(m.eans).then(reply, () => reply({}));
+    service.compare(m.eans, m.stores).then(reply, () => reply({}));
     return true;
   }
   if (m?.type === "nutrition") {

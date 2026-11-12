@@ -49,6 +49,25 @@ describe("installBridge", () => {
     expect(st.data.fetchedAt).toBe(123);
   });
 
+  it("manda qué súper se comparan y reenvía si cambian", async () => {
+    const st = fakeStorage({ storesOff: ["mas"] });
+    const win = fakeWin();
+    installBridge(win, st, () => 0);
+    await tick();
+    expect(win.posted.find((m) => m.type === "settings").stores).toEqual(["carrefour", "dia"]);
+    await st.set({ storesOff: ["mas", "dia"] });
+    await tick();
+    expect(win.posted.at(-1).stores).toEqual(["carrefour"]);
+  });
+
+  it("con compareStores apagado no manda ningún súper", async () => {
+    const st = fakeStorage({ compareStores: false });
+    const win = fakeWin();
+    installBridge(win, st, () => 0);
+    await tick();
+    expect(win.posted.find((m) => m.type === "settings").stores).toEqual([]);
+  });
+
   it("manda la configuración al arrancar y cuando cambia", async () => {
     const st = fakeStorage({ promos: PROMOS, selectedPromoIds: ["457"], day: 1, comunidad: false });
     const win = fakeWin();
@@ -243,6 +262,42 @@ describe("popup", () => {
     auto.checked = false;
     await change(auto);
     expect(st.data.autoPromo).toBe(false);
+  });
+
+  const storeRow = (id) => document.querySelector(`[data-store="${id}"]`);
+
+  it("elige con qué súper comparar", async () => {
+    const st = fakeStorage({ promos: PROMOS });
+    await open(st);
+    expect(["carrefour", "dia", "mas"].map((id) => storeRow(id).querySelector("input").checked)).toEqual([true, true, true]);
+    expect(storeRow("dia").className).toBe("row row--sub");
+    const dia = storeRow("dia").querySelector("input");
+    dia.checked = false;
+    await change(dia);
+    expect(st.data.storesOff).toEqual(["dia"]);
+    dia.checked = true;
+    await change(dia);
+    expect(st.data.storesOff).toEqual([]);
+  });
+
+  it("con comparar apagado los súper están deshabilitados", async () => {
+    await open(fakeStorage({ promos: PROMOS, compareStores: false, storesOff: ["mas"] }));
+    for (const id of ["carrefour", "dia", "mas"]) expect(storeRow(id).querySelector("input").disabled).toBe(true);
+    expect(storeRow("mas").querySelector("input").checked).toBe(false);
+  });
+
+  it("apagar y prender comparar habilita las filas", async () => {
+    await open(fakeStorage({ promos: PROMOS, compareStores: false }));
+    const master = document.querySelector('input[name="compareStores"]');
+    master.checked = true;
+    await change(master);
+    expect(storeRow("dia").querySelector("input").disabled).toBe(false);
+  });
+
+  it("un súper que no responde lo dice", async () => {
+    await open(fakeStorage({ promos: PROMOS, storeStatus: { mas: "error" } }));
+    expect(storeRow("mas").textContent).toContain("No responde");
+    expect(storeRow("dia").textContent).not.toContain("No responde");
   });
 
   it("comparar con otros súper arranca encendido y se guarda", async () => {

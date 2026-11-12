@@ -1,16 +1,18 @@
 // Cliente de comparación en la página. Junta los EAN pedidos durante
-// `delayMs` y hace un solo `send(eans)`. Los resultados duran lo que la página.
+// `delayMs` y hace un solo `send(eans, stores())`. Los resultados duran lo que la página.
 // `send` y `setTimer` se inyectan (sin APIs de chrome acá).
-export function createCompareClient({ send, delayMs = 150, setTimer = setTimeout }) {
+export function createCompareClient({ send, stores = () => undefined, delayMs = 150, setTimer = setTimeout }) {
   const done = new Map(); // ean -> StoreResults
   const inflight = new Map(); // ean -> Promise<StoreResults>
   let batch = null; // { eans: string[], resolvers: Map<ean, fn> }
+  let gen = 0; // sube con cada reset()
 
   async function flush(b) {
     batch = null;
+    const mine = gen;
     let result;
     try {
-      result = await send(b.eans);
+      result = await send(b.eans, stores());
     } catch {
       result = null;
     }
@@ -18,7 +20,8 @@ export function createCompareClient({ send, delayMs = 150, setTimer = setTimeout
     for (const ean of b.eans) {
       const r = safe[ean];
       const res = r && typeof r === "object" ? r : {};
-      done.set(ean, res);
+      // Si cambió la lista de súper mientras tanto, esta respuesta es de la lista vieja.
+      if (mine === gen) done.set(ean, res);
       inflight.delete(ean);
       b.resolvers.get(ean)(res);
     }
@@ -39,6 +42,11 @@ export function createCompareClient({ send, delayMs = 150, setTimer = setTimeout
   }
 
   const peek = (ean) => done.get(ean);
+  // Cambió la lista de súper: lo ya resuelto deja de valer.
+  const reset = () => {
+    gen++;
+    done.clear();
+  };
 
-  return { request, peek };
+  return { request, peek, reset };
 }

@@ -14,6 +14,27 @@ function fakeTimer() {
 }
 
 describe("createCompareClient", () => {
+  it("manda la lista de súper y reset() vuelve a pedir", async () => {
+    const timer = fakeTimer();
+    let list = ["dia"];
+    const send = vi.fn(async (eans) => Object.fromEntries(eans.map((e) => [e, { dia: offer }])));
+    const client = createCompareClient({ send, stores: () => list, setTimer: timer.setTimer });
+    const p = client.request("1");
+    timer.flush();
+    await p;
+    expect(send).toHaveBeenCalledWith(["1"], ["dia"]);
+    client.request("1");
+    expect(send).toHaveBeenCalledTimes(1);
+    list = ["mas"];
+    client.reset();
+    expect(client.peek("1")).toBeUndefined();
+    const q = client.request("1");
+    timer.flush();
+    await q;
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenLastCalledWith(["1"], ["mas"]);
+  });
+
   it("junta 3 request del mismo tick en un solo send", async () => {
     const timer = fakeTimer();
     const send = vi.fn(async (eans) => Object.fromEntries(eans.map((e) => [e, { dia: offer }])));
@@ -25,7 +46,7 @@ describe("createCompareClient", () => {
     timer.flush();
     const res = await Promise.all(ps);
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith(["1", "2", "3"]);
+    expect(send).toHaveBeenCalledWith(["1", "2", "3"], undefined);
     expect(res).toEqual([{ dia: offer }, { dia: offer }, { dia: offer }]);
   });
 
@@ -52,7 +73,7 @@ describe("createCompareClient", () => {
     timer.flush();
     expect(await a).toEqual({ dia: offer });
     expect(await b).toEqual({ dia: offer });
-    expect(send).toHaveBeenCalledWith(["1"]);
+    expect(send).toHaveBeenCalledWith(["1"], undefined);
   });
 
   it("si send rechaza, las promesas resuelven {}", async () => {
@@ -88,6 +109,6 @@ describe("createCompareClient", () => {
     const b = client.request("2");
     timer.flush();
     await b;
-    expect(send.mock.calls).toEqual([[["1"]], [["2"]]]);
+    expect(send.mock.calls).toEqual([[["1"], undefined], [["2"], undefined]]);
   });
 });

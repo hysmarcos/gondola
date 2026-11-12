@@ -1,6 +1,7 @@
 // En /carrito: avisos de promos incompletas y caja con lo que se paga de verdad.
 // Solo agrega nodos; no toca el carrito de Coto.
 import { compareRows, paintCompare } from "./compare-ui.js";
+import { STORES, storesFrom } from "./stores.js";
 import { parseMoney } from "./money.js";
 import { summaryRows, paintSummary, closeSummaryPop, $2 } from "./cart-summary.js";
 import { isComunidad } from "./banks.js";
@@ -76,7 +77,7 @@ export function installCartUi(win, doc, deps = {}) {
   const nutriAsked = new Set();
   let nutriScheduled = false;
 
-  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true, nutrition: true };
+  const state = { analysis: null, seq: -1, day: new Date().getDay(), path: null, miniOpen: false, compare: true, stores: STORES, nutrition: true };
 
   // Las respuestas de Open Food Facts llegan de a una: un solo repintado por cuadro.
   function nutriSoon() {
@@ -143,7 +144,7 @@ export function installCartUi(win, doc, deps = {}) {
       target.setAttribute(EAN_ATTR, ean);
     }
     const results = compare.peek(ean);
-    paintCompare(target, compareRows(line.cmp, results), "mini");
+    paintCompare(target, compareRows(line.cmp, results, state.stores), "mini");
     if (!results) ask(ean);
   }
   const onCart = () => String(win.location?.pathname ?? "").startsWith("/carrito");
@@ -431,7 +432,15 @@ export function installCartUi(win, doc, deps = {}) {
     if (m?.source !== SOURCE) return;
     if (m.type === "settings") {
       state.day = Number(m.day) || 0;
-      state.compare = m.compareStores !== false;
+      const stores = Array.isArray(m.stores) ? storesFrom(m.stores) : STORES;
+      // Cambió la lista de súper: lo pedido hasta ahora no vale, se pide de nuevo.
+      if (stores.map((s) => s.id).join() !== state.stores.map((s) => s.id).join()) {
+        requested.clear();
+        doc.querySelectorAll(CMP_SEL).forEach((e) => e.remove());
+      }
+      state.stores = stores;
+      // Sin ningún súper prendido no hay nada que comparar.
+      state.compare = m.compareStores !== false && stores.length > 0;
       state.nutrition = m.nutrition !== false;
       if (!state.compare) doc.querySelectorAll(CMP_SEL).forEach((e) => e.remove());
     } else if (m.type === "cart" && m.analysis) {
