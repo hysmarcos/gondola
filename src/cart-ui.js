@@ -15,6 +15,11 @@ const BOX = "coto-unit-cart-box";
 const CC = "coto-unit-cc";
 // Espera sin cambios en el carrito antes de pedirlo entero a otros súper.
 const CC_WAIT_MS = 800;
+// Una respuesta del mismo carrito más nueva que esto se vuelve a usar (al reabrir el
+// mini-carrito o si el total se desfasa un rato) sin pedirlo de nuevo.
+const CC_FRESH_MS = 5 * 60_000;
+// Sin tarjetas: siempre el mismo objeto, así la cuenta guardada sigue valiendo.
+const NO_CARDS = Object.freeze({});
 const LINE = "coto-unit-mini-line";
 const CART_LINE = "coto-unit-cart-line";
 const TIP = "coto-unit-tip";
@@ -235,7 +240,8 @@ export function installCartUi(win, doc, deps = {}) {
   let ccSig = null;
   let ccTimer = null;
   const hasCards = () => Object.keys(state.cards).length > 0;
-  const ccItems = (a) => a.lines.filter((l) => l.ean && l.qty > 0).map((l) => ({ ean: String(l.ean), qty: l.qty }));
+  // Solo las líneas con precio comparable: una pesable (sin cmp) nunca se compara.
+  const ccItems = (a) => a.lines.filter((l) => l.ean && l.cmp && l.qty > 0).map((l) => ({ ean: String(l.ean), qty: l.qty }));
   const cartSigOf = (items) => items.map((i) => `${i.ean}:${i.qty}`).sort().join(",");
 
   function ccStop() {
@@ -249,7 +255,7 @@ export function installCartUi(win, doc, deps = {}) {
     if (sig !== ccSig) return;
     // Lo que no vino de un súper pedido es un error de ese súper.
     const byStore = (r) => Object.fromEntries(ids.map((id) => [id, r && typeof r === "object" && r[id] != null ? r[id] : "error"]));
-    state.cc = { cart, results: byStore(res), promos: cards ? byStore(promos) : undefined };
+    state.cc = { sig, at: Date.now(), cart, results: byStore(res), promos: cards ? byStore(promos) : undefined };
     render();
   }
 
@@ -263,6 +269,8 @@ export function installCartUi(win, doc, deps = {}) {
     if (!now && sig === ccSig) return;
     ccSig = sig;
     clearTimeout(ccTimer);
+    // Ya está la respuesta de este mismo pedido, y es reciente: no se pide de nuevo.
+    if (!now && state.cc?.sig === sig && Date.now() - state.cc.at < CC_FRESH_MS) return;
     const go = () => ccFetch(items, cart, sig, ids, cards);
     if (now) go();
     else ccTimer = setTimeout(go, CC_WAIT_MS);
@@ -286,8 +294,19 @@ export function installCartUi(win, doc, deps = {}) {
     const stores = state.stores.filter((s) => s.id in cc.results);
     if (!stores.length) return { on, cmp: null };
     // Sin las promos de los otros súper todavía, se compara sin tarjetas de los dos lados.
-    const cards = cc.promos === undefined ? {} : state.cards;
-    return { on, cmp: compareCart({ analysis: a, results: cc.results, promos: cc.promos, cards, day: state.day, stores }) };
+    const cards = cc.promos === undefined ? NO_CARDS : state.cards;
+    return { on, cmp: compareMemo(a, cc, cards, state.day, state.stores, stores) };
+  }
+
+  // render() corre con cada cambio del DOM: la cuenta se rehace solo si cambió algo de lo
+  // que usa (cada cosa se reemplaza entera cuando cambia, así alcanza con comparar identidad).
+  let memo = null;
+  function compareMemo(analysis, cc, cards, day, all, stores) {
+    const key = [analysis, cc, cards, day, all];
+    if (memo && key.every((k, i) => k === memo.key[i])) return memo.out;
+    const out = compareCart({ analysis, results: cc.results, promos: cc.promos, cards, day, stores });
+    memo = { key, out };
+    return out;
   }
 
   // Va justo después de la caja de resumen.

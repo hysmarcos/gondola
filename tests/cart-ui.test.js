@@ -3,6 +3,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createCompareClient } from "../src/compare-client.js";
 import { installCartUi } from "../src/cart-ui.js";
 import { analyzeCart } from "../src/cart.js";
+import { compareCart } from "../src/cart-compare.js";
+
+// La cuenta de verdad, espiada: se ve cuántas veces se rehace.
+vi.mock("../src/cart-compare.js", async (orig) => {
+  const m = await orig();
+  return { ...m, compareCart: vi.fn(m.compareCart) };
+});
 import { CART_LINES } from "./fixtures/cart.js";
 import { parsePromos } from "../src/banks.js";
 import { PROMOS_RESULT } from "./fixtures/promos.js";
@@ -608,6 +615,80 @@ describe("carrito comparado", () => {
     send({ type: "cart", analysis: withEan(), seq: 1 });
     await vi.advanceTimersByTimeAsync(2000);
     expect(deps.calls).toHaveLength(0);
+  });
+
+  it("las líneas sin precio comparable (pesables) no se mandan", async () => {
+    const deps = fakeDeps();
+    const { send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    const a = withEan();
+    // Tresemme con EAN pero sin cmp, como un producto pesable.
+    a.lines = a.lines.map((l) => (l.id === "prod00608118" ? { ...l, ean: EAN_TRES, cmp: null } : l));
+    send({ type: "cart", analysis: a, seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    expect(deps.calls[0].items.map((i) => i.ean)).toEqual([EAN_DOVE]);
+  });
+
+  it("cerrar y volver a abrir el mini-carrito no vuelve a pedir el mismo carrito (hasta 5 min)", async () => {
+    const deps = fakeDeps();
+    const { send, setOpen } = setupMiniCc(deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    send({ type: "cart", analysis: competing(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia"], 4000));
+    await vi.advanceTimersByTimeAsync(0);
+    setOpen(false);
+    await vi.advanceTimersByTimeAsync(1000);
+    setOpen(true);
+    send({ type: "cart", analysis: competing(), seq: 2 });
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(deps.calls).toHaveLength(1);
+    // Más de 5 minutos después: se pide de nuevo.
+    setOpen(false);
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    setOpen(true);
+    await vi.advanceTimersByTimeAsync(800);
+    expect(deps.calls).toHaveLength(2);
+  });
+
+  it("en /carrito, un total desfasado un rato no hace pedir de nuevo", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia"]));
+    await vi.advanceTimersByTimeAsync(0);
+    const total = doc.querySelector(".card-body-container");
+    const before = total.innerHTML;
+    total.innerHTML = "Total: $1,00";
+    await vi.advanceTimersByTimeAsync(100);
+    total.innerHTML = before;
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(deps.calls).toHaveLength(1);
+    expect(cc(doc)).not.toBeNull();
+    // "Actualizar" igual pide.
+    [...cc(doc).querySelectorAll("button")].find((b) => b.textContent === "Actualizar").click();
+    expect(deps.calls).toHaveLength(2);
+  });
+
+  it("los cambios del DOM no rehacen la cuenta si no cambió nada", async () => {
+    const deps = fakeDeps();
+    const { doc, send } = setup("/carrito", undefined, deps);
+    send({ type: "settings", selected: [], day: 1, stores: ["dia"] });
+    send({ type: "cart", analysis: withEan(), seq: 1 });
+    await vi.advanceTimersByTimeAsync(800);
+    deps.calls[0].resolve(answer(["dia"]));
+    await vi.advanceTimersByTimeAsync(0);
+    compareCart.mockClear();
+    for (let i = 0; i < 3; i++) {
+      doc.body.append(doc.createElement("span"));
+      await vi.advanceTimersByTimeAsync(0);
+    }
+    expect(compareCart).not.toHaveBeenCalled();
+    // Otro día de compra: se rehace una vez.
+    send({ type: "settings", selected: [], day: 2, stores: ["dia"] });
+    expect(compareCart).toHaveBeenCalledTimes(1);
   });
 
   it("con las promos de tarjetas sin llegar, compara sin tarjetas", async () => {

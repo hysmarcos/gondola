@@ -189,6 +189,16 @@ describe("compareCart: con tarjetas", () => {
     expect(seen[1].onSale).toBe(true);
   });
 
+  it("el nombre y la marca llegan sin espacios en los bordes (las reglas anclan con ^)", () => {
+    const seen = [];
+    const rules = { dia: { ...RULES.dia, exclusions: [{ hash: fingerprint(LEGAL), test: (p) => (seen.push(p), /^yerba\b/.test(p.name)) }] } };
+    const lines = LINES.map((l) => (l.ean === "1" ? { ...l, name: "  Yerba Mañanita  ", brand: " Mañanita " } : l));
+    const st = run({ rules, analysis: analysis({ lines }) }).stores[0];
+    expect(seen[0]).toMatchObject({ name: "yerba mananita", brand: "mananita" });
+    // Elegible: 1900 + 2800 = 4700 → 1175, con tope 9500.
+    expect(st.bankOther.saving).toBe(1175);
+  });
+
   it("con las reglas reales de Día", () => {
     // El legal leído de la captura de Día (sin él la huella no está en las reglas).
     const { legal } = parseDia(readFileSync("tests/fixtures/bank-dia.html", "utf8")).find((p) => p.id === "Naranja 25%");

@@ -47,7 +47,8 @@ function bankOtherOf(promos, rules, cards, day, pairs, other) {
       continue;
     }
     const eligible = pairs.reduce((s, { line, r }) => {
-      const product = { name: norm(line.name), brand: norm(line.brand), groups: line.groups ?? [], onSale: !!r.onSale };
+      // Sin espacios en los bordes: las reglas por nombre anclan con ^.
+      const product = { name: norm(line.name).trim(), brand: norm(line.brand).trim(), groups: line.groups ?? [], onSale: !!r.onSale };
       return s + (excluded(promo, rules, product) ? 0 : r.total);
     }, 0);
     const saving = savingOf(eligible, promo);

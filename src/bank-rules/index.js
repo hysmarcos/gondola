@@ -10,8 +10,16 @@ export const RULES = { coto, mas, dia, carrefour };
 // La huella vacía (legal vacío) no es un texto leído: nunca da una regla.
 const EMPTY = hashOf("");
 
+// Una huella por promo: excluded() se llama una vez por producto del carrito.
+const prints = new WeakMap();
+function printOf(promo) {
+  if (!promo || typeof promo !== "object") return fingerprint(promo?.legal);
+  if (!prints.has(promo)) prints.set(promo, fingerprint(promo.legal));
+  return prints.get(promo);
+}
+
 const entryOf = (promo, rules) => {
-  const hash = fingerprint(promo?.legal);
+  const hash = printOf(promo);
   if (hash === EMPTY) return null;
   return (rules?.exclusions ?? []).find((e) => e.hash === hash) ?? null;
 };
