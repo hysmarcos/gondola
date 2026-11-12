@@ -321,6 +321,8 @@ export function installCartUi(win, doc, deps = {}) {
     if (sum.nextElementSibling !== box) sum.after(box);
     paintCartCompare(doc, box, cmp, {
       now: Date.now(),
+      day: state.day,
+      today: new Date().getDay(),
       cards: hasCards() && state.cc.promos !== undefined,
       onRefresh: () => state.analysis && ccWant(ccItems(state.analysis), true),
     });

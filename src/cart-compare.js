@@ -72,7 +72,11 @@ function storeCmp(store, { analysis, results, promos, cards, day, rules }) {
   for (const line of lines) {
     const r = otherLine(line, res.lines);
     if (r) pairs.push({ line, r });
-    else missing.push({ ean: line.ean ?? null, name: line.name });
+    else {
+      // Un dato dudoso sí está en el otro súper: va con su enlace.
+      const raw = line.ean ? res.lines?.[line.ean] : null;
+      missing.push({ ean: line.ean ?? null, name: line.name, url: (raw && typeof raw === "object" && raw.url) || null });
+    }
   }
   const coto = round2(pairs.reduce((s, p) => s + p.line.total, 0));
   const other = round2(pairs.reduce((s, p) => s + p.r.total, 0));

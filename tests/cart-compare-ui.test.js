@@ -113,6 +113,25 @@ describe("paintCartCompare", () => {
     expect(button(block(box, "dia"), "Faltan 3").getAttribute("aria-expanded")).toBe("true");
   });
 
+  it("faltantes que están en el otro súper llevan su enlace", () => {
+    const withUrl = [{ ean: "a", name: "Yerba Mañanita", url: "https://diaonline.supermercadosdia.com.ar/yerba/p" }, { ean: "b", name: "Fideos", url: null }];
+    const { box } = paint(cmpOf([dia({ missing: withUrl })], { winner: null }));
+    const items = [...block(box, "dia").querySelectorAll('[data-of="missing:dia"] li')];
+    expect(items[0].querySelector("a").getAttribute("href")).toBe("https://diaonline.supermercadosdia.com.ar/yerba/p");
+    expect(items[0].querySelector("a").textContent).toBe("Ver en Día");
+    expect(items[1].querySelector("a")).toBeNull();
+  });
+
+  it("con otro día de compra, la respuesta y la nota dicen ese día", () => {
+    const cmp = cmpOf([dia(), mas()], { winner: "dia", saving: 3150, withCards: false, runnerUp: "coto" });
+    const other = paint(cmp, { cards: true, day: 3, today: 1 }).box;
+    expect(other.querySelector(".coto-unit-cc-answer").textContent).toBe("El miércoles te conviene Día");
+    expect(block(other, "mas").textContent).toContain("Sin promo de tus tarjetas el miércoles");
+    const same = paint(cmp, { cards: true, day: 1, today: 1 }).box;
+    expect(same.querySelector(".coto-unit-cc-answer").textContent).toBe("Hoy te conviene Día");
+    expect(block(same, "mas").textContent).toContain("Sin promo de tus tarjetas hoy");
+  });
+
   it("productos en común: cada uno con su enlace al otro súper", () => {
     const { box } = paint(winsDia());
     button(block(box, "dia"), "Ver los 9 productos").click();

@@ -142,9 +142,11 @@ describe("pestaña Tarjetas", () => {
     expect(line("galicia", "dia").querySelector("a")).not.toBeNull();
   });
 
-  it("un súper que no respondió lo dice", async () => {
+  it("un súper cuyas promos no se pudieron leer lo dice, con el enlace", async () => {
     await open(fakeStorage({ promos: PROMOS, cards: { icbc: { plan: null } } }), { stores: [DIA], storePromos: { dia: "error" } });
-    expect(line("icbc", "dia").textContent).toContain("no responde");
+    expect(line("icbc", "dia").textContent).toBe("No pudimos leer las promos de Día Ver en Día");
+    expect(line("icbc", "dia").querySelector(".store-name").textContent).toBe("Día");
+    expect(line("icbc", "dia").textContent).not.toContain("no responde");
   });
 
   it("sin datos de otros súper solo aparece la línea de Coto", async () => {
@@ -233,6 +235,27 @@ describe("pestaña Tarjetas", () => {
     box.checked = false;
     await change(box);
     expect(st.data.cards).toEqual({});
+  });
+
+  it("al llegar las promos de otros súper se rehace solo Tarjetas, con la búsqueda escrita", async () => {
+    const st = fakeStorage({ promos: PROMOS, cards: { modo: { plan: null } } });
+    const meta = { version: "1" };
+    document.body.innerHTML = "";
+    const ui = await renderPopup(document, st, meta);
+    const ajustes = document.querySelector('[data-view="ajustes"]');
+    const ajustesKids = [...ajustes.childNodes];
+    const search = document.querySelector('input[type="search"]');
+    search.value = "mod";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    Object.assign(meta, { stores: [DIA], storePromos: { dia: [{ promo: { title: "20% - MODO", percent: 20, days: [3] }, ref: { cardId: "modo", plan: null }, status: "ok" }] } });
+    await ui.refreshCards();
+    // Ajustes queda como estaba (con su pantalla abierta, si había una).
+    expect(document.querySelector('[data-view="ajustes"]')).toBe(ajustes);
+    expect([...ajustes.childNodes]).toEqual(ajustesKids);
+    const again = document.querySelector('input[type="search"]');
+    expect(again.value).toBe("mod");
+    expect([...document.querySelectorAll("details.bank:not([hidden]) .bank-name")].map((e) => e.textContent)).toEqual(["MODO"]);
+    expect(line("modo", "dia").textContent).toContain("Miércoles · 20%");
   });
 
   it("sin promos muestra cómo cargarlas", () => {

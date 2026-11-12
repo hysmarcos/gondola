@@ -30,10 +30,11 @@ const link = (doc, store) => el(doc, "a", { className: "card-link", href: store.
 
 // Una línea por súper: lo que la tarjeta elegida da ahí.
 function storeLine(doc, store, entries) {
-  const line = el(doc, "div", { className: "card-store" }, [el(doc, "span", { className: "store-name", textContent: store.name })]);
+  const name = el(doc, "span", { className: "store-name", textContent: store.name });
+  const line = el(doc, "div", { className: "card-store" }, entries === "error" ? ["No pudimos leer las promos de ", name] : [name]);
   line.dataset.store = store.id;
   const text = (t) => line.append(" · ", el(doc, "span", { textContent: t }));
-  if (entries === "error") text("no responde");
+  if (entries === "error") { /* el texto ya está */ }
   else if (!entries.length) text("sin promo online");
   else {
     const ok = entries.filter((e) => e.status === "ok").map((e) => describe(e.promo));

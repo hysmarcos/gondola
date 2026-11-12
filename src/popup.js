@@ -208,8 +208,12 @@ const VIEWS = { tarjetas: (doc, s, st, meta) => cardsView(doc, s, st, meta), aju
 // storage: misma interfaz que en bridge.js.
 // meta: { version, logoUrl, welcomeUrl, tab, section, stores, storePromos }. tab y section abren
 // el popup en ese lugar. stores y storePromos son las promos de los otros súper (ver popup-cards.js).
+const KEYS = ["skin", "promos", "selectedPromoIds", "cards", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"];
+
+// Devuelve { refreshCards() }: vuelve a dibujar solo la pestaña Tarjetas (cuando llegan las
+// promos), sin tocar las otras pestañas y con la búsqueda que estaba escrita.
 export async function renderPopup(doc, storage, meta = {}) {
-  const s = await storage.get(["skin", "promos", "selectedPromoIds", "cards", "day", "autoPromo", "notifyPromo", "markBest", "comunidad", "compareStores", "storesOff", "storeStatus", "nutrition", "profileCeliac", "profileSodium", "profileSugar", "profileAllergens", "popupTab"]);
+  const s = await storage.get(KEYS);
   const wanted = meta.section ? "ajustes" : meta.tab ?? s.popupTab;
   let active = TABS.some((t) => t.id === wanted) ? wanted : "tarjetas";
 
@@ -257,4 +261,16 @@ export async function renderPopup(doc, storage, meta = {}) {
   select(active);
 
   doc.body.replaceChildren(header, main, nav);
+
+  async function refreshCards() {
+    const panel = panels.tarjetas;
+    const q = panel.querySelector('input[type="search"]')?.value ?? "";
+    panel.replaceChildren(...VIEWS.tarjetas(doc, await storage.get(KEYS), storage, meta));
+    const search = panel.querySelector('input[type="search"]');
+    if (search && q) {
+      search.value = q;
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }
+  return { refreshCards };
 }

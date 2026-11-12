@@ -2,13 +2,14 @@
 // resumen en una línea para el mini-carrito. Solo pinta: los pedidos viven en cart-ui.js.
 import { $0 } from "./cart-summary.js";
 import { STORES } from "./stores.js";
+import { dayName } from "./banks.js";
 
 const CC = "coto-unit-cc";
 // Tolerancia de comparación: dentro del 1% es "casi igual".
 const TOLERANCE = 0.01;
 
 const NOTES = {
-  none: "Sin promo de tus tarjetas hoy",
+  none: "Sin promo de tus tarjetas",
   changed: "Los términos cambiaron: no se resta",
   error: "No pudimos leer las promos",
 };
@@ -31,10 +32,12 @@ const WAIT = "Comparando con otros súper…";
 // Nombre para mostrar de un id del veredicto ("coto" o un súper).
 const nameOf = (cmp, id) => (id === "coto" ? "Coto" : cmp.stores.find((st) => st.id === id)?.name ?? null);
 
-function verdictView(cmp) {
+// when: "hoy" o "el miércoles" (el día de compra elegido, si no es hoy).
+function verdictView(cmp, when) {
   const v = cmp.verdict;
   if (!v || v.winner == null) return { text: FEW, sub: null };
-  const text = `Hoy te conviene ${nameOf(cmp, v.winner) ?? v.winner}`;
+  const who = nameOf(cmp, v.winner) ?? v.winner;
+  const text = when === "hoy" ? `Hoy te conviene ${who}` : `${when[0].toUpperCase()}${when.slice(1)} te conviene ${who}`;
   if (!(Math.round(v.saving) > 0)) return { text, sub: "Sale casi lo mismo en todos" };
   if (!v.withCards) return { text, sub: `Pagás ${$0(v.saving)} menos` };
   const second = nameOf(cmp, v.runnerUp);
@@ -46,7 +49,7 @@ function deltaOf(st) {
   return st.diff < 0 ? { cls: "down", text: `▼ ${$0(-st.diff)} menos` } : { cls: "up", text: `▲ ${$0(st.diff)} más` };
 }
 
-function storeView(st, cards) {
+function storeView(st, cards, when) {
   if (st.state === "error") return { id: st.id, text: `No pudimos consultar ${st.name}` };
   if (st.state !== "ok") return { id: st.id, text: `${st.name}: ningún producto en común` };
   const rows = [{ label: "Sin banco", value: `${$0(st.other)} · Coto ${$0(st.coto)}` }];
@@ -54,13 +57,19 @@ function storeView(st, cards) {
     if (st.bankOther) {
       rows.push({ label: `Con tus tarjetas (${st.bankOther.label})`, value: `${$0(st.bankOther.total)} · Coto ${$0(st.bankCoto?.total ?? st.coto)}` });
     } else {
-      const note = st.bankNote === "min" ? `Te faltan ${$0(st.minLeft)} para la compra mínima` : NOTES[st.bankNote] ?? NOTES.none;
+      const note = st.bankNote === "min" ? `Te faltan ${$0(st.minLeft)} para la compra mínima` 
+        : st.bankNote !== "none" && NOTES[st.bankNote] ? NOTES[st.bankNote]
+        : `${NOTES.none} ${when}`;
       rows.push({ label: "Con tus tarjetas", value: note, note: true });
     }
   }
   const lists = [];
   if (st.missing.length) {
-    lists.push({ id: `missing:${st.id}`, label: `Faltan ${st.missing.length}: ver cuáles`, items: st.missing.map((m) => ({ name: m.name })) });
+    lists.push({
+      id: `missing:${st.id}`,
+      label: `Faltan ${st.missing.length}: ver cuáles`,
+      items: st.missing.map((m) => ({ name: m.name, href: storeHref(m.url, st.id), link: `Ver en ${st.name}` })),
+    });
   }
   if (st.common.length) {
     lists.push({
@@ -132,12 +141,14 @@ const openOf = (box) => new Set((box.dataset.open ?? "").split(" ").filter(Boole
 
 // Pinta (o actualiza) el bloque dentro de `box`. No toca el DOM si no cambió nada.
 // opts.now: ahora en ms. opts.onRefresh(): botón "Actualizar". opts.cards: el usuario
-// tiene tarjetas prendidas (sin tarjetas no va el renglón "Con tus tarjetas").
-export function paintCartCompare(doc, box, cmp, { now = Date.now(), onRefresh = null, cards = false } = {}) {
+// tiene tarjetas prendidas (sin tarjetas no va el renglón "Con tus tarjetas"). opts.day: el
+// día de compra; opts.today: hoy (0 = domingo). Si no son el mismo, los textos dicen el día.
+export function paintCartCompare(doc, box, cmp, { now = Date.now(), onRefresh = null, cards = false, today = new Date().getDay(), day = today } = {}) {
   box.__cotoCc = { onRefresh };
+  const when = day === today || !dayName(day) ? "hoy" : `el ${dayName(day).toLowerCase()}`;
   const view = {
-    verdict: verdictView(cmp),
-    stores: cmp.stores.map((st) => storeView(st, cards)),
+    verdict: verdictView(cmp, when),
+    stores: cmp.stores.map((st) => storeView(st, cards, when)),
     foot: footOf(cmp, now),
   };
   const sig = JSON.stringify(view);

@@ -49,7 +49,8 @@ describe("compareCart: productos en común", () => {
     const st = r.stores[0];
     expect(st).toMatchObject({ id: "dia", name: "Día", state: "ok", at: 1234, matched: 1, of: 4 });
     expect(st.common).toEqual([{ ean: "1", name: "Yerba Mañanita", coto: 1000, other: 900, url: "u1" }]);
-    expect(st.missing).toEqual([{ ean: "2", name: "Fideos" }, { ean: "3", name: "Vino" }, { ean: null, name: "Pan" }]);
+    // Un dato dudoso sí está en el otro súper: lleva su enlace.
+    expect(st.missing).toEqual([{ ean: "2", name: "Fideos", url: null }, { ean: "3", name: "Vino", url: "u3" }, { ean: null, name: "Pan", url: null }]);
   });
 
   it("dato dudoso arriba de 2,5 veces y precio cero también faltan", () => {

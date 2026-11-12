@@ -15,16 +15,11 @@ const meta = {
   section: params.get("section") ?? undefined,
 };
 
-const render = () => renderPopup(document, chrome.storage.local, meta);
+const ready = renderPopup(document, chrome.storage.local, meta);
 
-// Al volver a dibujar se queda en la pestaña que está abierta.
-const redraw = () => {
-  const tab = document.querySelector('[role="tab"][aria-selected="true"]')?.id.replace(/^tab-/, "");
-  if (tab) Object.assign(meta, { tab, section: undefined });
-  return render();
-};
-
-render();
+// Cuando llegan promos se rehace solo Tarjetas: las otras pestañas, la pantalla abierta de
+// Ajustes y la búsqueda escrita quedan como están.
+const redraw = () => ready.then((ui) => ui.refreshCards());
 
 // Primero se dibuja sin las promos de los otros súper; cuando llegan, se vuelve a dibujar.
 chrome.storage.local
