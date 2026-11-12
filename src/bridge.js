@@ -20,7 +20,7 @@ export function installBridge(win, storage, now = Date.now) {
       // Una sola vez: las promos elegidas a mano pasan a ser tarjetas.
       const migrated = migrateCards(s, cardOf);
       if (migrated) storage.set({ cards: migrated }).catch(() => {});
-      const cards = cleanCards(migrated ?? s.cards);
+      const cards = cleanCards(migrated ?? s.cards, s.promos);
       // Comunidad no se elige en Tarjetas: la prende el ajuste "Tengo Comunidad Coto".
       const comunidad = s.comunidad !== false;
       const selected = (s.promos ?? []).filter((p) => (isComunidad(p) ? comunidad : applies(cards, cardOf(p))));

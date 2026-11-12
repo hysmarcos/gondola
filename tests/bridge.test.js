@@ -116,6 +116,24 @@ describe("installBridge", () => {
       expect(m.selected.map((p) => p.id)).toEqual(cards.icbc ? ["456"] : []);
     }
   });
+  it("una promo de Coto de un banco fuera de CARDS se aplica con su tarjeta y se migra", async () => {
+    const hsbc = { ...PROMOS.find((p) => p.id === "440"), id: "900", logo: "logo_hsbc_1.png", bank: "HSBC" };
+    const promos = [...PROMOS, hsbc];
+    const st = fakeStorage({ promos, cards: { hsbc: { plan: null } }, comunidad: false });
+    const win = fakeWin();
+    installBridge(win, st, () => 0);
+    await tick();
+    const m = win.posted.find((x) => x.type === "settings");
+    expect(m.cards).toEqual({ hsbc: { plan: null } });
+    expect(m.selected.map((p) => p.id)).toEqual(["900"]);
+    // Elegida a mano antes de las tarjetas: sigue aplicando.
+    const old = fakeStorage({ promos, selectedPromoIds: ["900"], comunidad: false });
+    const win2 = fakeWin();
+    installBridge(win2, old, () => 0);
+    await tick();
+    expect(old.data.cards).toEqual({ hsbc: { plan: null } });
+    expect(win2.posted.find((x) => x.type === "settings").selected.map((p) => p.id)).toEqual(["900"]);
+  });
   it("la promo de Comunidad sale del ajuste, no de las tarjetas elegidas", async () => {
     // Elegida a mano pero con el ajuste apagado: no va. Sin elegir y con el ajuste prendido: va.
     const st = fakeStorage({ promos: PROMOS, cards: {}, comunidad: false });

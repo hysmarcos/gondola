@@ -1,6 +1,6 @@
 // Pestaña Tarjetas: una sola lista de tarjetas. Cada una dice qué da en Coto y en los otros súper.
 import { dayName, isComunidad } from "./banks.js";
-import { CARDS, cleanCards, applies, migrateCards } from "./cards.js";
+import { CARDS, cleanCards, applies, migrateCards, cotoCards } from "./cards.js";
 import { cardOf } from "./bank-rules/coto.js";
 import { STORES } from "./stores.js";
 import { el, icon, plural, norm, switchInput } from "./popup-dom.js";
@@ -47,13 +47,16 @@ function storeLine(doc, store, entries) {
 export function cardsView(doc, s, storage, meta = {}) {
   const logoUrl = meta.logoUrl ?? (() => null);
   // Sin tarjetas guardadas todavía, se parte de las promos elegidas a mano (el puente lo guarda al abrir Coto).
-  const cards = cleanCards(s.cards ?? migrateCards(s, cardOf) ?? {});
+  const cards = cleanCards(s.cards ?? migrateCards(s, cardOf) ?? {}, s.promos);
+  // CARDS y los bancos de Coto que no están ahí (HSBC, o uno nuevo).
+  const all = [...CARDS, ...cotoCards(s.promos)];
+  const known = (id) => all.some((c) => c.id === id);
 
   // Comunidad Coto no va acá: se prende en Ajustes ("Tengo Comunidad Coto").
   const coto = [];
   for (const promo of (s.promos ?? []).filter((p) => !isComunidad(p))) {
     const ref = cardOf(promo);
-    if (ref && CARDS.some((c) => c.id === ref.cardId)) coto.push({ promo, ref, status: "ok", logo: promo.logo });
+    if (ref && known(ref.cardId)) coto.push({ promo, ref, status: "ok", logo: promo.logo });
   }
   const data = meta.storePromos ?? {};
   const shown = (meta.stores ?? STORES).filter((st) => st.id in data);
@@ -61,11 +64,12 @@ export function cardsView(doc, s, storage, meta = {}) {
   const entriesOf = (st) => (st.id === COTO.id ? coto : data[st.id]);
   const mapped = (st) => {
     const e = entriesOf(st);
-    return Array.isArray(e) ? e.filter((x) => x.status !== "unmapped" && x.ref && CARDS.some((c) => c.id === x.ref.cardId)) : [];
+    return Array.isArray(e) ? e.filter((x) => x.status !== "unmapped" && x.ref && known(x.ref.cardId)) : [];
   };
 
   const view = [];
-  const listed = CARDS.filter((c) => stores.some((st) => mapped(st).some((e) => e.ref.cardId === c.id)));
+  // Una tarjeta prendida va siempre, aunque no tenga promo: se tiene que poder apagar.
+  const listed = all.filter((c) => c.id in cards || stores.some((st) => mapped(st).some((e) => e.ref.cardId === c.id)));
   const unmapped = shown.flatMap((st) => (Array.isArray(data[st.id]) ? data[st.id] : []).filter((e) => e.status === "unmapped").map((e) => ({ st, e })));
   if (!listed.length && !unmapped.length) {
     view.push(el(doc, "div", { className: "empty" }, [

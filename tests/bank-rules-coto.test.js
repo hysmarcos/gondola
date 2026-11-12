@@ -41,3 +41,19 @@ describe("migrateCards", () => {
     expect(migrateCards({ selectedPromoIds: ["999", "468"], promos }, cardOf)).toEqual({});
   });
 });
+
+describe("bancos y planes fuera de CARDS", () => {
+  it("un banco que no está en CARDS es una tarjeta con su clave", () => {
+    expect(cardOf({ logo: "logo_hsbc_1.png", text: "20% de descuento" })).toEqual({ cardId: "hsbc", plan: null });
+  });
+  it("un plan que esa tarjeta no tiene en CARDS queda en null", () => {
+    expect(cardOf({ logo: "logo_galicia.png", text: "Clientes Plan Sueldo" })).toEqual({ cardId: "galicia", plan: null });
+    expect(cardOf({ logo: "logo_hsbc_1.png", text: "Plan Sueldo HSBC" })).toEqual({ cardId: "hsbc", plan: null });
+    expect(cardOf({ logo: "logo_icbc_1.png", text: "Identité" })).toEqual({ cardId: "icbc", plan: null });
+    expect(cardOf({ logo: "logo_supervielle2.png", text: "Plan Sueldo" })).toEqual({ cardId: "supervielle", plan: null });
+  });
+  it("migra una promo elegida de un banco que no está en CARDS", () => {
+    const hsbc = { ...byId("440"), id: "900", logo: "logo_hsbc_1.png", bank: "HSBC" };
+    expect(migrateCards({ selectedPromoIds: ["900", "457"], promos: [...promos, hsbc] }, cardOf)).toEqual({ icbc: { plan: "sueldo" }, hsbc: { plan: null } });
+  });
+});

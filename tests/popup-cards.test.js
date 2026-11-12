@@ -201,6 +201,40 @@ describe("pestaña Tarjetas", () => {
     expect(img.getAttribute("alt")).toBe("");
   });
 
+  it("un banco de Coto fuera de CARDS tiene su fila, se prende y se guarda", async () => {
+    const hsbc = { ...PROMOS.find((p) => p.id === "440"), id: "900", logo: "logo_hsbc_1.png", bank: "HSBC" };
+    const st = fakeStorage({ promos: [...PROMOS, hsbc] });
+    await open(st);
+    expect(card("hsbc").querySelector(".bank-name").textContent).toBe("HSBC");
+    expect(card("hsbc").querySelector(".plans")).toBeNull();
+    // Apagada muestra lo que da en Coto.
+    expect(line("hsbc", "coto").textContent).toContain("Lunes · 25%");
+    const box = card("hsbc").querySelector("input.switch");
+    box.checked = true;
+    await change(box);
+    expect(st.data.cards).toEqual({ hsbc: { plan: null } });
+    expect(card("hsbc").querySelector(".plans")).toBeNull();
+  });
+
+  it("una promo elegida a mano de un banco fuera de CARDS sigue prendida", async () => {
+    const hsbc = { ...PROMOS.find((p) => p.id === "440"), id: "900", logo: "logo_hsbc_1.png", bank: "HSBC" };
+    await open(fakeStorage({ promos: [...PROMOS, hsbc], selectedPromoIds: ["900"] }));
+    expect(card("hsbc").querySelector("input.switch").checked).toBe(true);
+  });
+
+  it("una tarjeta prendida sin promo en ningún súper igual tiene su fila y se puede apagar", async () => {
+    const st = fakeStorage({ promos: PROMOS, cards: { galicia: { plan: null } } });
+    await open(st, { version: "1", stores: [DIA], storePromos: { dia: [] } });
+    expect(document.querySelector(".summary").textContent).toBe("1 tarjeta elegida");
+    expect(line("galicia", "coto").textContent).toContain("sin promo online");
+    expect(line("galicia", "dia").textContent).toContain("sin promo online");
+    const box = card("galicia").querySelector("input.switch");
+    expect(box.checked).toBe(true);
+    box.checked = false;
+    await change(box);
+    expect(st.data.cards).toEqual({});
+  });
+
   it("sin promos muestra cómo cargarlas", () => {
     const nodes = cardsView(document, {}, fakeStorage(), {});
     expect(nodes).toHaveLength(1);
